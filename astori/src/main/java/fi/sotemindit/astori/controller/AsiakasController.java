@@ -1,5 +1,4 @@
 package fi.sotemindit.astori.controller;
-import fi.sotemindit.astori.model.AsiakkaanTila;
 
 import java.util.List;
 
@@ -12,12 +11,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import fi.sotemindit.astori.model.Asiakas;
+import fi.sotemindit.astori.model.AsiakkaanTila;
 import fi.sotemindit.astori.model.Kirjaus;
+import fi.sotemindit.astori.model.Tuote;
 import fi.sotemindit.astori.model.Yhteyshenkilo;
 import fi.sotemindit.astori.repository.AsiakasRepository;
 import fi.sotemindit.astori.repository.KayttajaRepository;
 import fi.sotemindit.astori.repository.KirjausRepository;
 import fi.sotemindit.astori.repository.YhteyshenkiloRepository;
+import fi.sotemindit.astori.repository.TuoteRepository;
+import fi.sotemindit.astori.repository.AsiakasTuoteRepository;
 
 @Controller
 public class AsiakasController {
@@ -33,6 +36,12 @@ public class AsiakasController {
 
 	@Autowired
 	private KayttajaRepository kayttajaRepository;
+	
+	@Autowired
+	private TuoteRepository tuoteRepository;
+	
+	@Autowired
+	private AsiakasTuoteRepository asiakasTuoteRepository;
 
 	// 1. PÄÄSIVU: Listaa kaikki asiakkaat
 	@GetMapping("/")
@@ -127,4 +136,28 @@ public class AsiakasController {
 
 		return "redirect:/asiakas/" + asiakasId; // Palaa profiiliin
 	}
+	@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
+	public String kirjaaMyynti(@PathVariable Long asiakasId,
+	                           @RequestParam Long tuoteId,
+	                           @RequestParam Integer maara, // UUSI LOMAKEPARAMETRI
+	                           jakarta.servlet.http.HttpSession session) {
+	    String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+	    if (istuntoTunnus == null) {
+	        return "redirect:/login";
+	    }
+
+	    Asiakas asiakas = asiakasRepository.findById(asiakasId)
+	            .orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
+	    Tuote tuote = tuoteRepository.findById(tuoteId)
+	            .orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt"));
+
+	    // Tallennetaan myynti annetulla määrällä ja tuotteen sen hetkisellä hinnalla
+	    fi.sotemindit.astori.model.AsiakasTuote uusiMyynti = 
+	            new fi.sotemindit.astori.model.AsiakasTuote(asiakas, tuote, tuote.getHinta(), maara);
+	            
+	    asiakasTuoteRepository.save(uusiMyynti);
+
+	    return "redirect:/asiakas/" + asiakasId;
+	}
+
 }

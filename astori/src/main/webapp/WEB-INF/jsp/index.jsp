@@ -106,6 +106,12 @@ body {
 				<form action="${pageContext.request.contextPath}/lisaa-asiakas"
 					method="post">
 					<div class="modal-body p-4">
+						<div class="navbar-nav me-auto">
+							<a class="nav-link active fw-bold"
+								href="${pageContext.request.contextPath}/">Asiakkaat</a> <a
+								class="nav-link"
+								href="${pageContext.request.contextPath}/asetukset">Asetukset</a>
+						</div>
 						<div class="mb-3">
 							<label for="nimi" class="form-label fw-semibold text-secondary">Nimi</label>
 							<input type="text" class="form-control" id="nimi" name="nimi"

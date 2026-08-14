@@ -17,17 +17,21 @@ public class Tuote {
     private String kuvaus;
 
     @Column(nullable = false)
-    private BigDecimal hinta; // Rekisterin oletushinta
+    private BigDecimal hinta;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TuoteYksikko yksikko = TuoteYksikko.KPL;
 
     public Tuote() {}
 
-    public Tuote(String nimi, String kuvaus, BigDecimal hinta) {
+    public Tuote(String nimi, String kuvaus, BigDecimal hinta, TuoteYksikko yksikko) {
         this.nimi = nimi;
         this.kuvaus = kuvaus;
         this.hinta = hinta;
+        this.yksikko = yksikko;
     }
 
-    // Getterit ja Setterit
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getNimi() { return nimi; }
@@ -36,4 +40,6 @@ public class Tuote {
     public void setKuvaus(String kuvaus) { this.kuvaus = kuvaus; }
     public BigDecimal getHinta() { return hinta; }
     public void setHinta(BigDecimal hinta) { this.hinta = hinta; }
+    public TuoteYksikko getYksikko() { return yksikko; }
+    public void setYksikko(TuoteYksikko yksikko) { this.yksikko = yksikko; }
 }

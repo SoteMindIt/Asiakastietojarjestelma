@@ -11,43 +11,44 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import fi.sotemindit.astori.model.Tuote;
+import fi.sotemindit.astori.model.TuoteYksikko;
 import fi.sotemindit.astori.repository.TuoteRepository;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
-public class TuoteController {
+public class AsetuksetController {
 
     @Autowired
     private TuoteRepository tuoteRepository;
 
-    // 1. LISTAA TUOTTEET: Näyttää tuoterekisterin pääsivun
-    @GetMapping("/tuotteet")
-    public String listaaTuotteet(HttpSession session, Model model) {
-        String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-        if (istuntoTunnus == null) {
-            return "redirect:/login"; // Pakotetaan kirjautumaan sisään tietoturvan vuoksi
-        }
-
-        List<Tuote> tuotteet = tuoteRepository.findAll();
-        model.addAttribute("tuotteet", tuotteet);
-        return "tuotteet"; // Etsii tuotteet.jsp -näkymää
-    }
-
-    // 2. LISÄÄ TUOTE: Tallentaa uuden tuotteen tai palvelun hintoineen
-    @PostMapping("/lisaa-tuote")
-    public String lisaaTuote(HttpSession session,
-                             @RequestParam String nimi,
-                             @RequestParam String kuvaus,
-                             @RequestParam BigDecimal hinta) {
+    // Näytetään asetussivu, jossa listataan tuotteet
+    @GetMapping("/asetukset")
+    public String naytaAsetukset(HttpSession session, Model model) {
         String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
         if (istuntoTunnus == null) {
             return "redirect:/login";
         }
 
-        Tuote uusiTuote = new Tuote(nimi, kuvaus, hinta);
+        List<Tuote> tuotteet = tuoteRepository.findAll();
+        model.addAttribute("tuotteet", tuotteet);
+        return "asetukset"; // Etsii asetukset.jsp -näkymää
+    }
+
+    // Lisätään uusi tuote asetuksista käsin yksikön kanssa
+    @PostMapping("/asetukset/lisaa-tuote")
+    public String lisaaTuote(HttpSession session,
+                             @RequestParam String nimi,
+                             @RequestParam String kuvaus,
+                             @RequestParam BigDecimal hinta,
+                             @RequestParam TuoteYksikko yksikko) {
+        String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+        if (istuntoTunnus == null) {
+            return "redirect:/login";
+        }
+
+        Tuote uusiTuote = new Tuote(nimi, kuvaus, hinta, yksikko);
         tuoteRepository.save(uusiTuote);
 
-        return "redirect:/tuotteet"; // Palataan takaisin tuotelistaussivulle
+        return "redirect:/asetukset";
     }
 }
-
