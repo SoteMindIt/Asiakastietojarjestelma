@@ -1,4 +1,5 @@
 package fi.sotemindit.astori.controller;
+import fi.sotemindit.astori.model.AsiakkaanTila;
 
 import java.util.List;
 
@@ -48,23 +49,25 @@ public class AsiakasController {
 
 	// 2. ASIAKKAAN LISÄYS: Tallentaa uuden asiakkaan tiedot
 	@PostMapping("/lisaa-asiakas")
-	public String lisaaAsiakas(jakarta.servlet.http.HttpSession session, @RequestParam String nimi,
-			@RequestParam String sahkoposti, @RequestParam String puhelin) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
+	public String lisaaAsiakas(jakarta.servlet.http.HttpSession session,
+	                           @RequestParam String nimi, 
+	                           @RequestParam String sahkoposti, 
+	                           @RequestParam String puhelin,
+	                           @RequestParam AsiakkaanTila tila) { // LISÄTTY PARAMETRI
+	    String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+	    if (istuntoTunnus == null) {
+	        return "redirect:/login";
+	    }
+	    
+	    fi.sotemindit.astori.model.Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+	            .orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
 
-		// Etsitään kuka on kirjautunut sisään
-		fi.sotemindit.astori.model.Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
-				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
-
-		// Luodaan asiakas ja asetetaan hänelle tämä käyttäjä omistajaksi
-		Asiakas uusiAsiakas = new Asiakas(nimi, sahkoposti, puhelin);
-		uusiAsiakas.setKayttaja(nykyinenKayttaja); // TÄMÄ LINKITTÄÄ ASIAKKAAN KÄYTTÄJÄÄN
-
-		asiakasRepository.save(uusiAsiakas);
-		return "redirect:/";
+	    // Luodaan asiakas uudella konstruktorilla
+	    Asiakas uusiAsiakas = new Asiakas(nimi, sahkoposti, puhelin, tila);
+	    uusiAsiakas.setKayttaja(nykyinenKayttaja);
+	    
+	    asiakasRepository.save(uusiAsiakas);
+	    return "redirect:/";
 	}
 
 	// 3. ASIAKASPROFIILI: Näyttää yhden asiakkaan tarkemmat tiedot, yhteyshenkilöt
