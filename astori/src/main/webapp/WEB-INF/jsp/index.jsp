@@ -7,8 +7,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Asiakastietojärjestelmä</title>
 <!-- Lataa paikallisen Bootstrap-tyylitiedoston omalta koneelta -->
-<link href="${pageContext.request.contextPath}/css/bootstrap.min.css"
-	rel="stylesheet" type="text/css" />
+<link
+	href="${pageContext.request.contextPath}/resources/bootstrap.min.css"
+	rel="stylesheet" />
+
 <style>
 body {
 	background-color: #f8f9fa;
@@ -152,7 +154,7 @@ body {
 
 	<!-- Lataa paikallisen Bootstrap-JavaScriptin sivun alalaitaan -->
 	<script
-		src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
+		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

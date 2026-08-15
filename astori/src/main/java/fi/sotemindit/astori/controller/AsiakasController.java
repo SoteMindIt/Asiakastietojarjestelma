@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import fi.sotemindit.astori.model.Asiakas;
+import fi.sotemindit.astori.model.AsiakasTuote;
 import fi.sotemindit.astori.model.AsiakkaanTila;
 import fi.sotemindit.astori.model.Kirjaus;
 import fi.sotemindit.astori.model.Tuote;
@@ -36,10 +37,10 @@ public class AsiakasController {
 
 	@Autowired
 	private KayttajaRepository kayttajaRepository;
-	
+
 	@Autowired
 	private TuoteRepository tuoteRepository;
-	
+
 	@Autowired
 	private AsiakasTuoteRepository asiakasTuoteRepository;
 
@@ -58,34 +59,32 @@ public class AsiakasController {
 
 	// 2. ASIAKKAAN LISÄYS: Tallentaa uuden asiakkaan tiedot
 	@PostMapping("/lisaa-asiakas")
-	public String lisaaAsiakas(jakarta.servlet.http.HttpSession session,
-	                           @RequestParam String nimi, 
-	                           @RequestParam String sahkoposti, 
-	                           @RequestParam String puhelin,
-	                           @RequestParam AsiakkaanTila tila) { // LISÄTTY PARAMETRI
-	    String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-	    if (istuntoTunnus == null) {
-	        return "redirect:/login";
-	    }
-	    
-	    fi.sotemindit.astori.model.Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
-	            .orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
+	public String lisaaAsiakas(jakarta.servlet.http.HttpSession session, @RequestParam String nimi,
+			@RequestParam String sahkoposti, @RequestParam String puhelin, @RequestParam AsiakkaanTila tila) { // LISÄTTY
+																												// PARAMETRI
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
 
-	    // Luodaan asiakas uudella konstruktorilla
-	    Asiakas uusiAsiakas = new Asiakas(nimi, sahkoposti, puhelin, tila);
-	    uusiAsiakas.setKayttaja(nykyinenKayttaja);
-	    
-	    asiakasRepository.save(uusiAsiakas);
-	    return "redirect:/";
+		fi.sotemindit.astori.model.Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
+
+		// Luodaan asiakas uudella konstruktorilla
+		Asiakas uusiAsiakas = new Asiakas(nimi, sahkoposti, puhelin, tila);
+		uusiAsiakas.setKayttaja(nykyinenKayttaja);
+
+		asiakasRepository.save(uusiAsiakas);
+		return "redirect:/";
 	}
 
 	// 3. ASIAKASPROFIILI: Näyttää yhden asiakkaan tarkemmat tiedot, yhteyshenkilöt
 	// ja kirjaukset
 	@GetMapping("/asiakas/{id}")
-	public String naytaAsiakas(jakarta.servlet.http.HttpSession session, @PathVariable Long id, Model model) {
+	public String naytaAsiakas(@PathVariable Long id, jakarta.servlet.http.HttpSession session, Model model) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
-			return "redirect:/login"; // Jos ei ole kirjautunut, heitetään kirjautumissivulle
+			return "redirect:/login";
 		}
 
 		Asiakas asiakas = asiakasRepository.findById(id)
@@ -94,11 +93,19 @@ public class AsiakasController {
 		List<Yhteyshenkilo> yhteyshenkilot = yhteyshenkiloRepository.findByAsiakasId(id);
 		List<Kirjaus> kirjaukset = kirjausRepository.findByAsiakasIdOrderByLuontiaikaDesc(id);
 
+		// HAETAAN REKISTERISTÄ TUOTTEET JA ASIAKKAAN OSTOT:
+		List<Tuote> tuoteLista = tuoteRepository.findAll();
+		List<AsiakasTuote> ostetutTuotteet = asiakasTuoteRepository.findByAsiakasId(id);
+
 		model.addAttribute("asiakas", asiakas);
 		model.addAttribute("yhteyshenkilot", yhteyshenkilot);
 		model.addAttribute("kirjaukset", kirjaukset);
+		model.addAttribute("ostetutTuotteet", ostetutTuotteet);
 
-		return "asiakasprofiili"; // Etsii asiakasprofiili-nimistä näkymää
+		// TÄMÄ RIVI KORJAA VIRHEEN: Varmista että nimi on täsmälleen "kaikkiTuotteet"
+		model.addAttribute("kaikkiTuotteet", tuoteLista);
+
+		return "asiakasprofiili";
 	}
 
 	// 4. YHTEYSHENKILÖN LISÄYS: Linkittää uuden henkilön tiettyyn asiakkaaseen
@@ -136,28 +143,52 @@ public class AsiakasController {
 
 		return "redirect:/asiakas/" + asiakasId; // Palaa profiiliin
 	}
+
 	@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
-	public String kirjaaMyynti(@PathVariable Long asiakasId,
-	                           @RequestParam Long tuoteId,
-	                           @RequestParam Integer maara, // UUSI LOMAKEPARAMETRI
-	                           jakarta.servlet.http.HttpSession session) {
-	    String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-	    if (istuntoTunnus == null) {
-	        return "redirect:/login";
-	    }
+	public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId, @RequestParam Integer maara, // UUSI
+																														// LOMAKEPARAMETRI
+			jakarta.servlet.http.HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
 
-	    Asiakas asiakas = asiakasRepository.findById(asiakasId)
-	            .orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
-	    Tuote tuote = tuoteRepository.findById(tuoteId)
-	            .orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt"));
+		Asiakas asiakas = asiakasRepository.findById(asiakasId)
+				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
+		Tuote tuote = tuoteRepository.findById(tuoteId)
+				.orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt"));
 
-	    // Tallennetaan myynti annetulla määrällä ja tuotteen sen hetkisellä hinnalla
-	    fi.sotemindit.astori.model.AsiakasTuote uusiMyynti = 
-	            new fi.sotemindit.astori.model.AsiakasTuote(asiakas, tuote, tuote.getHinta(), maara);
-	            
-	    asiakasTuoteRepository.save(uusiMyynti);
+		// Tallennetaan myynti annetulla määrällä ja tuotteen sen hetkisellä hinnalla
+		fi.sotemindit.astori.model.AsiakasTuote uusiMyynti = new fi.sotemindit.astori.model.AsiakasTuote(asiakas, tuote,
+				tuote.getHinta(), maara);
 
-	    return "redirect:/asiakas/" + asiakasId;
+		asiakasTuoteRepository.save(uusiMyynti);
+
+		return "redirect:/asiakas/" + asiakasId;
+	}
+
+	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot ja tilan
+	@PostMapping("/asiakas/{id}/muokkaa")
+	public String muokkaaAsiakasta(@PathVariable Long id, @RequestParam String nimi, @RequestParam String sahkoposti,
+			@RequestParam String puhelin, @RequestParam fi.sotemindit.astori.model.AsiakkaanTila tila,
+			jakarta.servlet.http.HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		Asiakas asiakas = asiakasRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + id));
+
+		// Päivitetään uudet tiedot entiteettiin
+		asiakas.setNimi(nimi);
+		asiakas.setSahkoposti(sahkoposti);
+		asiakas.setPuhelin(puhelin);
+		asiakas.setTila(tila);
+
+		asiakasRepository.save(asiakas); // Tallentaa muutokset PostgreSQL-tietokantaan
+
+		return "redirect:/asiakas/" + id;
 	}
 
 }

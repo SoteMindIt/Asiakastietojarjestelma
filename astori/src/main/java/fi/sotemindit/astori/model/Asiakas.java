@@ -26,6 +26,18 @@ public class Asiakas {
 
     @jakarta.persistence.ManyToOne
     @jakarta.persistence.JoinColumn(name = "kayttaja_id", nullable = true)
+    
+   
+   //Asiakkaan poisto 
+    @jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Yhteyshenkilo> yhteyshenkilot;
+
+    @jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Kirjaus> kirjaukset;
+
+    @jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<AsiakasTuote> ostetutTuotteet;
+
     private Kayttaja kayttaja;
 
     public Asiakas() {
@@ -71,7 +83,6 @@ public class Asiakas {
         this.puhelin = puhelin;
     }
 
-    // UUDET GETTERIT JA SETTERIT TILALLE
     public AsiakkaanTila getTila() {
         return tila;
     }
