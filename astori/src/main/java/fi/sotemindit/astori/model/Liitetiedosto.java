@@ -16,9 +16,9 @@ public class Liitetiedosto {
 
 	private String kuvaus;
 
-	@Lob
-	@Column(nullable = false)
-	private byte[] data; // Tallentaa PDF-tiedoston sisällön tavuina
+    @jakarta.persistence.Column(name = "data", columnDefinition = "bytea", nullable = false)
+    private byte[] data;
+
 
 	private LocalDateTime latausaika = LocalDateTime.now();
 

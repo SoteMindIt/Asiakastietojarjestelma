@@ -6,6 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Asiakasprofiili - ${asiakas.nimi}</title>
+<!-- Lataa paikallisen Bootstrap-tyylitiedoston resources-juuresta -->
 <link
 	href="${pageContext.request.contextPath}/resources/bootstrap.min.css"
 	rel="stylesheet" />
@@ -39,13 +40,15 @@ body {
 			<a class="navbar-brand fw-bold"
 				href="${pageContext.request.contextPath}/">Astori</a>
 			<div class="navbar-nav me-auto">
-				<a class="nav-link active fw-bold"
-					href="${pageContext.request.contextPath}/">Asiakkaat</a> <a
-					class="nav-link"
-					href="${pageContext.request.contextPath}/asetukset">Asetukset</a>
+				<a class="nav-link active fw-bold" href="${pageContext.request.contextPath}/">Asiakkaat</a>
+				<a class="nav-link"
+					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
+					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
+				<a class="nav-link"
+					href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
 			</div>
 			<div class="d-flex align-items-center">
-				<span class="navbar-text text-white me-3"> Käyttäjä: <strong>${kirjautunutKayttaja}</strong></span>
+				<span class="navbar-text text-white me-3">Käyttäjä: <strong>${kirjautunutKayttaja}</strong></span>
 				<a href="${pageContext.request.contextPath}/logout"
 					class="btn btn-outline-danger btn-sm">Kirjaudu ulos</a>
 			</div>
@@ -53,13 +56,14 @@ body {
 	</nav>
 
 	<div class="container py-2">
+		<!-- TAKAISIN-LINKKI -->
 		<div class="mb-3">
 			<a class="btn btn-link p-0 text-decoration-none"
 				href="${pageContext.request.contextPath}/">&larr; Takaisin
 				asiakaslistaukseen</a>
 		</div>
 
-		<!-- PERUSTIEDOT -->
+		<!-- ASIAKKAAN PERUSTIEDOT, MUOKKAUS JA POISTO -->
 		<div class="profile-card border mb-4">
 			<div class="d-flex justify-content-between align-items-start">
 				<div>
@@ -72,7 +76,6 @@ body {
 						<strong>Puhelin:</strong> ${asiakas.puhelin}
 					</p>
 				</div>
-				<!-- ASIAKKAAN TILA BADGE, MUOKKAUS JA POISTO -->
 				<div class="text-end">
 					<div class="mb-2">
 						<span
@@ -80,28 +83,26 @@ body {
 							Tila: ${asiakas.tila.nayttorivi} </span>
 					</div>
 					<div class="d-flex gap-2 justify-content-end">
-						<!-- Muokkauspainike -->
 						<button type="button"
 							class="btn btn-outline-secondary btn-sm fw-bold"
 							data-bs-toggle="modal" data-bs-target="#muokkaaAsiakasModal">
 							Muokkaa tietoja</button>
-
-						<!-- UUSI POISTOLOMAKE JA PAINIKE -->
 						<form
 							action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/poista"
 							method="post"
 							onsubmit="return confirm('Oletko varma, että haluat poistaa tämän asiakkaan ja KAIKKI hänen tiedot järjestelmästä lopullisesti?');">
-							<button type="submit" class="btn btn-danger btn-sm fw-bold">
-								Poista asiakas</button>
+							<button type="submit" class="btn btn-danger btn-sm fw-bold">Poista
+								asiakas</button>
 						</form>
 					</div>
 				</div>
-
 			</div>
 		</div>
 
+		<!-- KOLMESARAKKEINEN OSIO -->
 		<div class="row g-4">
-			<!-- 1. YHTEYSHENKILÖT -->
+
+			<!-- 1. SARAKE: YHTEYSHENKILÖT -->
 			<div class="col-md-4">
 				<div class="col-card">
 					<h3 class="fw-bold h5 text-secondary mb-3">Yhteyshenkilöt</h3>
@@ -118,6 +119,7 @@ body {
 								määriteltyjä yhteyshenkilöitä.</li>
 						</c:if>
 					</ul>
+
 					<h4 class="fw-bold h6 text-dark mt-3">Lisää yhteyshenkilö</h4>
 					<form
 						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-yhteyshenkilo"
@@ -128,7 +130,7 @@ body {
 						</div>
 						<div class="mb-2">
 							<input type="text" class="form-control form-control-sm"
-								name="rooli" placeholder="Rooli">
+								name="rooli" placeholder="Rooli (esim. Toimitusjohtaja)">
 						</div>
 						<div class="mb-2">
 							<input type="email" class="form-control form-control-sm"
@@ -142,7 +144,8 @@ body {
 					</form>
 				</div>
 			</div>
-			<!-- 2. KIRJAUKSET / LOKI -->
+
+			<!-- 2. SARAKE: KIRJAUKSET / LOKI -->
 			<div class="col-md-4">
 				<div class="col-card">
 					<h3 class="fw-bold h5 text-secondary mb-3">Asiakkaan loki</h3>
@@ -160,6 +163,7 @@ body {
 							</c:if>
 						</ul>
 					</div>
+
 					<h4 class="fw-bold h6 text-dark mt-3">Uusi kirjaus</h4>
 					<form
 						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-kirjaus"
@@ -173,8 +177,7 @@ body {
 					</form>
 				</div>
 			</div>
-
-			<!-- 3. MYYDYT PALVELUT -->
+			<!-- 3. SARAKE: MYYDYT PALVELUT -->
 			<div class="col-md-4">
 				<div class="col-card">
 					<h3 class="fw-bold h5 text-secondary mb-3">Asiakkaalle myydyt
@@ -197,12 +200,14 @@ body {
 							</c:if>
 						</ul>
 					</div>
+
 					<c:if test="${not empty ostetutTuotteet}">
 						<div class="pt-2 mb-3 border-top text-end">
 							<span class="fw-bold h6">Kokonaisarvo: <span
 								class="text-success">${yhteissumma} €</span></span>
 						</div>
 					</c:if>
+
 					<h4 class="fw-bold h6 text-dark mt-2">Kirjaa uusi hankinta</h4>
 					<form
 						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-tuote"
@@ -212,7 +217,7 @@ body {
 								required>
 								<option value="">-- Valitse tuote --</option>
 								<c:forEach var="t" items="${kaikkiTuotteet}">
-									<option value="${t.id}">${t.nimi}(${t.hinta} € /
+									<option value="${t.id}">${t.nimi}(${t.hinta}€ /
 										${t.yksikko.lyhenne})</option>
 								</c:forEach>
 							</select>
@@ -227,9 +232,86 @@ body {
 				</div>
 			</div>
 		</div>
-	</div>
+		<!-- .row päättyminen -->
 
-	<!-- BOOTSTRAP POP-UP LOMAKE MUOKKAUKSEEN -->
+		<!-- UUSI ALARIVI: ASIAKKAAN PDF-LIITETIEDOSTOT -->
+		<div class="row mt-4">
+			<div class="col-12">
+				<div class="col-card" style="padding: 25px;">
+					<h3 class="fw-bold h5 text-secondary mb-3">Asiakkaan
+						PDF-dokumentit ja Sopimukset</h3>
+					<c:if test="${param.virhe == 'vain_pdf_sallittu'}">
+						<div class="alert alert-danger py-2 small fw-bold">Virhe:
+							Vain PDF-tiedostot ovat sallittuja!</div>
+					</c:if>
+					<div class="row">
+						<!-- Vasen puoli: Tallennetut tiedostot -->
+						<div class="col-md-7 border-end">
+							<h4 class="fw-bold h6 text-dark mb-3">Tallennetut tiedostot</h4>
+							<div class="table-responsive border rounded bg-light p-0"
+								style="max-height: 200px; overflow-y: auto;">
+								<table class="table table-hover align-middle mb-0 small">
+									<thead class="table-light">
+										<tr>
+											<th>Tiedoston nimi</th>
+											<th>Kuvaus</th>
+											<th>Latausaika</th>
+										</tr>
+									</thead>
+									<tbody>
+										<c:forEach var="liite" items="${liitteet}">
+											<tr>
+												<td><a
+													href="${pageContext.request.contextPath}/liite/${liite.id}"
+													class="fw-bold text-primary text-decoration-none">📄
+														${liite.tiedostonNimi}</a></td>
+												<td class="text-secondary">${liite.kuvaus}</td>
+												<td class="text-muted" style="font-size: 0.85em;">${liite.latausaika}</td>
+											</tr>
+										</c:forEach>
+										<c:if test="${empty liitteet}">
+											<tr>
+												<td colspan="3" class="text-center py-4 text-muted italic">Ei
+													PDF-liitteitä.</td>
+											</tr>
+										</c:if>
+									</tbody>
+								</table>
+							</div>
+						</div>
+						<!-- Oikea puoli: Latauslomake -->
+						<div class="col-md-5">
+							<h4 class="fw-bold h6 text-dark mb-3">Lataa uusi
+								PDF-dokumentti</h4>
+							<form
+								action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-liite"
+								method="post" enctype="multipart/form-data">
+								<div class="mb-2">
+									<label class="form-label small fw-semibold text-secondary mb-1">Valitse
+										PDF-tiedosto</label> <input type="file"
+										class="form-control form-control-sm" name="tiedosto"
+										accept="application/pdf" required>
+								</div>
+								<div class="mb-3">
+									<label class="form-label small fw-semibold text-secondary mb-1">Kuvaus
+										/ Sisältö</label> <input type="text"
+										class="form-control form-control-sm" name="kuvaus"
+										placeholder="esim. Allekirjoitettu sopimus" required>
+								</div>
+								<button type="submit"
+									class="btn btn-primary btn-sm fw-bold px-3">Tallenna
+									dokumentti</button>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+	<!-- .container päättyminen -->
+
+	<!-- BOOTSTRAP POP-UP LOMAKE ASIAKKAAN MUOKKAUKSEEN -->
 	<div class="modal fade" id="muokkaaAsiakasModal" tabindex="-1"
 		aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered">
@@ -244,18 +326,18 @@ body {
 					method="post">
 					<div class="modal-body p-4">
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Nimi</label>
-							<input type="text" class="form-control" name="nimi"
+							<label class="form-label fw-semibold text-secondary">Nimi</label><input
+								type="text" class="form-control" name="nimi"
 								value="${asiakas.nimi}" required>
 						</div>
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Sähköposti</label>
-							<input type="email" class="form-control" name="sahkoposti"
+							<label class="form-label fw-semibold text-secondary">Sähköposti</label><input
+								type="email" class="form-control" name="sahkoposti"
 								value="${asiakas.sahkoposti}" required>
 						</div>
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Puhelin</label>
-							<input type="text" class="form-control" name="puhelin"
+							<label class="form-label fw-semibold text-secondary">Puhelin</label><input
+								type="text" class="form-control" name="puhelin"
 								value="${asiakas.puhelin}" required>
 						</div>
 						<div class="mb-3">
@@ -284,8 +366,8 @@ body {
 		</div>
 	</div>
 
+	<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

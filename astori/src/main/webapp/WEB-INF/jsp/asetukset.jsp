@@ -1,172 +1,211 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java"%>
+<%@ taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asetukset - Astori</title>
-    <link href="${pageContext.request.contextPath}/resources/bootstrap.min.css" rel="stylesheet" />
-    <style>
-        body { background-color: #f8f9fa; }
-        .settings-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #dee2e6; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asetukset - Astori</title>
+<link
+	href="${pageContext.request.contextPath}/resources/bootstrap.min.css"
+	rel="stylesheet" />
+<style>
+body {
+	background-color: #f8f9fa;
+}
+
+.settings-card {
+	background: white;
+	border-radius: 8px;
+	padding: 20px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+	border: 1px solid #dee2e6;
+}
+</style>
 </head>
 <body>
 
-    <!-- YLÄPALKKI -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="${pageContext.request.contextPath}/">Astori</a>
-            <div class="navbar-nav me-auto">
-                <a class="nav-link" href="${pageContext.request.contextPath}/">Asiakkaat</a>
-                <a class="nav-link" href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
-                <a class="nav-link active fw-bold" href="${pageContext.request.contextPath}/asetukset">Asetukset</a>
-            </div>
-            <div class="d-flex align-items-center">
-                <span class="navbar-text text-white me-3">Käyttäjä: <strong>${kirjautunutKayttaja}</strong></span>
-                <a href="${pageContext.request.contextPath}/logout" class="btn btn-outline-danger btn-sm">Kirjaudu ulos</a>
-            </div>
-        </div>
-    </nav>
+	<!-- YLÄPALKKI -->
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+		<div class="container">
+			<a class="navbar-brand fw-bold"
+				href="${pageContext.request.contextPath}/">Astori</a>
+			<div class="navbar-nav me-auto">
+				<a class="nav-link" href="${pageContext.request.contextPath}/">Asiakkaat</a>
+				<a class="nav-link active fw-bold"
+					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
+					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
+				<a class="nav-link"
+					href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
+			</div>
+			<div class="d-flex align-items-center">
+				<span class="navbar-text text-white me-3">Käyttäjä: <strong>${kirjautunutKayttaja}</strong></span>
+				<a href="${pageContext.request.contextPath}/logout"
+					class="btn btn-outline-danger btn-sm">Kirjaudu ulos</a>
+			</div>
+		</div>
+	</nav>
 
-    <div class="container py-2">
-        <h2 class="text-dark fw-bold mb-4">Järjestelmän asetukset</h2>
+	<div class="container py-2">
+		<h2 class="text-dark fw-bold mb-4">Järjestelmän asetukset</h2>
 
-        <!-- JOS TUNNUS ON VARATTU, NÄYTETÄÄN VIRHE -->
-        <c:if test="${param.virhe == 'tunnus_varattu'}">
-            <div class="alert alert-danger alert-dismissible fade show fw-bold" role="alert">
-                Virhe: Käyttäjätunnus on jo varattu järjestelmässä!
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        </c:if>
+		<!-- JOS TUNNUS ON VARATTU, NÄYTETÄÄN VIRHE -->
+		<c:if test="${param.virhe == 'tunnus_varattu'}">
+			<div class="alert alert-danger alert-dismissible fade show fw-bold"
+				role="alert">
+				Virhe: Käyttäjätunnus on jo varattu järjestelmässä!
+				<button type="button" class="btn-close" data-bs-dismiss="alert"
+					aria-label="Close"></button>
+			</div>
+		</c:if>
 
-        <div class="row g-4">
-            <!-- 1. OSAN ALLA: TUOTEHALLINTA -->
-            <div class="col-md-12">
-                <div class="settings-card mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="text-secondary mb-0 fw-bold">Tuoterekisteri & Palvelut</h4>
-                        <a href="${pageContext.request.contextPath}/asetukset/uusi" class="btn btn-primary fw-bold btn-sm px-3 shadow-sm">
-                            + Lisää uusi tuote
-                        </a>
-                    </div>
-                    <div class="table-responsive border rounded bg-white p-0">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nimi</th>
-                                    <th>Kuvaus</th>
-                                    <th>Yksikkö</th>
-                                    <th class="text-end">Hinta (alv 0%)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <c:forEach var="tuote" items="${tuotteet}">
-                                    <tr>
-                                        <td class="text-muted">#${tuote.id}</td>
-                                        <td><strong>${tuote.nimi}</strong></td>
-                                        <td class="text-secondary">${tuote.kuvaus}</td>
-                                        <td><span class="badge bg-light text-dark border">${tuote.yksikko.lyhenne}</span></td>
-                                        <td class="text-end fw-bold text-dark">${tuote.hinta} €</td>
-                                    </tr>
-                                </c:forEach>
-                                <c:if test="${empty tuotteet}">
-                                    <tr><td colspan="5" class="text-center py-3 text-muted">Rekisterissä ei ole vielä tuotteita.</td></tr>
-                                </c:if>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+		<div class="row g-4">
+			<!-- 1. OSAN ALLA: TUOTEHALLINTA -->
+			<div class="col-md-12">
+				<div class="settings-card mb-4">
+					<div class="d-flex justify-content-between align-items-center mb-3">
+						<h4 class="text-secondary mb-0 fw-bold">Tuoterekisteri ja
+							Palvelut</h4>
+						<a href="${pageContext.request.contextPath}/asetukset/uusi"
+							class="btn btn-primary fw-bold btn-sm px-3 shadow-sm"> +
+							Lisää uusi tuote </a>
+					</div>
+					<div class="table-responsive border rounded bg-white p-0">
+						<table class="table table-hover align-middle mb-0">
+							<thead class="table-light">
+								<tr>
+									<th>ID</th>
+									<th>Nimi</th>
+									<th>Kuvaus</th>
+									<th>Yksikkö</th>
+									<th class="text-end">Hinta (alv 0%)</th>
+								</tr>
+							</thead>
+							<tbody>
+								<c:forEach var="tuote" items="${tuotteet}">
+									<tr>
+										<td class="text-muted">#${tuote.id}</td>
+										<td><strong>${tuote.nimi}</strong></td>
+										<td class="text-secondary">${tuote.kuvaus}</td>
+										<td><span class="badge bg-light text-dark border">${tuote.yksikko.lyhenne}</span></td>
+										<td class="text-end fw-bold text-dark">${tuote.hinta}€</td>
+									</tr>
+								</c:forEach>
+								<c:if test="${empty tuotteet}">
+									<tr>
+										<td colspan="5" class="text-center py-3 text-muted">Rekisterissä
+											ei ole vielä tuotteita.</td>
+									</tr>
+								</c:if>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
 
-            <!-- 2. OSAN ALLA: KÄYTTÄJÄHALLINTA -->
-            <div class="col-md-12">
-                <div class="settings-card">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="text-secondary mb-0 fw-bold">Käyttäjät & Työntekijät</h4>
-                        <button type="button" class="btn btn-success fw-bold btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#lisaaKayttajaModal">
-                            + Luo uusi käyttäjätunnus
-                        </button>
-                    </div>
-                    <div class="table-responsive border rounded bg-white p-0">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Käyttäjätunnus</th>
-                                    <th>Nimi</th>
-                                    <th>Sähköposti</th>
-                                    <th>Puhelin</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <c:forEach var="k" items="${kayttajat}">
-                                    <tr>
-                                        <td><span class="badge bg-dark text-white fw-bold px-2 py-1">${k.kayttajatunnus}</span></td>
-                                        <td><strong>${k.etunimi} ${k.sukunimi}</strong></td>
-                                        <td>${k.sahkoposti}</td>
-                                        <td class="text-secondary">${k.puhelin}</td>
-                                    </tr>
-                                </c:forEach>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div> <!-- .row päättyminen -->
-    </div> <!-- .container päättyminen -->
+			<!-- 2. OSAN ALLA: KÄYTTÄJÄHALLINTA -->
+			<div class="col-md-12">
+				<div class="settings-card">
+					<div class="d-flex justify-content-between align-items-center mb-3">
+						<h4 class="text-secondary mb-0 fw-bold">Käyttäjät ja
+							Työntekijät</h4>
+						<button type="button"
+							class="btn btn-success fw-bold btn-sm px-3 shadow-sm"
+							data-bs-toggle="modal" data-bs-target="#lisaaKayttajaModal">
+							+ Luo uusi käyttäjätunnus</button>
+					</div>
+					<div class="table-responsive border rounded bg-white p-0">
+						<table class="table table-hover align-middle mb-0">
+							<thead class="table-light">
+								<tr>
+									<th>Käyttäjätunnus</th>
+									<th>Nimi</th>
+									<th>Sähköposti</th>
+									<th>Puhelin</th>
+								</tr>
+							</thead>
+							<tbody>
+								<c:forEach var="k" items="${kayttajat}">
+									<tr>
+										<td><span
+											class="badge bg-dark text-white fw-bold px-2 py-1">${k.kayttajatunnus}</span></td>
+										<td><strong>${k.etunimi} ${k.sukunimi}</strong></td>
+										<td>${k.sahkoposti}</td>
+										<td class="text-secondary">${k.puhelin}</td>
+									</tr>
+								</c:forEach>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- .row päättyminen -->
+	</div>
+	<!-- .container päättyminen -->
 
-    <!-- BOOTSTRAP POP-UP LOMAKE UUDELLE KÄYTTÄJÄLLE -->
-    <div class="modal fade" id="lisaaKayttajaModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title fw-bold">Luo uusi käyttäjätunnus</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form action="${pageContext.request.contextPath}/asetukset/lisaa-kayttaja" method="post">
-                    <div class="modal-body p-4">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold text-secondary">Käyttäjätunnus</label>
-                                <input type="text" class="form-control" name="tunnus" required placeholder="esim. matti">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold text-secondary">Salasana</label>
-                                <input type="password" class="form-control" name="salasana" required placeholder="••••••••">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold text-secondary">Etunimi</label>
-                                <input type="text" class="form-control" name="etunimi" required placeholder="Matti">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold text-secondary">Sukunimi</label>
-                                <input type="text" class="form-control" name="sukunimi" required placeholder="Meikäläinen">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold text-secondary">Sähköposti</label>
-                            <input type="email" class="form-control" name="sahkoposti" required placeholder="matti@astori.fi">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold text-secondary">Puhelin</label>
-                            <input type="text" class="form-control" name="puhelin" required placeholder="040 123 4567">
-                        </div>
-                    </div>
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Peruuta</button>
-                        <button type="submit" class="btn btn-success px-4 fw-bold">Luo tunnukset</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+	<!-- BOOTSTRAP POP-UP LOMAKE UUDELLE KÄYTTÄJÄLLE -->
+	<div class="modal fade" id="lisaaKayttajaModal" tabindex="-1"
+		aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<div class="modal-header bg-success text-white">
+					<h5 class="modal-title fw-bold">Luo uusi käyttäjätunnus</h5>
+					<button type="button" class="btn-close btn-close-white"
+						data-bs-dismiss="modal"></button>
+				</div>
+				<form
+					action="${pageContext.request.contextPath}/asetukset/lisaa-kayttaja"
+					method="post">
+					<div class="modal-body p-4">
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-semibold text-secondary">Käyttäjätunnus</label>
+								<input type="text" class="form-control" name="tunnus" required
+									placeholder="esim. matti">
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-semibold text-secondary">Salasana</label>
+								<input type="password" class="form-control" name="salasana"
+									required placeholder="••••••••">
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-semibold text-secondary">Etunimi</label>
+								<input type="text" class="form-control" name="etunimi" required
+									placeholder="Matti">
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-semibold text-secondary">Sukunimi</label>
+								<input type="text" class="form-control" name="sukunimi" required
+									placeholder="Meikäläinen">
+							</div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Sähköposti</label>
+							<input type="email" class="form-control" name="sahkoposti"
+								required placeholder="matti@astori.fi">
+						</div>
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Puhelin</label>
+							<input type="text" class="form-control" name="puhelin" required
+								placeholder="040 123 4567">
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-success px-4 fw-bold">Luo
+							tunnukset</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
 
-    <!-- Lataa paikallisen Bootstrap-JavaScriptin suoraan resources-juuresta -->
-    <script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+	<!-- Lataa paikallisen Bootstrap-JavaScriptin suoraan resources-juuresta -->
+	<script
+		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-                            

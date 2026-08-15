@@ -9,10 +9,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.transaction.annotation.Transactional;
+
 import fi.sotemindit.astori.model.Liitetiedosto;
 import fi.sotemindit.astori.repository.LiitetiedostoRepository;
 import fi.sotemindit.astori.model.Asiakas;
@@ -88,6 +89,7 @@ public class AsiakasController {
 
 	// 3. ASIAKASPROFIILI: Näyttää yhden asiakkaan tarkemmat tiedot, yhteyshenkilöt
 	// ja kirjaukset
+	@Transactional
 	@GetMapping("/asiakas/{id}")
 	public String naytaAsiakas(@PathVariable Long id, jakarta.servlet.http.HttpSession session, Model model) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -217,43 +219,51 @@ public class AsiakasController {
 		return "redirect:/"; // Poiston jälkeen palataan suoraan pääsivulle asiakaslistaukseen
 	}
 
-	// 9. LIITETIEDOSTON TALLENNUS: Ottaa vastaan PDF-tiedoston ja tallentaa sen
-	// kantaan tavuina
-	@PostMapping("/asiakas/{asiakasId}/lisaa-liite")
-	public String lisaaLiitetiedosto(@PathVariable Long javaAsiakasId, // Käytetään polkumuuttujaa
-			@PathVariable("asiakasId") Long asiakasId, @RequestParam("tiedosto") MultipartFile tiedosto,
-			@RequestParam String kuvaus, jakarta.servlet.http.HttpSession session) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
+    // 9. KORJATTU LIITETIEDOSTON TALLENNUS: Poistettu ylimääräinen javaAsiakasId-muuttuja
+	
+	@Transactional
+    @PostMapping("/asiakas/{asiakasId}/lisaa-liite")
+    public String lisaaLiitetiedosto(@PathVariable("asiakasId") Long asiakasId,
+                                     @RequestParam("tiedosto") MultipartFile tiedosto,
+                                     @RequestParam String kuvaus,
+                                     jakarta.servlet.http.HttpSession session) {
+        String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+        if (istuntoTunnus == null) {
+            return "redirect:/login"; // Tietoturvatarkistus
+        }
 
-		if (!tiedosto.isEmpty()) {
-			try {
-				// Varmistetaan, että kyseessä on PDF-tiedosto
-				String contentType = tiedosto.getContentType();
-				if (contentType == null || !contentType.equalsIgnoreCase("application/pdf")) {
-					return "redirect:/asiakas/" + asiakasId + "?virhe=vain_pdf_sallittu";
-				}
+        if (!tiedosto.isEmpty()) {
+            try {
+                // Varmistetaan, että kyseessä on PDF-tiedosto
+                String contentType = tiedosto.getContentType();
+                if (contentType == null || !contentType.equalsIgnoreCase("application/pdf")) {
+                    return "redirect:/asiakas/" + asiakasId + "?virhe=vain_pdf_sallittu";
+                }
 
-				Asiakas asiakas = asiakasRepository.findById(asiakasId)
-						.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
+                Asiakas asiakas = asiakasRepository.findById(asiakasId)
+                        .orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
 
-				// Luodaan uusi liitetiedosto-olio ja luetaan tiedoston sisältö tavutaulukoksi
-				Liitetiedosto uusiLiite = new Liitetiedosto(tiedosto.getOriginalFilename(), kuvaus, tiedosto.getBytes(),
-						asiakas);
+                // Luodaan uusi liitetiedosto-olio ja luetaan tiedoston sisältö tavutaulukoksi
+                Liitetiedosto uusiLiite = new Liitetiedosto(
+                        tiedosto.getOriginalFilename(),
+                        kuvaus,
+                        tiedosto.getBytes(),
+                        asiakas
+                );
 
-				liitetiedostoRepository.save(uusiLiite);
+                liitetiedostoRepository.save(uusiLiite);
 
-			} catch (Exception e) {
-				return "redirect:/asiakas/" + asiakasId + "?virhe=lataus_epaonnistui";
-			}
-		}
-		return "redirect:/asiakas/" + asiakasId;
-	}
+            } catch (Exception e) {
+                return "redirect:/asiakas/" + asiakasId + "?virhe=lataus_epaonnistui";
+            }
+        }
+        return "redirect:/asiakas/" + asiakasId;
+    }
+
 
 	// 10. LIITETIEDOSTON LATAUS: Hakee PDF-tiedoston kannasta ja lähettää sen
 	// selaimelle avattavaksi
+    @Transactional
 	@GetMapping("/liite/{liiteId}")
 	public ResponseEntity<byte[]> lataaLiitetiedosto(@PathVariable Long liiteId,
 			jakarta.servlet.http.HttpSession session) {
