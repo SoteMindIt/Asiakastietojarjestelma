@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import fi.sotemindit.astori.model.Liitetiedosto;
+import fi.sotemindit.astori.repository.LiitetiedostoRepository;
 import fi.sotemindit.astori.model.Asiakas;
 import fi.sotemindit.astori.model.AsiakasTuote;
 import fi.sotemindit.astori.model.AsiakkaanTila;
@@ -43,6 +48,9 @@ public class AsiakasController {
 
 	@Autowired
 	private AsiakasTuoteRepository asiakasTuoteRepository;
+
+	@Autowired
+	private LiitetiedostoRepository liitetiedostoRepository;
 
 	// 1. PÄÄSIVU: Listaa kaikki asiakkaat
 	@GetMapping("/")
@@ -89,7 +97,7 @@ public class AsiakasController {
 
 		Asiakas asiakas = asiakasRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + id));
-
+		List<Liitetiedosto> liitteet = liitetiedostoRepository.findByAsiakasIdOrderByLatausaikaDesc(id);
 		List<Yhteyshenkilo> yhteyshenkilot = yhteyshenkiloRepository.findByAsiakasId(id);
 		List<Kirjaus> kirjaukset = kirjausRepository.findByAsiakasIdOrderByLuontiaikaDesc(id);
 
@@ -98,12 +106,13 @@ public class AsiakasController {
 		List<AsiakasTuote> ostetutTuotteet = asiakasTuoteRepository.findByAsiakasId(id);
 
 		model.addAttribute("asiakas", asiakas);
+		model.addAttribute("liitteet", liitteet);
 		model.addAttribute("yhteyshenkilot", yhteyshenkilot);
 		model.addAttribute("kirjaukset", kirjaukset);
 		model.addAttribute("ostetutTuotteet", ostetutTuotteet);
-
-		// TÄMÄ RIVI KORJAA VIRHEEN: Varmista että nimi on täsmälleen "kaikkiTuotteet"
 		model.addAttribute("kaikkiTuotteet", tuoteLista);
+		liitetiedostoRepository.findByAsiakasIdOrderByLatausaikaDesc(id);
+		model.addAttribute("liitteet", liitteet);
 
 		return "asiakasprofiili";
 	}
@@ -207,4 +216,60 @@ public class AsiakasController {
 
 		return "redirect:/"; // Poiston jälkeen palataan suoraan pääsivulle asiakaslistaukseen
 	}
+
+	// 9. LIITETIEDOSTON TALLENNUS: Ottaa vastaan PDF-tiedoston ja tallentaa sen
+	// kantaan tavuina
+	@PostMapping("/asiakas/{asiakasId}/lisaa-liite")
+	public String lisaaLiitetiedosto(@PathVariable Long javaAsiakasId, // Käytetään polkumuuttujaa
+			@PathVariable("asiakasId") Long asiakasId, @RequestParam("tiedosto") MultipartFile tiedosto,
+			@RequestParam String kuvaus, jakarta.servlet.http.HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		if (!tiedosto.isEmpty()) {
+			try {
+				// Varmistetaan, että kyseessä on PDF-tiedosto
+				String contentType = tiedosto.getContentType();
+				if (contentType == null || !contentType.equalsIgnoreCase("application/pdf")) {
+					return "redirect:/asiakas/" + asiakasId + "?virhe=vain_pdf_sallittu";
+				}
+
+				Asiakas asiakas = asiakasRepository.findById(asiakasId)
+						.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
+
+				// Luodaan uusi liitetiedosto-olio ja luetaan tiedoston sisältö tavutaulukoksi
+				Liitetiedosto uusiLiite = new Liitetiedosto(tiedosto.getOriginalFilename(), kuvaus, tiedosto.getBytes(),
+						asiakas);
+
+				liitetiedostoRepository.save(uusiLiite);
+
+			} catch (Exception e) {
+				return "redirect:/asiakas/" + asiakasId + "?virhe=lataus_epaonnistui";
+			}
+		}
+		return "redirect:/asiakas/" + asiakasId;
+	}
+
+	// 10. LIITETIEDOSTON LATAUS: Hakee PDF-tiedoston kannasta ja lähettää sen
+	// selaimelle avattavaksi
+	@GetMapping("/liite/{liiteId}")
+	public ResponseEntity<byte[]> lataaLiitetiedosto(@PathVariable Long liiteId,
+			jakarta.servlet.http.HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return ResponseEntity.status(403).build(); // Kielletty ilman kirjautumista
+		}
+
+		Liitetiedosto liite = liitetiedostoRepository.findById(liiteId)
+				.orElseThrow(() -> new IllegalArgumentException("Tiedostoa ei löytynyt"));
+
+		// Rakennetaan HTTP-vastaus, joka käskee selainta avaamaan tai lataamaan
+		// tiedoston PDF-muodossa
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + liite.getTiedostonNimi() + "\"")
+				.header(HttpHeaders.CONTENT_TYPE, "application/pdf").body(liite.getData());
+	}
+
 }

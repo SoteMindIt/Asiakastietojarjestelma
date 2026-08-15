@@ -39,6 +39,10 @@ public class Asiakas {
 
 	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
 	private java.util.List<AsiakasTuote> ostetutTuotteet;
+	
+    @jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Liitetiedosto> liitetiedostot;
+
 
 	public Asiakas() {
 	}
