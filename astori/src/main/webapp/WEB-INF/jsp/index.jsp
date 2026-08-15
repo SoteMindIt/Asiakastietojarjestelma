@@ -6,11 +6,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Asiakastietojärjestelmä</title>
-<!-- Lataa paikallisen Bootstrap-tyylitiedoston omalta koneelta -->
+<!-- Lataa paikallisen Bootstrap-tyylitiedoston resources-juuresta -->
 <link
 	href="${pageContext.request.contextPath}/resources/bootstrap.min.css"
 	rel="stylesheet" />
-
 <style>
 body {
 	background-color: #f8f9fa;
@@ -31,6 +30,14 @@ body {
 		<div class="container">
 			<a class="navbar-brand fw-bold"
 				href="${pageContext.request.contextPath}/">Astori</a>
+			<div class="navbar-nav me-auto">
+				<a class="nav-link active fw-bold"
+					href="${pageContext.request.contextPath}/">Asiakkaat</a> <a
+					class="nav-link"
+					href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a> <a
+					class="nav-link"
+					href="${pageContext.request.contextPath}/asetukset">Asetukset</a>
+			</div>
 			<div class="d-flex align-items-center">
 				<span class="navbar-text text-white me-3"> Käyttäjä: <strong>${kirjautunutKayttaja}</strong>
 				</span> <a href="${pageContext.request.contextPath}/logout"
@@ -40,16 +47,13 @@ body {
 	</nav>
 
 	<div class="container py-2">
-		<!-- OTSIKKOPALKKI JA PAINIKE -->
 		<div class="d-flex justify-content-between align-items-center mb-4">
 			<h2 class="text-dark fw-bold mb-0">Asiakastietojärjestelmä</h2>
-			<!-- PAINIKE: Avaa uuden asiakkaan pop-up-lomakkeen -->
 			<button type="button" class="btn btn-primary fw-bold px-4 shadow-sm"
 				data-bs-toggle="modal" data-bs-target="#lisaaAsiakasModal">
 				+ Lisää uusi asiakas</button>
 		</div>
 
-		<!-- ASIAKASTAULUKKO -->
 		<h4 class="text-secondary mb-3">Kaikki asiakkaat</h4>
 		<div class="table-responsive border">
 			<table class="table table-hover align-middle mb-0">
@@ -70,12 +74,9 @@ body {
 							<td><strong class="text-dark">${asiakas.nimi}</strong></td>
 							<td>${asiakas.sahkoposti}</td>
 							<td>${asiakas.puhelin}</td>
-							<td>
-								<!-- Bootstrap Badge -efekti tilan mukaan --> <span
+							<td><span
 								class="badge ${asiakas.tila == 'KAUPPA' ? 'bg-success' : (asiakas.tila == 'EI_KAUPPAA' ? 'bg-danger' : 'bg-warning text-dark')}">
-									${asiakas.tila.nayttorivi} </span>
-							</td>
-							<td class="text-end">
+									${asiakas.tila.nayttorivi} </span></td>
 							<td class="text-end"><a
 								href="${pageContext.request.contextPath}/asiakas/${asiakas.id}"
 								class="btn btn-sm btn-outline-primary px-3 rounded-pill fw-semibold">
@@ -84,7 +85,7 @@ body {
 					</c:forEach>
 					<c:if test="${empty asiakkaat}">
 						<tr>
-							<td colspan="5" class="text-center py-4 text-muted">Järjestelmässä
+							<td colspan="6" class="text-center py-4 text-muted">Järjestelmässä
 								ei ole vielä asiakkaita.</td>
 						</tr>
 					</c:if>
@@ -95,25 +96,17 @@ body {
 
 	<!-- BOOTSTRAP POP-UP LOMAKE (MODAL) -->
 	<div class="modal fade" id="lisaaAsiakasModal" tabindex="-1"
-		aria-labelledby="lisaaAsiakasModalLabel" aria-hidden="true">
+		aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content border-0 shadow-lg">
 				<div class="modal-header bg-primary text-white">
-					<h5 class="modal-title fw-bold" id="lisaaAsiakasModalLabel">Lisää
-						uusi asiakas</h5>
+					<h5 class="modal-title fw-bold">Lisää uusi asiakas</h5>
 					<button type="button" class="btn-close btn-close-white"
-						data-bs-dismiss="modal" aria-label="Sulje"></button>
+						data-bs-dismiss="modal"></button>
 				</div>
-				<!-- Lomakkeen toiminto korjattu käyttämään dynaamista polkua -->
 				<form action="${pageContext.request.contextPath}/lisaa-asiakas"
 					method="post">
 					<div class="modal-body p-4">
-						<div class="navbar-nav me-auto">
-							<a class="nav-link active fw-bold"
-								href="${pageContext.request.contextPath}/">Asiakkaat</a> <a
-								class="nav-link"
-								href="${pageContext.request.contextPath}/asetukset">Asetukset</a>
-						</div>
 						<div class="mb-3">
 							<label for="nimi" class="form-label fw-semibold text-secondary">Nimi</label>
 							<input type="text" class="form-control" id="nimi" name="nimi"
@@ -152,9 +145,8 @@ body {
 		</div>
 	</div>
 
-	<!-- Lataa paikallisen Bootstrap-JavaScriptin sivun alalaitaan -->
+	<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
-
 </body>
 </html>

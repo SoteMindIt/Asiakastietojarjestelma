@@ -49,39 +49,6 @@ public class LoginController {
         return "login";
     }
 
-    // 3. NÄYTÄ REKISTERÖINTISIVU
-    @GetMapping("/rekisteroidy")
-    public String naytaRekisterointi() {
-        return "rekisterointi"; // Etsii rekisterointi.jsp-sivua
-    }
-
-    // 4. KÄSITTELE REKISTERÖINTI (Uuden käyttäjän luonti)
-    @PostMapping("/rekisteroidy")
-    public String luoKayttaja(@RequestParam String tunnus, 
-                              @RequestParam String salasana,
-                              @RequestParam String etunimi,
-                              @RequestParam String sukunimi,
-                              @RequestParam String sahkoposti,
-                              @RequestParam String puhelin, // UUSI PARAMETRI
-                              Model model) {
-        
-        if (kayttajaRepository.findByKayttajatunnus(tunnus).isPresent()) {
-            model.addAttribute("virhe", "Käyttäjätunnus on jo varattu!");
-            return "rekisterointi";
-        }
-        
-        // Kryptataan (suojataan) salasana ennen tietokantaan tallentamista
-        String suojattuSalasana = passwordEncoder.encode(salasana);
-        
-        // Luodaan uusi käyttäjä kaikilla tiedoilla
-        Kayttaja uusiKayttaja = new Kayttaja(tunnus, suojattuSalasana, etunimi, sukunimi, sahkoposti, puhelin);
-        kayttajaRepository.save(uusiKayttaja);
-        
-        return "redirect:/login";
-         
-        
-    }
-
     // 5. KIRJAUDU ULOS
     @GetMapping("/logout")
     public String kirjauduUlos(HttpSession session) {
