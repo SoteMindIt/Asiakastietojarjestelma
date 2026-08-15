@@ -1,10 +1,7 @@
 package fi.sotemindit.astori.model;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -12,90 +9,93 @@ import jakarta.persistence.Table;
 @Table(name = "asiakkaat")
 public class Asiakas {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
+	private Long id;
 
-    private String nimi;
-    private String sahkoposti;
-    private String puhelin;
-    
-    // UUSI KENTTÄ: Tallentaa tilan tietokantaan tekstimuodossa (String)
-    @Enumerated(EnumType.STRING)
-    private AsiakkaanTila tila = AsiakkaanTila.PROSPEKTI; // Oletuksena uusi asiakas on Prospekti
+	private String nimi;
+	private String sahkoposti;
+	private String puhelin;
 
-    @jakarta.persistence.ManyToOne
-    @jakarta.persistence.JoinColumn(name = "kayttaja_id", nullable = true)
-    
-   
-   //Asiakkaan poisto 
+	// UUSI REKISTERI: Tila
+	@jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+	private AsiakkaanTila tila = AsiakkaanTila.PROSPEKTI;
+
+	// KORJATTU JA ENERGINEN KÄYTTÄJÄRELAATIO:
+	@jakarta.persistence.ManyToOne
+	@jakarta.persistence.JoinColumn(name = "kayttaja_id", nullable = true)
+	private Kayttaja kayttaja;
+	
     @jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<Yhteyshenkilo> yhteyshenkilot;
+    private java.util.List<Tapahtuma> tapahtumat;
 
-    @jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<Kirjaus> kirjaukset;
 
-    @jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<AsiakasTuote> ostetutTuotteet;
+	// CASCADE-OMINAISUUDET POISTOA VARTEN:
+	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<Yhteyshenkilo> yhteyshenkilot;
 
-    private Kayttaja kayttaja;
+	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<Kirjaus> kirjaukset;
 
-    public Asiakas() {
-    }
+	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<AsiakasTuote> ostetutTuotteet;
 
-    // Päivitetty konstruktori ottamaan vastaan myös tilan
-    public Asiakas(String nimi, String sahkoposti, String puhelin, AsiakkaanTila tila) {
-        this.nimi = nimi;
-        this.sahkoposti = sahkoposti;
-        this.puhelin = puhelin;
-        this.tila = tila;
-    }
+	public Asiakas() {
+	}
 
-    public Long getId() {
-        return id;
-    }
+	// Päivitetty konstruktori ottamaan vastaan myös tilan
+	public Asiakas(String nimi, String sahkoposti, String puhelin, AsiakkaanTila tila) {
+		this.nimi = nimi;
+		this.sahkoposti = sahkoposti;
+		this.puhelin = puhelin;
+		this.tila = tila;
+	}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public String getNimi() {
-        return nimi;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public void setNimi(String nimi) {
-        this.nimi = nimi;
-    }
+	public String getNimi() {
+		return nimi;
+	}
 
-    public String getSahkoposti() {
-        return sahkoposti;
-    }
+	public void setNimi(String nimi) {
+		this.nimi = nimi;
+	}
 
-    public void setSahkoposti(String sahkoposti) {
-        this.sahkoposti = sahkoposti;
-    }
+	public String getSahkoposti() {
+		return sahkoposti;
+	}
 
-    public String getPuhelin() {
-        return puhelin;
-    }
+	public void setSahkoposti(String sahkoposti) {
+		this.sahkoposti = sahkoposti;
+	}
 
-    public void setPuhelin(String puhelin) {
-        this.puhelin = puhelin;
-    }
+	public String getPuhelin() {
+		return puhelin;
+	}
 
-    public AsiakkaanTila getTila() {
-        return tila;
-    }
+	public void setPuhelin(String puhelin) {
+		this.puhelin = puhelin;
+	}
 
-    public void setTila(AsiakkaanTila tila) {
-        this.tila = tila;
-    }
+	public AsiakkaanTila getTila() {
+		return tila;
+	}
 
-    public Kayttaja getKayttaja() {
-        return kayttaja;
-    }
+	public void setTila(AsiakkaanTila tila) {
+		this.tila = tila;
+	}
 
-    public void setKayttaja(Kayttaja kayttaja) {
-        this.kayttaja = kayttaja;
-    }
+	public Kayttaja getKayttaja() {
+		return kayttaja;
+	}
+
+	public void setKayttaja(Kayttaja kayttaja) {
+		this.kayttaja = kayttaja;
+	}
 }

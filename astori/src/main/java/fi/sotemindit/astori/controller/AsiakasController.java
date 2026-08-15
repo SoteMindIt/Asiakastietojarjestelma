@@ -191,4 +191,20 @@ public class AsiakasController {
 		return "redirect:/asiakas/" + id;
 	}
 
+	// 8. ASIAKKAAN POISTO: Poistaa asiakkaan ja kaikki siihen liittyvät tiedot
+	// cascade-ominaisuudella
+	@PostMapping("/asiakas/{id}/poista")
+	public String poistaAsiakas(@PathVariable Long id, jakarta.servlet.http.HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login"; // Tietoturvatarkistus
+		}
+
+		// Varmistetaan, että asiakas on olemassa ennen poistoa
+		if (asiakasRepository.existsById(id)) {
+			asiakasRepository.deleteById(id); // Suorittaa poiston
+		}
+
+		return "redirect:/"; // Poiston jälkeen palataan suoraan pääsivulle asiakaslistaukseen
+	}
 }
