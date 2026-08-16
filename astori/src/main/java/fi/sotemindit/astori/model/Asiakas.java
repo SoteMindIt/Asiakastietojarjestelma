@@ -25,10 +25,9 @@ public class Asiakas {
 	@jakarta.persistence.ManyToOne
 	@jakarta.persistence.JoinColumn(name = "kayttaja_id", nullable = true)
 	private Kayttaja kayttaja;
-	
-    @jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<Tapahtuma> tapahtumat;
 
+	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<Tapahtuma> tapahtumat;
 
 	// CASCADE-OMINAISUUDET POISTOA VARTEN:
 	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
@@ -39,10 +38,12 @@ public class Asiakas {
 
 	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
 	private java.util.List<AsiakasTuote> ostetutTuotteet;
-	
-    @jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<Liitetiedosto> liitetiedostot;
 
+	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<Liitetiedosto> liitetiedostot;
+
+	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<Tarjous> tarjoukset;
 
 	public Asiakas() {
 	}
@@ -101,5 +102,13 @@ public class Asiakas {
 
 	public void setKayttaja(Kayttaja kayttaja) {
 		this.kayttaja = kayttaja;
+	}
+
+	public java.util.List<Tarjous> getTarjoukset() {
+		return tarjoukset;
+	}
+
+	public void setTarjoukset(java.util.List<Tarjous> tarjoukset) {
+		this.tarjoukset = tarjoukset;
 	}
 }

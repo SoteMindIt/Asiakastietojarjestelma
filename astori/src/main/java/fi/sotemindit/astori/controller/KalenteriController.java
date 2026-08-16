@@ -8,10 +8,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import fi.sotemindit.astori.model.Kayttaja;
 import fi.sotemindit.astori.model.Tapahtuma;
 import fi.sotemindit.astori.model.TapahtumaTyyppi;
 import fi.sotemindit.astori.repository.AsiakasRepository;
 import fi.sotemindit.astori.repository.TapahtumaRepository;
+import fi.sotemindit.astori.repository.KayttajaRepository;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
@@ -22,46 +25,54 @@ public class KalenteriController {
 
 	@Autowired
 	private AsiakasRepository asiakasRepository;
+	
+	@Autowired
+	private KayttajaRepository kayttajaRepository; // Lisää tämä repositorio alkuun
 
-	// 1. REITTI: Näyttää kalenterisivun
+	// 1. REITTI: Näyttää VAIN OMAN kalenterin
 	@GetMapping("/kalenteri")
 	public String naytaKalenteri(HttpSession session, Model model) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
+	    String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+	    if (istuntoTunnus == null) {
+	        return "redirect:/login";
+	    }
 
-		// Viedään sivulle asiakkaat uuden varauksen pudotusvalikkoa varten
-		model.addAttribute("asiakkaat", asiakasRepository.findAll());
-		// Viedään tapahtumatyypit (PUHELU, TAPAAMINEN jne.)
-		model.addAttribute("tyypit", TapahtumaTyyppi.values());
-		// Haetaan kaikki tapahtumat kalenteriruudukkoon tulostettavaksi
-		model.addAttribute("tapahtumat", tapahtumaRepository.findAll());
+	    model.addAttribute("asiakkaat", asiakasRepository.findAll());
+	    model.addAttribute("tyypit", TapahtumaTyyppi.values());
+	    
+	 // Päivitetty vastaamaan uutta siistiä metodin nimeä
+	    model.addAttribute("tapahtumat", tapahtumaRepository.findByKayttajatunnus(istuntoTunnus));
 
-		return "kalenteri"; // Avaa kalenteri.jsp
+
+
+	    return "kalenteri";
 	}
 
-	// 2. REITTI: Tallentaa uuden kalenterimerkinnän
+	// 2. REITTI: Tallentaa uuden kalenterimerkinnän ja linkittää sen käyttäjään
 	@PostMapping("/kalenteri/lisaa")
 	public String lisaaKalenteriTapahtuma(@RequestParam String otsikko, @RequestParam String kuvaus,
-			@RequestParam String ajankohtaStr, // Otetaan vastaan tekstinä lomakkeelta
-			@RequestParam TapahtumaTyyppi tyyppi, @RequestParam Long asiakasId, HttpSession session) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
+	        @RequestParam String ajankohtaStr, @RequestParam TapahtumaTyyppi tyyppi, 
+	        @RequestParam Long asiakasId, HttpSession session) {
+	    
+	    String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+	    if (istuntoTunnus == null) {
+	        return "redirect:/login";
+	    }
 
-		// Muunnetaan HTML5-lomakkeen datetime-local merkkijono Javan
-		// LocalDateTime-muotoon
-		LocalDateTime ajankohta = LocalDateTime.parse(ajankohtaStr);
+	    LocalDateTime ajankohta = LocalDateTime.parse(ajankohtaStr);
 
-		fi.sotemindit.astori.model.Asiakas asiakas = asiakasRepository.findById(asiakasId)
-				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
+	    fi.sotemindit.astori.model.Asiakas asiakas = asiakasRepository.findById(asiakasId)
+	            .orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
 
-		Tapahtuma uusiTapahtuma = new Tapahtuma(otsikko, kuvaus, ajankohta, tyyppi, asiakas);
-		tapahtumaRepository.save(uusiTapahtuma);
+	    // HAETAAN KIRJAUTUNUT KÄYTTÄJÄ TIETOKANNASTA
+	    Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+	            .orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löytynyt"));
 
-		return "redirect:/kalenteri"; // Palataan takaisin kalenterinäkymään
+	    // Luodaan tapahtuma ja annetaan sille myös nykyinen käyttäjä
+	    Tapahtuma uusiTapahtuma = new Tapahtuma(otsikko, kuvaus, ajankohta, tyyppi, asiakas, nykyinenKayttaja);
+	    tapahtumaRepository.save(uusiTapahtuma);
+
+	    return "redirect:/kalenteri";
 	}
 
 }

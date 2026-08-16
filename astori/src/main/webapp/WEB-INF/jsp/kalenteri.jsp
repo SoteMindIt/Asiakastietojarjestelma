@@ -13,9 +13,8 @@
     <style>
         body { background-color: #f8f9fa; }
         .calendar-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        /* Muokataan FullCalendar muistuttamaan enemmän Microsoftin kalenteria */
         .fc-header-toolbar { margin-bottom: 20px !important; }
-        .fc-button-primary { background-color: #0d6efd !important; border-color: #0d6efd !important; fw-bold; }
+        .fc-button-primary { background-color: #0d6efd !important; border-color: #0d6efd !important; font-weight: bold; }
         .fc-button-primary:hover { background-color: #0b5ed7 !important; }
         .fc-daygrid-event { border-radius: 4px; padding: 2px 4px; font-size: 0.85em; cursor: pointer; }
     </style>
@@ -42,7 +41,6 @@
     <div class="container py-2">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="text-dark fw-bold mb-0">Kalenteri</h2>
-            <!-- Painike uuden tapaamisen lisäämiseksi sivun laitaan -->
             <button type="button" class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#lisaaTapahtumaModal">
                 + Uusi kalenterivaraus
             </button>
@@ -53,7 +51,8 @@
             <div id="calendar"></div>
         </div>
     </div>
-        <!-- BOOTSTRAP POP-UP LOMAKE UUDELLE VARAUKSELLE -->
+
+    <!-- BOOTSTRAP POP-UP LOMAKE UUDELLE VARAUKSELLE -->
     <div class="modal fade" id="lisaaTapahtumaModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
@@ -90,7 +89,6 @@
 
                         <div class="mb-3">
                             <label for="ajankohtaStr" class="form-label fw-semibold text-secondary">Ajankohta ja kellonaika</label>
-                            <!-- datetime-local tuo selaimeen hienon kellon ja kalenterin valintatyökalun -->
                             <input type="datetime-local" class="form-control" id="ajankohtaStr" name="ajankohtaStr" required>
                         </div>
 
@@ -101,18 +99,58 @@
 
                     </div>
                     <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-disabled="modal">Peruuta</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Peruuta</button>
                         <button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna kalenteriin</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    	<!-- JAVASCRIPT-ALUSTUS KALENTERIN PIIRTÄMISEKSI -->
-	<script>
+
+    <!-- BOOTSTRAP POP-UP VALMIIN MERKINNÄN KATSELUUN JA POISTOON -->
+    <div class="modal fade" id="katsoTapahtumaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold" id="viewOtsikko">Kalenteritapahtuma</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <small class="text-uppercase fw-bold text-muted d-block">Asiakas</small>
+                        <span id="viewAsiakas" class="fs-5 fw-semibold text-dark">-</span>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-uppercase fw-bold text-muted d-block">Ajankohta</small>
+                        <span id="viewAika" class="fs-5 text-dark">-</span>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-uppercase fw-bold text-muted d-block">Kuvaus / Muistiinpanot</small>
+                        <p id="viewKuvaus" class="bg-light p-3 rounded border text-secondary" style="white-space: pre-wrap;">-</p>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light d-flex justify-content-between">
+                    <form action="${pageContext.request.contextPath}/kalenteri/poista" method="post" onsubmit="return confirm('Haluatko varmasti poistaa tämän kalenterivarauksen?');">
+                        <input type="hidden" id="poistaTapahtumaId" name="tapahtumaId">
+                        <button type="submit" class="btn btn-danger fw-bold">Poista varaus</button>
+                    </form>
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Sulje</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOOTSTRAP JAVASCRIPT REKISTERISTÄ -->
+    <script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+    <!-- JAVASCRIPT-ALUSTUS KALENTERIN PIIRTÄMISEKSI -->
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
             
+            // Muuttujat tuplaklikkauksen tunnistamiseen
+            var lastClickedDate = null;
+            var lastClickTime = 0;
+
             var calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'fi', // Asetetaan kalenterin kieleksi suomi
@@ -120,7 +158,7 @@
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,listMonth' // Kuukausi-, viikko- ja agendanäkymät
+                    right: 'dayGridMonth,timeGridWeek,listMonth'
                 },
                 buttonText: {
                     today: 'Tämä päivä',
@@ -129,46 +167,88 @@
                     list: 'Lista'
                 },
                 
-                // SYÖTETÄÄN TIETOKANNASTA TULEVAT TAPAHTUMAT JSTL-LOOPIN AVULLA KALENTERIIN
+                // 1. TOIMINTO: TAPAHTUMAN KLIKKAUS (TIETOJEN KATSELU)
+                eventClick: function(info) {
+                    // Estetään selaimen oletustoiminto (esim. linkkien seuraaminen)
+                    info.jsEvent.preventDefault();
+
+                    // Täytetään klikatun tapahtuman tiedot modal-ikkunan kenttiin
+                    document.getElementById('viewOtsikko').innerText = info.event.title;
+                    document.getElementById('viewKuvaus').innerText = info.event.extendedProps.description || 'Ei kuvausta.';
+                    
+                    // Muotoillaan alkamisaika siististi suomalaiseen silmään
+                    if (info.event.start) {
+                        let pvm = new Date(info.event.start);
+                        let muotoiltuAika = pvm.toLocaleDateString('fi-FI') + ' klo ' + 
+                                            pvm.toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'});
+                        document.getElementById('viewAika').innerText = muotoiltuAika;
+                    }
+                    
+                    // Syötetään asiakkaan nimi extendedProps-lohkosta jos asetettu, tai poimitaan otsikosta
+                    document.getElementById('viewAsiakas').innerText = info.event.extendedProps.asiakasNimi || 'Liitetty asiakkaaseen';
+
+                    // Asetetaan ID piilokenttään poistamista varten
+                    document.getElementById('poistaTapahtumaId').value = info.event.id;
+
+                    // Avataan katselu-modal ohjelmallisesti
+                    var viewModal = new bootstrap.Modal(document.getElementById('katsoTapahtumaModal'));
+                    viewModal.show();
+                },
+                
+                // 2. TOIMINTO: TYHJÄN RUUDUN TUPLAKLIKKAUS (UUSI VARAUS)
+                dateClick: function(info) {
+                    var currentTime = new Date().getTime();
+                    var clickDelay = currentTime - lastClickTime;
+
+                    if (lastClickedDate === info.dateStr && clickDelay < 400) {
+                        let valittuPvm = info.dateStr; 
+                        
+                        if (valittuPvm.length === 10) {
+                            valittuPvm += "T09:00"; // Oletusaika kuukausinäkymässä
+                        } else {
+                            valittuPvm = valittuPvm.substring(0, 16);
+                        }
+
+                        document.getElementById('ajankohtaStr').value = valittuPvm;
+
+                        var addModal = new bootstrap.Modal(document.getElementById('lisaaTapahtumaModal'));
+                        addModal.show();
+                    }
+
+                    lastClickedDate = info.dateStr;
+                    lastClickTime = currentTime;
+                },
+                
+                // LADEETAAN KIRJAUTUNEEN KÄYTTÄJÄN TAPAHTUMAT TIETOKANNASTA
                 events: [
                     <c:forEach var="tap" items="${tapahtumat}" varStatus="status">
                         {
-                            title: '${tap.tyyppi.nayttorivi}: ${tap.otsikko} (${tap.asiakas.nimi})',
-                            // Muutetaan LocalDateTime sellaiseen muotoon, jota JavaScript ymmärtää varmasti (ISO)
+                            id: '${tap.id}',
+                            title: '${tap.otsikko}',
                             start: '${tap.ajankohta.toString()}', 
                             description: '${tap.kuvaus}',
+                            // Tallennetaan lisätiedot extendedProps-lohkoon JavaScriptiä varten
+                            extendedProps: {
+                                asiakasNimi: '${tap.asiakas.nimi}',
+                                tyyppiRivi: '${tap.tyyppi.nayttorivi}'
+                            },
                             
-                            // MÄÄRITETÄÄN VÄRIT MICROSOFT-TYYLIIN TAPAHTUMATYYPIN MUKAAN
                             <c:choose>
                                 <c:when test="${tap.tyyppi == 'PUHELU'}">
-                                    backgroundColor: '#ffc107', borderHex: '#ffc107', textColor: '#000'
-                                </c:when>
-                                <c:when test="${tap.tyyppi == 'TAPAAMINEN'}">
-                                    backgroundColor: '#198754', borderColor: '#198754', textColor: '#fff'
-                                </c:when>
-                                <c:when test="${tap.tyyppi == 'ETAKOKOUS'}">
-                                    backgroundColor: '#0dcaf0', borderColor: '#0dcaf0', textColor: '#000'
+                                    backgroundColor: '#ffc107', borderColor: '#ffc107', textColor: '#000'
                                 </c:when>
                                 <c:otherwise>
-                                    backgroundColor: '#6c757d', borderColor: '#6c757d', textColor: '#fff'
+                                    backgroundColor: '#0d6efd', borderColor: '#0d6efd', textColor: '#fff'
                                 </c:otherwise>
                             </c:choose>
-                        }${!status.last ? ',' : ''} // Lisätään pilkku rivien väliin, paitsi viimeiseen
+                        }${!status.last ? ',' : ''}
                     </c:forEach>
-                ],
-                
-                // Näytetään tapahtuman kuvaus pop-up-ikkunana (alert), kun sitä klikataan
-                eventClick: function(info) {
-                    alert(info.event.title + "\n\nLisätiedot:\n" + (info.event.extendedProps.description || "Ei kuvailua."));
-                }
+                ]
             });
             
             calendar.render();
         });
     </script>
-
-	<!-- Lataa paikallisen Bootstrap-JavaScriptin aivan tiedoston lopussa -->
-	<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 </body>
 </html>
     

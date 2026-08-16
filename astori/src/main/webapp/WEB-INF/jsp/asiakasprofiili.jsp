@@ -63,7 +63,7 @@ body {
 				asiakaslistaukseen</a>
 		</div>
 
-		<!-- ASIAKKAAN PERUSTIEDOT, MUOKKAUS JA POISTO -->
+		<!-- ASIAKKAAN PERUSTIEDOT, MUOKKAUS, POISTO JA TARJOUSLASKENTA -->
 		<div class="profile-card border mb-4">
 			<div class="d-flex justify-content-between align-items-start">
 				<div>
@@ -72,9 +72,19 @@ body {
 					<p class="mb-1">
 						<strong>Sähköposti:</strong> ${asiakas.sahkoposti}
 					</p>
-					<p class="mb-0">
+					<p class="mb-3">
 						<strong>Puhelin:</strong> ${asiakas.puhelin}
 					</p>
+					
+					<!-- UUSI PAINIKE TARJOUSLASKENTAAN SIIRTYMISELLE -->
+					<div class="mt-3">
+						<a href="${pageContext.request.contextPath}/asiakkaat/${asiakas.id}/tarjoukset" class="btn btn-primary fw-bold shadow-sm px-4">
+							📊 Tarjouslaskenta & Tarjoukset 
+							<c:if test="${not empty tarjouksetMäärä}">
+								<span class="badge bg-light text-dark ms-2">${tarjouksetMäärä} kpl</span>
+							</c:if>
+						</a>
+					</div>
 				</div>
 				<div class="text-end">
 					<div class="mb-2">
@@ -98,7 +108,6 @@ body {
 				</div>
 			</div>
 		</div>
-
 		<!-- KOLMESARAKKEINEN OSIO -->
 		<div class="row g-4">
 
@@ -177,11 +186,11 @@ body {
 					</form>
 				</div>
 			</div>
-			<!-- 3. SARAKE: MYYDYT PALVELUT -->
+
+			<!-- 3. SARAKE: MYYDYT PALVELUT (KORJATTU LOMAKE) -->
 			<div class="col-md-4">
 				<div class="col-card">
-					<h3 class="fw-bold h5 text-secondary mb-3">Asiakkaalle myydyt
-						palvelut</h3>
+					<h3 class="fw-bold h5 text-secondary mb-3">Asiakkaalle myydyt palvelut</h3>
 					<c:set var="yhteissumma" value="0" />
 					<div style="max-height: 250px; overflow-y: auto;" class="mb-2">
 						<ul class="list-group list-group-flush">
@@ -213,161 +222,24 @@ body {
 						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-tuote"
 						method="post">
 						<div class="mb-2">
-							<select name="tuoteId" class="form-select form-select-sm"
-								required>
+							<select name="tuoteId" class="form-select form-select-sm" required>
 								<option value="">-- Valitse tuote --</option>
 								<c:forEach var="t" items="${kaikkiTuotteet}">
-									<option value="${t.id}">${t.nimi}(${t.hinta}€ /
-										${t.yksikko.lyhenne})</option>
+									<option value="${t.id}">${t.nimi} (${t.hinta}€ / ${t.yksikko.lyhenne})</option>
 								</c:forEach>
 							</select>
 						</div>
 						<div class="mb-2">
-							<input type="number" class="form-control form-control-sm"
-								name="maara" value="1" min="1" required placeholder="Määrä">
+							<input type="number" class="form-control form-control-sm" name="maara" placeholder="Määrä" step="any" required>
 						</div>
-						<button type="submit" class="btn btn-success btn-sm w-100 fw-bold">Tallenna
-							hankinta</button>
+						<button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Kirjaa hankinta</button>
 					</form>
 				</div>
 			</div>
-		</div>
-		<!-- .row päättyminen -->
 
-		<!-- UUSI ALARIVI: ASIAKKAAN PDF-LIITETIEDOSTOT -->
-		<div class="row mt-4">
-			<div class="col-12">
-				<div class="col-card" style="padding: 25px;">
-					<h3 class="fw-bold h5 text-secondary mb-3">Asiakkaan
-						PDF-dokumentit ja Sopimukset</h3>
-					<c:if test="${param.virhe == 'vain_pdf_sallittu'}">
-						<div class="alert alert-danger py-2 small fw-bold">Virhe:
-							Vain PDF-tiedostot ovat sallittuja!</div>
-					</c:if>
-					<div class="row">
-						<!-- Vasen puoli: Tallennetut tiedostot -->
-						<div class="col-md-7 border-end">
-							<h4 class="fw-bold h6 text-dark mb-3">Tallennetut tiedostot</h4>
-							<div class="table-responsive border rounded bg-light p-0"
-								style="max-height: 200px; overflow-y: auto;">
-								<table class="table table-hover align-middle mb-0 small">
-									<thead class="table-light">
-										<tr>
-											<th>Tiedoston nimi</th>
-											<th>Kuvaus</th>
-											<th>Latausaika</th>
-										</tr>
-									</thead>
-									<tbody>
-										<c:forEach var="liite" items="${liitteet}">
-											<tr>
-												<td><a
-													href="${pageContext.request.contextPath}/liite/${liite.id}"
-													class="fw-bold text-primary text-decoration-none">📄
-														${liite.tiedostonNimi}</a></td>
-												<td class="text-secondary">${liite.kuvaus}</td>
-												<td class="text-muted" style="font-size: 0.85em;">${liite.latausaika}</td>
-											</tr>
-										</c:forEach>
-										<c:if test="${empty liitteet}">
-											<tr>
-												<td colspan="3" class="text-center py-4 text-muted italic">Ei
-													PDF-liitteitä.</td>
-											</tr>
-										</c:if>
-									</tbody>
-								</table>
-							</div>
-						</div>
-						<!-- Oikea puoli: Latauslomake -->
-						<div class="col-md-5">
-							<h4 class="fw-bold h6 text-dark mb-3">Lataa uusi
-								PDF-dokumentti</h4>
-							<form
-								action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-liite"
-								method="post" enctype="multipart/form-data">
-								<div class="mb-2">
-									<label class="form-label small fw-semibold text-secondary mb-1">Valitse
-										PDF-tiedosto</label> <input type="file"
-										class="form-control form-control-sm" name="tiedosto"
-										accept="application/pdf" required>
-								</div>
-								<div class="mb-3">
-									<label class="form-label small fw-semibold text-secondary mb-1">Kuvaus
-										/ Sisältö</label> <input type="text"
-										class="form-control form-control-sm" name="kuvaus"
-										placeholder="esim. Allekirjoitettu sopimus" required>
-								</div>
-								<button type="submit"
-									class="btn btn-primary btn-sm fw-bold px-3">Tallenna
-									dokumentti</button>
-							</form>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-	</div>
-	<!-- .container päättyminen -->
-
-	<!-- BOOTSTRAP POP-UP LOMAKE ASIAKKAAN MUOKKAUKSEEN -->
-	<div class="modal fade" id="muokkaaAsiakasModal" tabindex="-1"
-		aria-hidden="true">
-		<div class="modal-dialog modal-dialog-centered">
-			<div class="modal-content border-0 shadow-lg">
-				<div class="modal-header bg-dark text-white">
-					<h5 class="modal-title fw-bold">Muokkaa asiakkaan tietoja</h5>
-					<button type="button" class="btn-close btn-close-white"
-						data-bs-dismiss="modal"></button>
-				</div>
-				<form
-					action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/muokkaa"
-					method="post">
-					<div class="modal-body p-4">
-						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Nimi</label><input
-								type="text" class="form-control" name="nimi"
-								value="${asiakas.nimi}" required>
-						</div>
-						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Sähköposti</label><input
-								type="email" class="form-control" name="sahkoposti"
-								value="${asiakas.sahkoposti}" required>
-						</div>
-						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Puhelin</label><input
-								type="text" class="form-control" name="puhelin"
-								value="${asiakas.puhelin}" required>
-						</div>
-						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Asiakkaan
-								tila</label> <select class="form-select" name="tila" required>
-								<option value="PROSPEKTI"
-									${asiakas.tila == 'PROSPEKTI' ? 'selected' : ''}>Prospekti</option>
-								<option value="KONTAKTOITU"
-									${asiakas.tila == 'KONTAKTOITU' ? 'selected' : ''}>Kontaktoitu</option>
-								<option value="KAUPPA"
-									${asiakas.tila == 'KAUPPA' ? 'selected' : ''}>Kauppa</option>
-								<option value="EI_KAUPPAA"
-									${asiakas.tila == 'EI_KAUPPAA' ? 'selected' : ''}>Ei
-									kauppaa</option>
-							</select>
-						</div>
-					</div>
-					<div class="modal-footer bg-light">
-						<button type="button" class="btn btn-secondary"
-							data-bs-disabled="modal">Peruuta</button>
-						<button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna
-							muutokset</button>
-					</div>
-				</form>
-			</div>
 		</div>
 	</div>
 
-	<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->
-	<script
-		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+		
