@@ -1,6 +1,7 @@
 package fi.sotemindit.astori.controller;
 
 import java.util.List;
+import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -27,6 +28,7 @@ import fi.sotemindit.astori.repository.YhteyshenkiloRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.repository.AsiakasTuoteRepository;
 import fi.sotemindit.astori.repository.TarjousRepository;
+import fi.sotemindit.astori.model.TarjousRivi;
 
 @Controller
 public class AsiakasController {
@@ -121,7 +123,11 @@ public class AsiakasController {
 		model.addAttribute("kirjaukset", kirjaukset);
 		model.addAttribute("ostetutTuotteet", ostetutTuotteet);
 		model.addAttribute("kaikkiTuotteet", tuoteLista);
-		model.addAttribute("tarjouksetMäärä", tarjoukset.size());
+
+		// KORJATTU: Viemme suoraan listan ja laskemme määrän turvallisesti ilman
+		// NullPointerException-riskiä
+		model.addAttribute("tarjoukset", tarjoukset);
+		model.addAttribute("tarjouksetMaara", tarjoukset != null ? tarjoukset.size() : 0);
 
 		// LISÄTTY: Viedään uudet myyntiputken tilat profiilisivulle muokkausta varten
 		model.addAttribute("tilat", AsiakkaanTila.values());
@@ -186,8 +192,7 @@ public class AsiakasController {
 		return "redirect:/asiakas/" + asiakasId;
 	}
 
-	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot ja tilan (KORJATTU JA
-	// TÄYDENNETTY LOPPUUN ASTI)
+	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot ja tilan
 	@PostMapping("/asiakas/{id}/muokkaa")
 	public String muokkaaAsiakasta(@PathVariable Long id, @RequestParam String nimi, @RequestParam String sahkoposti,
 			@RequestParam String puhelin, @RequestParam fi.sotemindit.astori.model.AsiakkaanTila tila,
@@ -207,7 +212,7 @@ public class AsiakasController {
 
 		asiakasRepository.save(asiakas);
 
-		// Palataan muokkauksen jälkeen suoraan kyseisen asiakkaan profiiliin
 		return "redirect:/asiakas/" + id;
 	}
+
 }

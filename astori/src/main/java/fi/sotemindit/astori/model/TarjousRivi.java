@@ -6,42 +6,40 @@ import jakarta.persistence.*;
 @Table(name = "tarjous_rivit")
 public class TarjousRivi {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    private String tuoteNimi;
-    private double maara;
-    private double yksikkohinta;
-    private double alvProsentti; // esim. 25.5 tai 10.0
+	private String tuotteenNimi;
+	private Double maara;
+	private Double yksikkohinta;
+	private Double alvProsentti;
 
-    @ManyToOne
-    @JoinColumn(name = "tarjous_id", nullable = false)
-    private Tarjous tarjous;
+	@ManyToOne
+	@JoinColumn(name = "tarjous_id", nullable = false)
+	private Tarjous tarjous;
 
-    public TarjousRivi() {}
+	public TarjousRivi() {}
 
-    // RIVILASKENTA: Veroton hinta yhteensä (määrä * hinta)
-    public double getVerotonSumma() {
-        return this.maara * this.yksikkohinta;
-    }
+	public TarjousRivi(String tuotteenNimi, Double maara, Double yksikkohinta, Double alvProsentti, Tarjous tarjous) {
+		this.tuotteenNimi = tuotteenNimi;
+		this.maara = maara;
+		this.yksikkohinta = yksikkohinta;
+		this.alvProsentti = alvProsentti;
+		this.tarjous = tarjous;
+	}
 
-    // RIVILASKENTA: Verollinen hinta yhteensä
-    public double getVerollinenSumma() {
-        return getVerotonSumma() * (1 + (this.alvProsentti / 100.0));
-    }
-
-    // Getterit ja setterit
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getTuoteNimi() { return tuoteNimi; }
-    public void setTuoteNimi(String tuoteNimi) { this.tuoteNimi = tuoteNimi; }
-    public double getMaara() { return maara; }
-    public void setMaara(double maara) { this.maara = maara; }
-    public double getYksikkohinta() { return yksikkohinta; }
-    public void setYksikkohinta(double yksikkohinta) { this.yksikkohinta = yksikkohinta; }
-    public double getAlvProsentti() { return alvProsentti; }
-    public void setAlvProsentti(double alvProsentti) { this.alvProsentti = alvProsentti; }
-    public Tarjous getTarjous() { return tarjous; }
-    public void setTarjous(Tarjous tarjous) { this.tarjous = tarjous; }
+	// Getterit ja Setterit
+	public Long getId() { return id; }
+	public void setId(Long id) { this.id = id; }
+	public String getTuotteenNimi() { return tuotteenNimi; }
+	public void setTuotteenNimi(String tuotteenNimi) { this.tuotteenNimi = tuotteenNimi; }
+	public Double getMaara() { return maara; }
+	public void setMaara(Double maara) { this.maara = maara; }
+	public Double getYksikkohinta() { return yksikkohinta; }
+	public void setYksikkohinta(Double yksikkohinta) { this.yksikkohinta = yksikkohinta; }
+	public Double getAlvProsentti() { return alvProsentti; }
+	public void setAlvProsentti(Double alvProsentti) { this.alvProsentti = alvProsentti; }
+	public Tarjous getTarjous() { return tarjous; }
+	public void setTarjous(Tarjous tarjous) { this.tarjous = tarjous; }
 }

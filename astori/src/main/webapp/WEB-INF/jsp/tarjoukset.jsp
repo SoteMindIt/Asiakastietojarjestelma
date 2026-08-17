@@ -1,163 +1,221 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="jakarta.tags.core"%>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt"%>
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tarjouslaskenta - ${asiakas.nimi}</title>
-    <!-- Käytetään paikallista Bootstrapia -->
-    <link href="${pageContext.request.contextPath}/resources/bootstrap.min.css" rel="stylesheet" />
-    <style>
-        body { background-color: #f8f9fa; }
-        .main-card { background: white; border-radius: 8px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .summary-box { background: #f1f3f5; border-radius: 6px; padding: 15px; max-width: 350px; margin-left: auto; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarjouslaskenta - ${asiakas.nimi}</title>
+<!-- Käytetään paikallista Bootstrapia -->
+<link
+	href="${pageContext.request.contextPath}/resources/bootstrap.min.css"
+	rel="stylesheet" />
+<style>
+body {
+	background-color: #f8f9fa;
+}
+
+.main-card {
+	background: white;
+	border-radius: 8px;
+	padding: 25px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.summary-box {
+	background: #f1f3f5;
+	border-radius: 6px;
+	padding: 15px;
+	max-width: 350px;
+	margin-left: auto;
+}
+</style>
 </head>
 <body>
 
-    <!-- YLÄPALKKI -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="${pageContext.request.contextPath}/">Astori</a>
-            <div class="navbar-nav me-auto">
-                <a class="nav-link active fw-bold" href="${pageContext.request.contextPath}/">Asiakkaat</a>
-                <a class="nav-link" href="${pageContext.request.contextPath}/asetukset">Asetukset</a>
-                <a class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
-                <a class="nav-link" href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
-            </div>
-        </div>
-    </nav>
+	<!-- YLÄPALKKI -->
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+		<div class="container">
+			<a class="navbar-brand fw-bold"
+				href="${pageContext.request.contextPath}/">Astori</a>
+			<div class="navbar-nav me-auto">
+				<a class="nav-link active fw-bold"
+					href="${pageContext.request.contextPath}/">Asiakkaat</a> <a
+					class="nav-link"
+					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
+					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
+				<a class="nav-link"
+					href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
+			</div>
+		</div>
+	</nav>
 
-    <div class="container py-2">
-        <!-- TAKAISIN-LINKKI -->
-        <div class="mb-3">
-            <a class="btn btn-link p-0 text-decoration-none" href="${pageContext.request.contextPath}/asiakas/${asiakas.id}">&larr; Takaisin asiakasprofiiliin</a>
-        </div>
+	<div class="container py-2">
+		<!-- TAKAISIN-LINKKI -->
+		<div class="mb-3">
+			<a class="btn btn-link p-0 text-decoration-none"
+				href="${pageContext.request.contextPath}/asiakas/${asiakas.id}">&larr;
+				Takaisin asiakasprofiiliin</a>
+		</div>
 
-        <div class="main-card border mb-4">
-            <span class="text-muted small">Asiakkaan tarjoushallinta</span>
-            <h1 class="text-dark fw-bold mb-3">${asiakas.nimi}</h1>
-            
-            <h3 class="fw-bold h5 text-secondary mt-4 mb-3">Aiemmat tarjoukset</h3>
-            <c:choose>
-                <c:when test="${empty tarjoukset}">
-                    <div class="alert alert-info">Ei aiempia tallennettuja tarjouksia tälle asiakkaalle.</div>
-                </c:when>
-                <c:otherwise>
-                    <div class="table-responsive">
-                        <table class="table table-striped align-middle border">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Tarjousnumero</th>
-                                    <th>Päivämäärä</th>
-                                    <th>Voimassaolo</th>
-                                    <th>Veroton (€)</th>
-                                    <th>ALV (€)</th>
-                                    <th>Loppusumma (€)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <c:forEach items="${tarjoukset}" var="t">
-                                    <tr>
-                                        <td><strong>${t.tarjousNumero}</strong></td>
-                                        <td>${t.pvm}</td>
-                                        <td>${t.voimassaoloPvm}</td>
-                                        <td><fmt:formatNumber value="${t.verotonYhteensa}" pattern="#,##0.00 €"/></td>
-                                        <td><fmt:formatNumber value="${t.alvYhteensa}" pattern="#,##0.00 €"/></td>
-                                        <td><strong class="text-success"><fmt:formatNumber value="${t.verollinenYhteensa}" pattern="#,##0.00 €"/></strong></td>
-                                    </tr>
-                                </c:forEach>
-                            </tbody>
-                        </table>
-                    </div>
-                </c:otherwise>
-            </c:choose>
-        </div>
-        <!-- UUDEN TARJOUKSEN LASKENTA JA LUONTI -->
-        <div class="main-card border">
-            <h3 class="fw-bold h4 mb-4 text-dark">Luo uusi tarjouslaskelma</h3>
-            <form action="${pageContext.request.contextPath}/asiakkaat/${asiakas.id}/tarjoukset/tallenna" method="post">
-                
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Tarjousnumero:</label>
-                        <input type="text" class="form-control" name="tarjousNumero" required placeholder="esim. T-2026-001">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Voimassaolopäivä:</label>
-                        <input type="date" class="form-control" name="voimassaoloPvm" required>
-                    </div>
-                </div>
+		<div class="main-card border mb-4">
+			<span class="text-muted small">Asiakkaan tarjoushallinta</span>
+			<h1 class="text-dark fw-bold mb-3">${asiakas.nimi}</h1>
 
-                <h4 class="fw-bold h5 mb-3 text-secondary">Tarjousrivit</h4>
-                <div class="table-responsive">
-                    <table class="table border" id="rivit-table">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Valitse tuote rekisteristä / Kirjoita nimi</th>
-                                <th style="width: 120px;">Määrä</th>
-                                <th style="width: 140px;">Yksikköhinta (€)</th>
-                                <th style="width: 130px;">ALV %</th>
-                                <th style="width: 100px;">Toiminnot</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <!-- Tuotevalinta rekisteristä dynaamisella hinnan asetuksella -->
-                                    <select class="form-select" name="tuote[]" required onchange="paivitaRivinHinta(this)">
-                                        <option value="" data-hinta="0">-- Valitse tuote --</option>
-                                        <c:forEach var="t" items="${kaikkiTuotteet}">
-                                            <option value="${t.nimi}" data-hinta="${t.hinta}">${t.nimi} (${t.hinta} €)</option>
-                                        </c:forEach>
-                                    </select>
-                                </td>
-                                <td><input type="number" class="form-control" name="maara[]" value="1" step="any" required oninput="laskeYhteissummat()"></td>
-                                <td><input type="number" class="form-control" name="hinta[]" step="any" required oninput="laskeYhteissummat()"></td>
-                                <td>
-                                    <select class="form-select" name="alv[]" onchange="laskeYhteissummat()">
-                                        <option value="25.5">25.5 %</option>
-                                        <option value="14.0">14.0 %</option>
-                                        <option value="10.0">10.0 %</option>
-                                        <option value="0.0">0.0 %</option>
-                                    </select>
-                                </td>
-                                <td><button type="button" class="btn btn-outline-danger w-100" onclick="poistaRivi(this)">Poista</button></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+			<h3 class="fw-bold h5 text-secondary mt-4 mb-3">Aiemmat
+				tarjoukset</h3>
+			<c:choose>
+				<c:when test="${empty tarjoukset}">
+					<div class="alert alert-info">Ei aiempia tallennettuja
+						tarjouksia tälle asiakkaalle.</div>
+				</c:when>
+				<c:otherwise>
+					<div class="table-responsive">
+						<table class="table table-striped align-middle border">
+							<thead class="table-light">
+								<tr>
+									<th>Tarjousnumero</th>
+									<th>Päivämäärä</th>
+									<th>Voimassaolo</th>
+									<th>Veroton (€)</th>
+									<th>ALV (€)</th>
+									<th>Loppusumma (€)</th>
+									<th>Toiminnot</th>
+									<!-- 1. LISÄTTY TÄMÄ OTSikko -->
+								</tr>
+							</thead>
+							<tbody>
+								<c:forEach items="${tarjoukset}" var="t">
+									<tr>
+										<td><strong>${t.tarjousNumero}</strong></td>
+										<td>${t.pvm}</td>
+										<td>${t.voimassaoloPvm}</td>
+										<td><fmt:formatNumber value="${t.verotonYhteensa}"
+												pattern="#,##0.00 €" /></td>
+										<td><fmt:formatNumber value="${t.alvYhteensa}"
+												pattern="#,##0.00 €" /></td>
+										<td><strong class="text-success"><fmt:formatNumber
+													value="${t.verollinenYhteensa}" pattern="#,##0.00 €" /></strong></td>
+										<td>
+											<!-- 2. LISÄTTY TÄMÄ LATAUSPAINIKE --> <a
+											class="btn btn-sm btn-danger fw-bold"
+											href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf">
+												Lataa PDF </a>
+										</td>
+									</tr>
+								</c:forEach>
+							</tbody>
+						</table>
 
-                <div class="d-flex justify-content-between align-items-start mt-3">
-                    <button type="button" class="btn btn-outline-primary fw-bold" onclick="lisaaRivi()">+ Lisää uusi rivi</button>
-                    
-                    <!-- REAALIAIKAINEN ESIVALINTALASKURI -->
-                    <div class="summary-box border w-100 shadow-sm">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="text-muted">Veroton yhteensä:</span>
-                            <span id="summa-veroton" class="fw-bold">0.00 €</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">ALV yhteensä:</span>
-                            <span id="summa-alv" class="fw-bold">0.00 €</span>
-                        </div>
-                        <div class="d-flex justify-content-between border-top pt-2">
-                            <span class="fw-bold text-dark fs-5">Loppusumma:</span>
-                            <span id="summa-verollinen" class="fw-bold text-success fs-5">0.00 €</span>
-                        </div>
-                    </div>
-                </div>
+					</div>
+				</c:otherwise>
+			</c:choose>
+		</div>
+		<!-- UUDEN TARJOUKSEN LASKENTA JA LUONTI -->
+		<div class="main-card border">
+			<h3 class="fw-bold h4 mb-4 text-dark">Luo uusi tarjouslaskelma</h3>
+			<form
+				action="${pageContext.request.contextPath}/asiakkaat/${asiakas.id}/tarjoukset/tallenna"
+				method="post">
 
-                <div class="mt-4 border-top pt-3 text-end">
-                    <button type="submit" class="btn btn-success btn-lg fw-bold px-5">Tallenna ja laske tarjous</button>
-                </div>
-            </form>
-        </div>
-    </div>
-         <!-- REAALIAIKAINEN LASKENTALOGIIKKA JA AUTOMAATTINEN HINNAN PAIVITYS -->
-    <script>
+				<div class="row g-3 mb-4">
+					<div class="col-md-6">
+						<label class="form-label fw-bold">Tarjousnumero:</label> <input
+							type="text" class="form-control" name="tarjousNumero" required
+							placeholder="esim. T-2026-001">
+					</div>
+					<div class="col-md-6">
+						<label class="form-label fw-bold">Voimassaolopäivä:</label> <input
+							type="date" class="form-control" name="voimassaoloPvm" required>
+					</div>
+				</div>
+
+				<div class="mb-4">
+					<label class="form-label fw-bold">Tarjouksen kuvaus /
+						Lisätiedot:</label>
+					<textarea class="form-control" name="lisatiedot" rows="4"
+						placeholder="Kirjoita tähän tarkempi kuvaus palvelun sisällöstä, aikataulusta tai muista ehdoista..."></textarea>
+				</div>
+
+				<h4 class="fw-bold h5 mb-3 text-secondary">Tarjousrivit</h4>
+				<div class="table-responsive">
+					<table class="table border" id="rivit-table">
+						<thead class="table-light">
+							<tr>
+								<th>Valitse tuote rekisteristä / Kirjoita nimi</th>
+								<th style="width: 120px;">Määrä</th>
+								<th style="width: 140px;">Yksikköhinta (€)</th>
+								<th style="width: 130px;">ALV %</th>
+								<th style="width: 100px;">Toiminnot</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>
+									<!-- Tuotevalinta rekisteristä dynaamisella hinnan asetuksella -->
+									<select class="form-select" name="tuote[]" required
+									onchange="paivitaRivinHinta(this)">
+										<option value="" data-hinta="0">-- Valitse tuote --</option>
+										<c:forEach var="t" items="${kaikkiTuotteet}">
+											<option value="${t.nimi}" data-hinta="${t.hinta}">${t.nimi}
+												(${t.hinta} €)</option>
+										</c:forEach>
+								</select>
+								</td>
+								<td><input type="number" class="form-control"
+									name="maara[]" value="1" step="any" required
+									oninput="laskeYhteissummat()"></td>
+								<td><input type="number" class="form-control"
+									name="hinta[]" step="any" required
+									oninput="laskeYhteissummat()"></td>
+								<td><select class="form-select" name="alv[]"
+									onchange="laskeYhteissummat()">
+										<option value="25.5">25.5 %</option>
+										<option value="14.0">14.0 %</option>
+										<option value="10.0">10.0 %</option>
+										<option value="0.0">0.0 %</option>
+								</select></td>
+								<td><button type="button"
+										class="btn btn-outline-danger w-100"
+										onclick="poistaRivi(this)">Poista</button></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="d-flex justify-content-between align-items-start mt-3">
+					<button type="button" class="btn btn-outline-primary fw-bold"
+						onclick="lisaaRivi()">+ Lisää uusi rivi</button>
+
+					<!-- REAALIAIKAINEN ESIVALINTALASKURI -->
+					<div class="summary-box border w-100 shadow-sm">
+						<div class="d-flex justify-content-between mb-1">
+							<span class="text-muted">Veroton yhteensä:</span> <span
+								id="summa-veroton" class="fw-bold">0.00 €</span>
+						</div>
+						<div class="d-flex justify-content-between mb-2">
+							<span class="text-muted">ALV yhteensä:</span> <span
+								id="summa-alv" class="fw-bold">0.00 €</span>
+						</div>
+						<div class="d-flex justify-content-between border-top pt-2">
+							<span class="fw-bold text-dark fs-5">Loppusumma:</span> <span
+								id="summa-verollinen" class="fw-bold text-success fs-5">0.00
+								€</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="mt-4 border-top pt-3 text-end">
+					<button type="submit" class="btn btn-success btn-lg fw-bold px-5">Tallenna
+						ja laske tarjous</button>
+				</div>
+			</form>
+		</div>
+	</div>
+	<!-- REAALIAIKAINEN LASKENTALOGIIKKA JA AUTOMAATTINEN HINNAN PAIVITYS -->
+	<script>
         // UUSI FUNKTIO: Hakee valitun tuotteen hinnan rekisteristä ja asettaa sen hinta-kenttään
         function paivitaRivinHinta(selectElement) {
             var valittuOption = selectElement.options[selectElement.selectedIndex];
@@ -252,4 +310,3 @@
     </script>
 </body>
 </html>
-        

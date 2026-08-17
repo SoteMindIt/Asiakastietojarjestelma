@@ -40,8 +40,9 @@ body {
 			<a class="navbar-brand fw-bold"
 				href="${pageContext.request.contextPath}/">Astori</a>
 			<div class="navbar-nav me-auto">
-				<a class="nav-link active fw-bold" href="${pageContext.request.contextPath}/">Asiakkaat</a>
-				<a class="nav-link"
+				<a class="nav-link active fw-bold"
+					href="${pageContext.request.contextPath}/">Asiakkaat</a> <a
+					class="nav-link"
 					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
 					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
 				<a class="nav-link"
@@ -75,21 +76,20 @@ body {
 					<p class="mb-3">
 						<strong>Puhelin:</strong> ${asiakas.puhelin}
 					</p>
-					
+
 					<!-- UUSI PAINIKE TARJOUSLASKENTAAN SIIRTYMISELLE -->
 					<div class="mt-3">
-						<a href="${pageContext.request.contextPath}/asiakkaat/${asiakas.id}/tarjoukset" class="btn btn-primary fw-bold shadow-sm px-4">
-							📊 Tarjouslaskenta & Tarjoukset 
-							<c:if test="${not empty tarjouksetMäärä}">
-								<span class="badge bg-light text-dark ms-2">${tarjouksetMäärä} kpl</span>
-							</c:if>
-						</a>
+						<a
+							href="${pageContext.request.contextPath}/asiakas/${asiakas.id}/tarjoukset"
+							class="btn btn-primary">Avaa tarjoushallinta</a>
+
 					</div>
 				</div>
 				<div class="text-end">
 					<div class="mb-2">
 						<!-- PÄIVITETTY MYYNTIPUTKEN VÄRIKOODAUS PROFIILIIN -->
-						<span class="badge fs-6 
+						<span
+							class="badge fs-6 
 							<c:choose>
 								<c:when test="${asiakas.tila == 'PROSPEKTI'}">bg-info text-white</c:when>
 								<c:when test="${asiakas.tila == 'KONTAKTOITU'}">bg-warning text-dark</c:when>
@@ -97,8 +97,7 @@ body {
 								<c:when test="${asiakas.tila == 'AKTIIVINEN'}">bg-success</c:when>
 								<c:otherwise>bg-secondary</c:otherwise>
 							</c:choose>">
-							Tila: ${asiakas.tila.nayttorivi}
-						</span>
+							Tila: ${asiakas.tila.nayttorivi} </span>
 					</div>
 					<div class="d-flex gap-2 justify-content-end">
 						<button type="button"
@@ -198,7 +197,8 @@ body {
 			<!-- 3. SARAKE: MYYDYT PALVELUT -->
 			<div class="col-md-4">
 				<div class="col-card">
-					<h3 class="fw-bold h5 text-secondary mb-3">Asiakkaalle myydyt palvelut</h3>
+					<h3 class="fw-bold h5 text-secondary mb-3">Asiakkaalle myydyt
+						palvelut</h3>
 					<c:set var="yhteissumma" value="0" />
 					<div style="max-height: 250px; overflow-y: auto;" class="mb-2">
 						<ul class="list-group list-group-flush">
@@ -226,51 +226,71 @@ body {
 					</c:if>
 
 					<h4 class="fw-bold h6 text-dark mt-2">Kirjaa uusi hankinta</h4>
-					<form action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-tuote" method="post">
+					<form
+						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-tuote"
+						method="post">
 						<div class="mb-2">
-							<select class="form-select form-select-sm" name="tuoteId" required>
+							<select class="form-select form-select-sm" name="tuoteId"
+								required>
 								<option value="">-- Valitse palvelu/tuote --</option>
 								<c:forEach var="tuote" items="${kaikkiTuotteet}">
-									<option value="${tuote.id}">${tuote.nimi} (${tuote.hinta} €)</option>
+									<option value="${tuote.id}">${tuote.nimi}
+										(${tuote.hinta} €)</option>
 								</c:forEach>
 							</select>
 						</div>
 						<div class="mb-2">
-							<input type="number" class="form-control form-control-sm" name="maara" min="1" value="1" required placeholder="Määrä">
+							<input type="number" class="form-control form-control-sm"
+								name="maara" min="1" value="1" required placeholder="Määrä">
 						</div>
-						<button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Kirjaa hankinta</button>
+						<button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Kirjaa
+							hankinta</button>
 					</form>
 				</div>
 			</div>
 
-		</div> <!-- row päättyy -->
-	</div> <!-- container päättyy -->
+		</div>
+		<!-- row päättyy -->
+	</div>
+	<!-- container päättyy -->
 
 	<!-- BOOTSTRAP POP-UP LOMAKE (MODAL) ASIAKKUUDEN TIETOJEN MUOKKAUKSEEN -->
-	<div class="modal fade" id="muokkaaAsiakasModal" tabindex="-1" aria-hidden="true">
+	<div class="modal fade" id="muokkaaAsiakasModal" tabindex="-1"
+		aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content border-0 shadow-lg">
 				<div class="modal-header bg-dark text-white">
 					<h5 class="modal-title fw-bold">Muokkaa asiakkaan tietoja</h5>
-					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+					<button type="button" class="btn-close btn-close-white"
+						data-bs-dismiss="modal"></button>
 				</div>
-				<form action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/muokkaa" method="post">
+				<form
+					action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/muokkaa"
+					method="post">
 					<div class="modal-body p-4">
 						<div class="mb-3">
-							<label for="editNimi" class="form-label fw-semibold text-secondary">Nimi / Organisaatio</label>
-							<input type="text" class="form-control" id="editNimi" name="nimi" value="${asiakas.nimi}" required>
+							<label for="editNimi"
+								class="form-label fw-semibold text-secondary">Nimi /
+								Organisaatio</label> <input type="text" class="form-control"
+								id="editNimi" name="nimi" value="${asiakas.nimi}" required>
 						</div>
 						<div class="mb-3">
-							<label for="editSahkoposti" class="form-label fw-semibold text-secondary">Sähköposti</label>
-							<input type="email" class="form-control" id="editSahkoposti" name="sahkoposti" value="${asiakas.sahkoposti}" required>
+							<label for="editSahkoposti"
+								class="form-label fw-semibold text-secondary">Sähköposti</label>
+							<input type="email" class="form-control" id="editSahkoposti"
+								name="sahkoposti" value="${asiakas.sahkoposti}" required>
 						</div>
 						<div class="mb-3">
-							<label for="editPuhelin" class="form-label fw-semibold text-secondary">Puhelin</label>
-							<input type="text" class="form-control" id="editPuhelin" name="puhelin" value="${asiakas.puhelin}" required>
+							<label for="editPuhelin"
+								class="form-label fw-semibold text-secondary">Puhelin</label> <input
+								type="text" class="form-control" id="editPuhelin" name="puhelin"
+								value="${asiakas.puhelin}" required>
 						</div>
 						<div class="mb-3">
-							<label for="editTila" class="form-label fw-semibold text-secondary">Myyntiputken vaihe</label>
-							<select class="form-select" id="editTila" name="tila" required>
+							<label for="editTila"
+								class="form-label fw-semibold text-secondary">Myyntiputken
+								vaihe</label> <select class="form-select" id="editTila" name="tila"
+								required>
 								<!-- KORJATTU JA DYNAAMINEN VALINTA: Tulostetaan uudet tilat ja valitaan nykyinen -->
 								<c:forEach var="t" items="${tilat}">
 									<option value="${t}" ${t == asiakas.tila ? 'selected' : ''}>${t.nayttorivi}</option>
@@ -279,8 +299,10 @@ body {
 						</div>
 					</div>
 					<div class="modal-footer bg-light">
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Peruuta</button>
-						<button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna muutokset</button>
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna
+							muutokset</button>
 					</div>
 				</form>
 			</div>
@@ -288,7 +310,7 @@ body {
 	</div>
 
 	<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->
-	<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+	<script
+		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-			
