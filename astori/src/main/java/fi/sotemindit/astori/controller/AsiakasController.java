@@ -9,9 +9,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.transaction.annotation.Transactional;
 
 import fi.sotemindit.astori.model.Liitetiedosto;
@@ -22,14 +19,14 @@ import fi.sotemindit.astori.model.AsiakkaanTila;
 import fi.sotemindit.astori.model.Kirjaus;
 import fi.sotemindit.astori.model.Tuote;
 import fi.sotemindit.astori.model.Yhteyshenkilo;
-import fi.sotemindit.astori.model.Tarjous; // UUSI IMPORT
+import fi.sotemindit.astori.model.Tarjous;
 import fi.sotemindit.astori.repository.AsiakasRepository;
 import fi.sotemindit.astori.repository.KayttajaRepository;
 import fi.sotemindit.astori.repository.KirjausRepository;
 import fi.sotemindit.astori.repository.YhteyshenkiloRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.repository.AsiakasTuoteRepository;
-import fi.sotemindit.astori.repository.TarjousRepository; // UUSI IMPORT
+import fi.sotemindit.astori.repository.TarjousRepository;
 
 @Controller
 public class AsiakasController {
@@ -56,7 +53,7 @@ public class AsiakasController {
 	private LiitetiedostoRepository liitetiedostoRepository;
 
 	@Autowired
-	private TarjousRepository tarjousRepository; // UUSI REPOSITORY-LIITOS
+	private TarjousRepository tarjousRepository;
 
 	// 1. PÄÄSIVU: Listaa kaikki asiakkaat
 	@GetMapping("/")
@@ -68,6 +65,11 @@ public class AsiakasController {
 
 		List<Asiakas> asiakkaat = asiakasRepository.findAll();
 		model.addAttribute("asiakkaat", asiakkaat);
+
+		// LISÄTTY: Viedään uudet myyntiputken tilat index.jsp-sivulle uuden lisäystä
+		// varten
+		model.addAttribute("tilat", AsiakkaanTila.values());
+
 		return "index";
 	}
 
@@ -89,7 +91,9 @@ public class AsiakasController {
 		asiakasRepository.save(uusiAsiakas);
 		return "redirect:/";
 	}
-	// 3. ASIAKASPROFIILI: Näyttää yhden asiakkaan tarkemmat tiedot, yhteyshenkilöt, kirjaukset ja TARJOUKSET
+
+	// 3. ASIAKASPROFIILI: Näyttää yhden asiakkaan tarkemmat tiedot, yhteyshenkilöt,
+	// kirjaukset ja TARJOUKSET
 	@Transactional
 	@GetMapping("/asiakas/{id}")
 	public String naytaAsiakas(@PathVariable Long id, jakarta.servlet.http.HttpSession session, Model model) {
@@ -108,7 +112,7 @@ public class AsiakasController {
 		List<Tuote> tuoteLista = tuoteRepository.findAll();
 		List<AsiakasTuote> ostetutTuotteet = asiakasTuoteRepository.findByAsiakasId(id);
 
-		// UUSI PAREMPI LATAUS: Haetaan asiakkaan tehtyjen tarjousten määrä tai lista profiiliin
+		// HAETAAN ASIAKKAAN TEHTYJEN TARJOUSTEN LISTA PROFIILIIN
 		List<Tarjous> tarjoukset = tarjousRepository.findByAsiakasId(id);
 
 		model.addAttribute("asiakas", asiakas);
@@ -117,7 +121,10 @@ public class AsiakasController {
 		model.addAttribute("kirjaukset", kirjaukset);
 		model.addAttribute("ostetutTuotteet", ostetutTuotteet);
 		model.addAttribute("kaikkiTuotteet", tuoteLista);
-		model.addAttribute("tarjouksetMäärä", tarjoukset.size()); // Annetaan lukumäärä JSP:lle
+		model.addAttribute("tarjouksetMäärä", tarjoukset.size());
+
+		// LISÄTTY: Viedään uudet myyntiputken tilat profiilisivulle muokkausta varten
+		model.addAttribute("tilat", AsiakkaanTila.values());
 
 		return "asiakasprofiili";
 	}
@@ -179,7 +186,8 @@ public class AsiakasController {
 		return "redirect:/asiakas/" + asiakasId;
 	}
 
-	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot ja tilan (Korjattu loppuun asti)
+	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot ja tilan (KORJATTU JA
+	// TÄYDENNETTY LOPPUUN ASTI)
 	@PostMapping("/asiakas/{id}/muokkaa")
 	public String muokkaaAsiakasta(@PathVariable Long id, @RequestParam String nimi, @RequestParam String sahkoposti,
 			@RequestParam String puhelin, @RequestParam fi.sotemindit.astori.model.AsiakkaanTila tila,
@@ -198,6 +206,8 @@ public class AsiakasController {
 		asiakas.setTila(tila);
 
 		asiakasRepository.save(asiakas);
+
+		// Palataan muokkauksen jälkeen suoraan kyseisen asiakkaan profiiliin
 		return "redirect:/asiakas/" + id;
 	}
 }

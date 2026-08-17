@@ -1,15 +1,15 @@
 package fi.sotemindit.astori.model;
 
-
 public enum AsiakkaanTila {
-    PROSPEKTI("Prospekti"),
-    KONTAKTOITU("Kontaktoitu"),
-    KAUPPA("Kauppa"),
-    EI_KAUPPAA("Ei kauppaa");
+    PROSPEKTI("Prospekti (Potentiaalinen)"),
+    KONTAKTOITU("Kontaktoitu / Keskustelussa"),
+    TARJOUS_JATETTY("Tarjous jätetty"),
+    AKTIIVINEN("Aktiivinen asiakas"),
+    PAATTYNYT("Yhteistyö päättynyt");
 
     private final String nayttorivi;
 
-    AsiakkaanTila(String nayttorivi) {
+    private AsiakkaanTila(String nayttorivi) {
         this.nayttorivi = nayttorivi;
     }
 

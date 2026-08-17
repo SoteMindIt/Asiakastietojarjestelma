@@ -70,9 +70,19 @@ body {
 							<td><strong class="text-dark">${asiakas.nimi}</strong></td>
 							<td>${asiakas.sahkoposti}</td>
 							<td>${asiakas.puhelin}</td>
-							<td><span
-								class="badge ${asiakas.tila == 'KAUPPA' ? 'bg-success' : (asiakas.tila == 'EI_KAUPPAA' ? 'bg-danger' : 'bg-warning text-dark')}">
-									${asiakas.tila.nayttorivi} </span></td>
+							<td>
+								<!-- UUSI KONSULTAATIOMYYNTIPUTKEN VÄRIKOODAUS -->
+								<span class="badge 
+									<c:choose>
+										<c:when test="${asiakas.tila == 'PROSPEKTI'}">bg-info text-white</c:when>
+										<c:when test="${asiakas.tila == 'KONTAKTOITU'}">bg-warning text-dark</c:when>
+										<c:when test="${asiakas.tila == 'TARJOUS_JATETTY'}">bg-primary</c:when>
+										<c:when test="${asiakas.tila == 'AKTIIVINEN'}">bg-success</c:when>
+										<c:otherwise>bg-secondary</c:otherwise>
+									</c:choose>">
+									${asiakas.tila.nayttorivi}
+								</span>
+							</td>
 							<td class="text-end"><a
 								href="${pageContext.request.contextPath}/asiakas/${asiakas.id}"
 								class="btn btn-sm btn-outline-primary px-3 rounded-pill fw-semibold">
@@ -89,52 +99,44 @@ body {
 			</table>
 		</div>
 	</div>
-
-	<!-- BOOTSTRAP POP-UP LOMAKE (MODAL) -->
-	<div class="modal fade" id="lisaaAsiakasModal" tabindex="-1"
-		aria-hidden="true">
+	<!-- BOOTSTRAP POP-UP LOMAKE (MODAL) UUDELLE ASIAKKAALLE -->
+	<div class="modal fade" id="lisaaAsiakasModal" tabindex="-1" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content border-0 shadow-lg">
 				<div class="modal-header bg-primary text-white">
 					<h5 class="modal-title fw-bold">Lisää uusi asiakas</h5>
-					<button type="button" class="btn-close btn-close-white"
-						data-bs-dismiss="modal"></button>
+					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
 				</div>
-				<form action="${pageContext.request.contextPath}/lisaa-asiakas"
-					method="post">
+				<form action="${pageContext.request.contextPath}/lisaa-asiakas" method="post">
 					<div class="modal-body p-4">
 						<div class="mb-3">
-							<label for="nimi" class="form-label fw-semibold text-secondary">Nimi</label>
+							<label for="nimi" class="form-label fw-semibold text-secondary">Nimi / Organisaatio</label>
 							<input type="text" class="form-control" id="nimi" name="nimi"
-								required placeholder="Matti Meikäläinen">
+								required placeholder="esim. Sote-Hyvinvointi Oy">
 						</div>
 						<div class="mb-3">
-							<label for="sahkoposti"
-								class="form-label fw-semibold text-secondary">Sähköposti</label>
+							<label for="sahkoposti" class="form-label fw-semibold text-secondary">Sähköposti</label>
 							<input type="email" class="form-control" id="sahkoposti"
-								name="sahkoposti" required placeholder="matti@esimerkki.fi">
+								name="sahkoposti" required placeholder="yhteys@yritys.fi">
 						</div>
 						<div class="mb-3">
-							<label for="puhelin"
-								class="form-label fw-semibold text-secondary">Puhelin</label> <input
-								type="text" class="form-control" id="puhelin" name="puhelin"
+							<label for="puhelin" class="form-label fw-semibold text-secondary">Puhelin</label> 
+							<input type="text" class="form-control" id="puhelin" name="puhelin"
 								required placeholder="040 123 4567">
 						</div>
 						<div class="mb-3">
-							<label for="tila" class="form-label fw-semibold text-secondary">Asiakkaan
-								tila</label> <select class="form-select" id="tila" name="tila" required>
-								<option value="PROSPEKTI">Prospekti</option>
-								<option value="KONTAKTOITU">Kontaktoitu</option>
-								<option value="KAUPPA">Kauppa</option>
-								<option value="EI_KAUPPAA">Ei kauppaa</option>
+							<label for="tila" class="form-label fw-semibold text-secondary">Asiakkuuden alkutila</label> 
+							<select class="form-select" id="tila" name="tila" required>
+								<!-- Tulostetaan kaikki ohjaimesta tulleet uudet tilat dynaamisesti loopissa -->
+								<c:forEach var="t" items="${tilat}">
+									<option value="${t}">${t.nayttorivi}</option>
+								</c:forEach>
 							</select>
 						</div>
 					</div>
 					<div class="modal-footer bg-light">
-						<button type="button" class="btn btn-secondary"
-							data-bs-dismiss="modal">Peruuta</button>
-						<button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna
-							asiakas</button>
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna asiakas</button>
 					</div>
 				</form>
 			</div>
@@ -142,7 +144,7 @@ body {
 	</div>
 
 	<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->
-	<script
-		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+	<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+	
