@@ -243,6 +243,12 @@ body {
 							<input type="number" class="form-control form-control-sm"
 								name="maara" min="1" value="1" required placeholder="Määrä">
 						</div>
+
+						<div class="mb-2">
+							<label class="form-label text-secondary small mb-1 fw-bold">Ostopäivä:</label>
+							<input type="date" class="form-control form-control-sm"
+								name="ostopaivamaara">
+						</div>
 						<button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Kirjaa
 							hankinta</button>
 					</form>

@@ -1,34 +1,32 @@
 package fi.sotemindit.astori.controller;
 
 import java.util.List;
-import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.transaction.annotation.Transactional;
 
-import fi.sotemindit.astori.model.Liitetiedosto;
-import fi.sotemindit.astori.repository.LiitetiedostoRepository;
 import fi.sotemindit.astori.model.Asiakas;
 import fi.sotemindit.astori.model.AsiakasTuote;
 import fi.sotemindit.astori.model.AsiakkaanTila;
 import fi.sotemindit.astori.model.Kirjaus;
+import fi.sotemindit.astori.model.Liitetiedosto;
+import fi.sotemindit.astori.model.Tarjous;
 import fi.sotemindit.astori.model.Tuote;
 import fi.sotemindit.astori.model.Yhteyshenkilo;
-import fi.sotemindit.astori.model.Tarjous;
 import fi.sotemindit.astori.repository.AsiakasRepository;
+import fi.sotemindit.astori.repository.AsiakasTuoteRepository;
 import fi.sotemindit.astori.repository.KayttajaRepository;
 import fi.sotemindit.astori.repository.KirjausRepository;
-import fi.sotemindit.astori.repository.YhteyshenkiloRepository;
-import fi.sotemindit.astori.repository.TuoteRepository;
-import fi.sotemindit.astori.repository.AsiakasTuoteRepository;
+import fi.sotemindit.astori.repository.LiitetiedostoRepository;
 import fi.sotemindit.astori.repository.TarjousRepository;
-import fi.sotemindit.astori.model.TarjousRivi;
+import fi.sotemindit.astori.repository.TuoteRepository;
+import fi.sotemindit.astori.repository.YhteyshenkiloRepository;
 
 @Controller
 public class AsiakasController {
@@ -173,7 +171,7 @@ public class AsiakasController {
 	// 6. TUOTEMYYNNIN KIRJAUS
 	@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
 	public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId, @RequestParam Integer maara,
-			jakarta.servlet.http.HttpSession session) {
+			jakarta.servlet.http.HttpSession session, @RequestParam(required = false) String ostopaivamaara) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
@@ -186,6 +184,12 @@ public class AsiakasController {
 
 		fi.sotemindit.astori.model.AsiakasTuote uusiMyynti = new fi.sotemindit.astori.model.AsiakasTuote(asiakas, tuote,
 				tuote.getHinta(), maara);
+		
+		if (ostopaivamaara != null && !ostopaivamaara.trim().isEmpty()) {
+			uusiMyynti.setOstopaivamaara(java.time.LocalDate.parse(ostopaivamaara));
+		} else {
+			uusiMyynti.setOstopaivamaara(java.time.LocalDate.now()); // Oletus: tämä päivä
+		}
 
 		asiakasTuoteRepository.save(uusiMyynti);
 
@@ -213,6 +217,29 @@ public class AsiakasController {
 		asiakasRepository.save(asiakas);
 
 		return "redirect:/asiakas/" + id;
+	}
+
+	// 7b. ASIAKKAAN POISTO: Poistaa asiakkaan ja kaikki siihen liittyvät tiedot
+	// (Cascade)
+	@Transactional
+	@PostMapping("/asiakas/{id}/poista")
+	public String poistaAsiakas(@PathVariable Long id, jakarta.servlet.http.HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		// Varmistetaan, että asiakas on olemassa ennen poistoa
+		if (!asiakasRepository.existsById(id)) {
+			throw new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + id);
+		}
+
+		// Poistetaan asiakas (CascadeType.ALL hoitaa liitostaulujen siivouksen
+		// automaattisesti)
+		asiakasRepository.deleteById(id);
+
+		// Palataan onnistuneen poiston jälkeen takaisin pääsivun asiakaslistaukseen
+		return "redirect:/";
 	}
 
 }

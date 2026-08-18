@@ -78,6 +78,7 @@ public class AsetuksetController {
 
 		return "redirect:/asetukset";
 	}
+
 	// 4. REITTI: Ottaa vastaan uuden käyttäjän tiedot ja tallentaa ne turvallisesti
 	@PostMapping("/asetukset/lisaa-kayttaja")
 	public String lisaaKayttaja(HttpSession session, @RequestParam String tunnus, @RequestParam String salasana,
@@ -102,7 +103,8 @@ public class AsetuksetController {
 		return "redirect:/asetukset";
 	}
 
-	// 5. REITTI: Ottaa vastaan yrityksen tiedot ja tallentaa/päivittää ne kiinteälle ID:lle 1
+	// 5. REITTI: Ottaa vastaan yrityksen tiedot ja tallentaa/päivittää ne
+	// kiinteälle ID:lle 1
 	@PostMapping("/asetukset/tallenna-yritys")
 	public String tallennaYritystiedot(HttpSession session, @RequestParam String nimi, @RequestParam String yTunnus,
 			@RequestParam String sahkoposti, @RequestParam String puhelin, @RequestParam String osoite,
@@ -129,4 +131,43 @@ public class AsetuksetController {
 
 		return "redirect:/asetukset?tallennettu=true";
 	}
+
+	// 6. REITTI: Luo ja lataa PostgreSQL-tietokannan täydellinen varmuuskopio
+	// (.sql)
+	@GetMapping("/asetukset/varmuuskopio")
+	@org.springframework.web.bind.annotation.ResponseBody
+	public void lataaVarmuuskopio(jakarta.servlet.http.HttpServletResponse response, HttpSession session)
+			throws java.io.IOException {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			response.sendRedirect("/login");
+			return;
+		}
+
+		String tiedostonNimi = "astori_varmuuskopio_" + java.time.LocalDate.now() + ".sql";
+		response.setContentType("application/octet-stream");
+		response.setHeader("Content-Disposition", "attachment; filename=\"" + tiedostonNimi + "\"");
+
+		ProcessBuilder pb = new ProcessBuilder("E:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\pg_dump.exe", "-U", "postgres", "-h", "localhost", "-p", "5432",
+				"asiakastiedot");
+
+		java.util.Map<String, String> env = pb.environment();
+		env.put("PGPASSWORD", "admin");
+
+		Process prosessi = pb.start();
+
+		try (java.io.InputStream in = prosessi.getInputStream();
+				java.io.OutputStream out = response.getOutputStream()) {
+
+			byte[] puskuri = new byte[4096];
+			int luettu;
+			while ((luettu = in.read(puskuri)) != -1) {
+				out.write(puskuri, 0, luettu);
+			}
+			out.flush();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 }
