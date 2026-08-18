@@ -186,6 +186,16 @@ public class TarjousController {
 				tekstiFontti);
 		asiakasTiedot.setSpacingAfter(30);
 		document.add(asiakasTiedot);
+		
+		if (tarjous.getLisatiedot() != null) {
+			String teksti = tarjous.getLisatiedot().trim();
+			if (!teksti.isEmpty()) {
+				document.add(new com.lowagie.text.Paragraph("Lisätiedot ja ehdot:", alaOtsikkoFontti));
+				com.lowagie.text.Paragraph pLisatiedot = new com.lowagie.text.Paragraph(teksti, tekstiFontti);
+				pLisatiedot.setSpacingAfter(20);
+				document.add(pLisatiedot);
+			}
+		}
 
 		// TULOSTETAAN LISÄTIEDOT JOS NIITÄ ON KIRJOITETTU
 		if (tarjous.getLisatiedot() != null && !tarjous.getLisatiedot().trim().isEmpty()) {
@@ -294,6 +304,7 @@ public class TarjousController {
 
 			document.add(summaTaulu);
 			document.close();
+			
 		}
 	}
 }
