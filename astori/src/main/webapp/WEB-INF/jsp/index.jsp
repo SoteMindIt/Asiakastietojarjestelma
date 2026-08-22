@@ -51,7 +51,7 @@ body {
 		</div>
 
 		<h4 class="text-secondary mb-3">Kaikki asiakkaat</h4>
-		<div class="table-responsive border">
+		<div class="table-responsive border mb-3">
 			<table class="table table-hover align-middle mb-0">
 				<thead class="table-light">
 					<tr>
@@ -98,6 +98,37 @@ body {
 				</tbody>
 			</table>
 		</div>
+
+		<!-- SIVUTUSPAINIKKEET (Näytetään vain, jos sivuja on enemmän kuin 1) -->
+		<c:if test="${totalPages > 1}">
+			<nav aria-label="Asiakaslistan sivutus" class="d-flex justify-content-center mt-4">
+				<ul class="pagination shadow-sm">
+					
+					<!-- EDELINEN-PAINIKE -->
+					<li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
+						<a class="page-link" href="?page=${currentPage - 1}" aria-label="Edellinen">
+							<span aria-hidden="true">&laquo; Edellinen</span>
+						</a>
+					</li>
+
+					<!-- SIVUNUMEROT -->
+					<c:forEach var="i" begin="0" end="${totalPages - 1}">
+						<li class="page-item ${currentPage == i ? 'active' : ''}">
+							<a class="page-link" href="?page=${i}">${i + 1}</a>
+						</li>
+					</c:forEach>
+
+					<!-- SEURAAVA-PAINIKE -->
+					<li class="page-item ${currentPage >= totalPages - 1 ? 'disabled' : ''}">
+						<a class="page-link" href="?page=${currentPage + 1}" aria-label="Seuraava">
+							<span aria-hidden="true">Seuraava &raquo;</span>
+						</a>
+					</li>
+					
+				</ul>
+			</nav>
+		</c:if>
+
 	</div>
 	<!-- BOOTSTRAP POP-UP LOMAKE (MODAL) UUDELLE ASIAKKAALLE -->
 	<div class="modal fade" id="lisaaAsiakasModal" tabindex="-1" aria-hidden="true">
@@ -147,4 +178,3 @@ body {
 	<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-	

@@ -1,6 +1,8 @@
 package fi.sotemindit.astori.model;
 
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,13 +15,13 @@ public class Tarjous {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "tarjous_numero", nullable = false)
+	@Column(name = "tarjous_numero", nullable = false, unique = true)
 	private String tarjousNumero;
 	private LocalDate pvm;
 	private LocalDate voimassaoloPvm;
-	private Double verotonYhteensa;
-	private Double alvYhteensa;
-	private Double verollinenYhteensa;
+	private java.math.BigDecimal verotonYhteensa;
+	private java.math.BigDecimal alvYhteensa;
+	private java.math.BigDecimal verollinenYhteensa;
 
 	@ManyToOne
 	@JoinColumn(name = "asiakas_id", nullable = false)
@@ -72,27 +74,27 @@ public class Tarjous {
 		this.voimassaoloPvm = voimassaoloPvm;
 	}
 
-	public Double getVerotonYhteensa() {
+	public BigDecimal getVerotonYhteensa() {
 		return verotonYhteensa;
 	}
 
-	public void setVerotonYhteensa(Double verotonYhteensa) {
+	public void setVerotonYhteensa(BigDecimal verotonYhteensa) {
 		this.verotonYhteensa = verotonYhteensa;
 	}
 
-	public Double getAlvYhteensa() {
+	public BigDecimal getAlvYhteensa() {
 		return alvYhteensa;
 	}
 
-	public void setAlvYhteensa(Double alvYhteensa) {
+	public void setAlvYhteensa(BigDecimal alvYhteensa) {
 		this.alvYhteensa = alvYhteensa;
 	}
 
-	public Double getVerollinenYhteensa() {
+	public BigDecimal getVerollinenYhteensa() {
 		return verollinenYhteensa;
 	}
 
-	public void setVerollinenYhteensa(Double verollinenYhteensa) {
+	public void setVerollinenYhteensa(BigDecimal verollinenYhteensa) {
 		this.verollinenYhteensa = verollinenYhteensa;
 	}
 

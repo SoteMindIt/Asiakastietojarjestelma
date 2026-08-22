@@ -2,60 +2,60 @@ package fi.sotemindit.astori.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 
 @Entity
 @Table(name = "asiakkaat")
 public class Asiakas {
 
 	@Id
-	@GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@Column(nullable = false)
 	private String nimi;
-	private String sahkoposti;
+
 	private String puhelin;
+	private String sahkoposti;
+	private String katuosoite;
+	private String postinumero;
+	private String postitoimipaikka;
+	private String kotisivu;
 
-	// UUSI REKISTERI: Tila
-	@jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
-	private AsiakkaanTila tila = AsiakkaanTila.PROSPEKTI;
+	// UUSI: Asiakkaan tila tallennetaan tietokantaan tekstimuodossa (esim.
+	// 'PROSPEKTI')
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private AsiakkaanTila tila = AsiakkaanTila.PROSPEKTI; // Oletuksena uusi asiakas on Prospekti
+	
+	 // Lisää tämä muiden muuttujien joukkoon (esim. tilan alapuolelle)
+    @jakarta.persistence.ManyToOne
+    @jakarta.persistence.JoinColumn(name = "kayttaja_id")
+    private Kayttaja kayttaja;
 
-	// KORJATTU JA ENERGINEN KÄYTTÄJÄRELAATIO:
-	@jakarta.persistence.ManyToOne
-	@jakarta.persistence.JoinColumn(name = "kayttaja_id", nullable = true)
-	private Kayttaja kayttaja;
-
-	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-	private java.util.List<Tapahtuma> tapahtumat;
-
-	// CASCADE-OMINAISUUDET POISTOA VARTEN:
-	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-	private java.util.List<Yhteyshenkilo> yhteyshenkilot;
-
-	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-	private java.util.List<Kirjaus> kirjaukset;
-
-	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-	private java.util.List<AsiakasTuote> ostetutTuotteet;
-
-	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-	private java.util.List<Liitetiedosto> liitetiedostot;
-
-	@jakarta.persistence.OneToMany(mappedBy = "asiakas", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-	private java.util.List<Tarjous> tarjoukset;
-
+	// Tyhjä konstruktori JPA:ta varten
 	public Asiakas() {
 	}
 
-	// Päivitetty konstruktori ottamaan vastaan myös tilan
-	public Asiakas(String nimi, String sahkoposti, String puhelin, AsiakkaanTila tila) {
+	// Konstruktori helpottamaan olioiden luontia kehityksessä
+	public Asiakas(String nimi, String puhelin, String sahkoposti, String katuosoite, String postinumero,
+			String postitoimipaikka, String kotisivu, AsiakkaanTila tila) {
 		this.nimi = nimi;
-		this.sahkoposti = sahkoposti;
 		this.puhelin = puhelin;
-		this.tila = tila;
+		this.sahkoposti = sahkoposti;
+		this.katuosoite = katuosoite;
+		this.postinumero = postinumero;
+		this.postitoimipaikka = postitoimipaikka;
+		this.kotisivu = kotisivu;
+		this.tila = tila != null ? tila : AsiakkaanTila.PROSPEKTI;
 	}
 
+	// Getterit ja Setterit
 	public Long getId() {
 		return id;
 	}
@@ -72,6 +72,14 @@ public class Asiakas {
 		this.nimi = nimi;
 	}
 
+	public String getPuhelin() {
+		return puhelin;
+	}
+
+	public void setPuhelin(String puhelin) {
+		this.puhelin = puhelin;
+	}
+
 	public String getSahkoposti() {
 		return sahkoposti;
 	}
@@ -80,12 +88,36 @@ public class Asiakas {
 		this.sahkoposti = sahkoposti;
 	}
 
-	public String getPuhelin() {
-		return puhelin;
+	public String getKatuosoite() {
+		return katuosoite;
 	}
 
-	public void setPuhelin(String puhelin) {
-		this.puhelin = puhelin;
+	public void setKatuosoite(String katuosoite) {
+		this.katuosoite = katuosoite;
+	}
+
+	public String getPostinumero() {
+		return postinumero;
+	}
+
+	public void setPostinumero(String postinumero) {
+		this.postinumero = postinumero;
+	}
+
+	public String getPostitoimipaikka() {
+		return postitoimipaikka;
+	}
+
+	public void setPostitoimipaikka(String postitoimipaikka) {
+		this.postitoimipaikka = postitoimipaikka;
+	}
+
+	public String getKotisivu() {
+		return kotisivu;
+	}
+
+	public void setKotisivu(String kotisivu) {
+		this.kotisivu = kotisivu;
 	}
 
 	public AsiakkaanTila getTila() {
@@ -95,20 +127,11 @@ public class Asiakas {
 	public void setTila(AsiakkaanTila tila) {
 		this.tila = tila;
 	}
+    public Kayttaja getKayttaja() {
+        return kayttaja;
+    }
 
-	public Kayttaja getKayttaja() {
-		return kayttaja;
-	}
-
-	public void setKayttaja(Kayttaja kayttaja) {
-		this.kayttaja = kayttaja;
-	}
-
-	public java.util.List<Tarjous> getTarjoukset() {
-		return tarjoukset;
-	}
-
-	public void setTarjoukset(java.util.List<Tarjous> tarjoukset) {
-		this.tarjoukset = tarjoukset;
-	}
+    public void setKayttaja(Kayttaja kayttaja) {
+        this.kayttaja = kayttaja;
+    }
 }

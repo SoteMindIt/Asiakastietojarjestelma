@@ -9,4 +9,7 @@ import java.util.List;
 public interface TarjousRepository extends JpaRepository<Tarjous, Long> {
     // Haetaan tietyn asiakkaan kaikki tarjoukset
     List<Tarjous> findByAsiakasId(Long asiakasId);
+    
+    // UUSI: Tarkistaa löytyykö tarjousnumero jo tietokannasta
+    boolean existsByTarjousNumero(String tarjousNumero);
 }

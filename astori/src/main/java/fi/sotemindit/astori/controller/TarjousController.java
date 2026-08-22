@@ -60,13 +60,22 @@ public class TarjousController {
 	@PostMapping("/asiakkaat/{asiakasId}/tarjoukset/tallenna")
 	public String tallennaTarjous(@PathVariable Long asiakasId, @RequestParam String tarjousNumero,
 			@RequestParam String voimassaoloPvm, @RequestParam(required = false) String lisatiedot,
-			@RequestParam("tuote[]") List<String> tuotteet, @RequestParam("maara[]") List<Double> maarat,
-			@RequestParam("hinta[]") List<Double> hinnat, @RequestParam("alv[]") List<Double> alvProsentit,
-			jakarta.servlet.http.HttpSession session) {
+			@RequestParam("tuote[]") List<String> tuotteet, 
+			@RequestParam("maara[]") List<java.math.BigDecimal> maarat, 
+			@RequestParam("hinta[]") List<java.math.BigDecimal> hinnat, 
+			@RequestParam("alv[]") List<java.math.BigDecimal> alvProsentit, 
+			jakarta.servlet.http.HttpSession session,
+			org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
+		}
+
+		if (tarjousRepository.existsByTarjousNumero(tarjousNumero)) {
+			redirectAttributes.addFlashAttribute("virheViesti",
+					"Tarjousnumero '" + tarjousNumero + "' on jo käytössä! Valitse toinen numero.");
+			return "redirect:/asiakas/" + asiakasId + "/tarjoukset";
 		}
 
 		Asiakas asiakas = asiakasRepository.findById(asiakasId)
@@ -79,33 +88,41 @@ public class TarjousController {
 		tarjous.setVoimassaoloPvm(LocalDate.parse(voimassaoloPvm));
 		tarjous.setLisatiedot(lisatiedot);
 
-		double kokonaisVeroton = 0.0;
-		double kokonaisAlv = 0.0;
+		java.math.BigDecimal kokonaisVeroton = java.math.BigDecimal.ZERO;
+		java.math.BigDecimal kokonaisAlv = java.math.BigDecimal.ZERO;
 
 		for (int i = 0; i < tuotteet.size(); i++) {
 			String tuoteNimi = tuotteet.get(i);
-			double maara = maarat.get(i) != null ? maarat.get(i) : 0.0;
-			double hinta = hinnat.get(i) != null ? hinnat.get(i) : 0.0;
-			double alv = alvProsentit.get(i) != null ? alvProsentit.get(i) : 0.0;
+			
+			java.math.BigDecimal bdMaara = maarat.get(i) != null ? maarat.get(i) : java.math.BigDecimal.ZERO;
+			java.math.BigDecimal bdHinta = hinnat.get(i) != null ? hinnat.get(i) : java.math.BigDecimal.ZERO;
+			java.math.BigDecimal bdAlvProsentti = alvProsentit.get(i) != null ? alvProsentit.get(i) : java.math.BigDecimal.ZERO;
 
-			double riviVeroton = maara * hinta;
-			double riviAlv = riviVeroton * (alv / 100.0);
+			// Rivin veroton hinta = määrä * hinta
+			java.math.BigDecimal riviVeroton = bdMaara.multiply(bdHinta);
+			
+			// Rivin ALV = riviVeroton * (alvProsentti / 100)
+			java.math.BigDecimal riviAlv = riviVeroton.multiply(bdAlvProsentti)
+					.divide(java.math.BigDecimal.valueOf(100.0), 2, java.math.RoundingMode.HALF_UP);
 
-			kokonaisVeroton += riviVeroton;
-			kokonaisAlv += riviAlv;
+			kokonaisVeroton = kokonaisVeroton.add(riviVeroton);
+			kokonaisAlv = kokonaisAlv.add(riviAlv);
 
-			TarjousRivi rivi = new TarjousRivi(tuoteNimi, maara, hinta, alv, tarjous);
+			// KORJATTU: Välitetään puhtaat BigDecimal-oliot suoraan konstruktorille ilman double-muunnosta
+			TarjousRivi rivi = new TarjousRivi(tuoteNimi, bdMaara, bdHinta, bdAlvProsentti, tarjous);
 			tarjous.getRivit().add(rivi);
 		}
 
 		tarjous.setVerotonYhteensa(kokonaisVeroton);
 		tarjous.setAlvYhteensa(kokonaisAlv);
-		tarjous.setVerollinenYhteensa(kokonaisVeroton + kokonaisAlv);
+		tarjous.setVerollinenYhteensa(kokonaisVeroton.add(kokonaisAlv));
 
 		tarjousRepository.save(tarjous);
 
 		return "redirect:/asiakas/" + asiakasId + "/tarjoukset";
 	}
+
+
 
 	// 3. Generoi ja lataa tarjous PDF-muodossa
 	@Transactional
@@ -194,107 +211,145 @@ public class TarjousController {
 					tekstiFontti);
 			pLisatiedot.setSpacingAfter(20);
 			document.add(pLisatiedot);
-
-			// 4. TARJOUSRIVIT TAULUKKONA
-			document.add(new com.lowagie.text.Paragraph("Tarjouksen sisältö:", alaOtsikkoFontti));
-			com.lowagie.text.Paragraph vali = new com.lowagie.text.Paragraph(" ");
-			vali.setSpacingAfter(5);
-			document.add(vali);
-
-			com.lowagie.text.pdf.PdfPTable riviTaulu = new com.lowagie.text.pdf.PdfPTable(5);
-			riviTaulu.setWidthPercentage(100);
-			riviTaulu.setSpacingAfter(20);
-			riviTaulu.setWidths(new float[] { 4.0f, 1.2f, 1.6f, 1.2f, 2.0f });
-
-			String[] otsikot = { "Tuote / Kuvaus", "Määrä", "Yksikköhinta", "ALV %", "Yhteensä (alv)" };
-			for (String otsikkoTeksti : otsikot) {
-				com.lowagie.text.pdf.PdfPCell solu = new com.lowagie.text.pdf.PdfPCell(
-						new com.lowagie.text.Paragraph(otsikkoTeksti, lihavoituTeksti));
-				solu.setBackgroundColor(java.awt.Color.LIGHT_GRAY);
-				solu.setPadding(6);
-				solu.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_CENTER);
-				riviTaulu.addCell(solu);
-			}
-
-			for (fi.sotemindit.astori.model.TarjousRivi r : tarjous.getRivit()) {
-				double maara = r.getMaara() != null ? r.getMaara() : 0.0;
-				double hinta = r.getYksikkohinta() != null ? r.getYksikkohinta() : 0.0;
-				double alv = r.getAlvProsentti() != null ? r.getAlvProsentti() : 0.0;
-				double riviVerollinen = (maara * hinta) * (1 + (alv / 100.0));
-
-				com.lowagie.text.pdf.PdfPCell solu1 = new com.lowagie.text.pdf.PdfPCell(
-						new com.lowagie.text.Paragraph(r.getTuotteenNimi(), tekstiFontti));
-				solu1.setPadding(6);
-				riviTaulu.addCell(solu1);
-
-				com.lowagie.text.pdf.PdfPCell solu2 = new com.lowagie.text.pdf.PdfPCell(
-						new com.lowagie.text.Paragraph(String.format("%.2f", maara), tekstiFontti));
-				solu2.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_CENTER);
-				solu2.setPadding(6);
-				riviTaulu.addCell(solu2);
-
-				com.lowagie.text.pdf.PdfPCell solu3 = new com.lowagie.text.pdf.PdfPCell(
-						new com.lowagie.text.Paragraph(String.format("%.2f €", hinta), tekstiFontti));
-				solu3.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
-				solu3.setPadding(6);
-				riviTaulu.addCell(solu3);
-
-				com.lowagie.text.pdf.PdfPCell solu4 = new com.lowagie.text.pdf.PdfPCell(
-						new com.lowagie.text.Paragraph(String.format("%.1f %%", alv), tekstiFontti));
-				solu4.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_CENTER);
-				solu4.setPadding(6);
-				riviTaulu.addCell(solu4);
-
-				com.lowagie.text.pdf.PdfPCell solu5 = new com.lowagie.text.pdf.PdfPCell(
-						new com.lowagie.text.Paragraph(String.format("%.2f €", riviVerollinen), tekstiFontti));
-				solu5.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
-				solu5.setPadding(6);
-				riviTaulu.addCell(solu5);
-			}
-			document.add(riviTaulu);
-
-			// 5. YHTEENVETOLAATIKKO
-			com.lowagie.text.pdf.PdfPTable summaTaulu = new com.lowagie.text.pdf.PdfPTable(2);
-			summaTaulu.setWidthPercentage(40);
-			summaTaulu.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
-			summaTaulu.setSpacingAfter(30);
-
-			com.lowagie.text.pdf.PdfPCell lblVeroton = new com.lowagie.text.pdf.PdfPCell(
-					new com.lowagie.text.Paragraph("Veroton yhteensä:", tekstiFontti));
-			lblVeroton.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
-			summaTaulu.addCell(lblVeroton);
-
-			com.lowagie.text.pdf.PdfPCell sv = new com.lowagie.text.pdf.PdfPCell(new com.lowagie.text.Paragraph(
-					String.format("%.2f €", tarjous.getVerotonYhteensa()), tekstiFontti));
-			sv.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
-			sv.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
-			summaTaulu.addCell(sv);
-
-			com.lowagie.text.pdf.PdfPCell lblAlv = new com.lowagie.text.pdf.PdfPCell(
-					new com.lowagie.text.Paragraph("ALV yhteensä:", tekstiFontti));
-			lblAlv.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
-			summaTaulu.addCell(lblAlv);
-
-			com.lowagie.text.pdf.PdfPCell sa = new com.lowagie.text.pdf.PdfPCell(
-					new com.lowagie.text.Paragraph(String.format("%.2f €", tarjous.getAlvYhteensa()), tekstiFontti));
-			sa.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
-			sa.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
-			summaTaulu.addCell(sa);
-
-			com.lowagie.text.pdf.PdfPCell lblLoppusumma = new com.lowagie.text.pdf.PdfPCell(
-					new com.lowagie.text.Paragraph("Loppusumma:", lihavoituTeksti));
-			lblLoppusumma.setBorder(com.lowagie.text.pdf.PdfPCell.BOTTOM);
-			summaTaulu.addCell(lblLoppusumma);
-
-			com.lowagie.text.pdf.PdfPCell sll = new com.lowagie.text.pdf.PdfPCell(new com.lowagie.text.Paragraph(
-					String.format("%.2f €", tarjous.getVerollinenYhteensa()), lihavoituTeksti));
-			sll.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
-			sll.setBorder(com.lowagie.text.pdf.PdfPCell.BOTTOM);
-			summaTaulu.addCell(sll);
-
-			document.add(summaTaulu);
-			document.close();
-			
 		}
+		
+		// 4. TARJOUSRIVIT TAULUKKONA
+		document.add(new com.lowagie.text.Paragraph("Tarjouksen sisältö:", alaOtsikkoFontti));
+		com.lowagie.text.Paragraph vali = new com.lowagie.text.Paragraph(" ");
+		vali.setSpacingAfter(5);
+		document.add(vali);
+
+		com.lowagie.text.pdf.PdfPTable riviTaulu = new com.lowagie.text.pdf.PdfPTable(5);
+		riviTaulu.setWidthPercentage(100);
+		riviTaulu.setSpacingAfter(20);
+		riviTaulu.setWidths(new float[] { 4.0f, 1.2f, 1.6f, 1.2f, 2.0f });
+
+		String[] otsikot = { "Tuote / Kuvaus", "Määrä", "Yksikköhinta", "ALV %", "Yhteensä (alv)" };
+		for (String otsikkoTeksti : otsikot) {
+			com.lowagie.text.pdf.PdfPCell solu = new com.lowagie.text.pdf.PdfPCell(
+					new com.lowagie.text.Paragraph(otsikkoTeksti, lihavoituTeksti));
+			solu.setBackgroundColor(java.awt.Color.LIGHT_GRAY);
+			solu.setPadding(6);
+			solu.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_CENTER);
+			riviTaulu.addCell(solu);
+		} // KORJATTU: Otsikkosilmukka suljetaan tässä oikeaoppisesti ennen rivejä!
+
+		for (fi.sotemindit.astori.model.TarjousRivi r : tarjous.getRivit()) {
+			// KORJATTU: Vaihdettu 0.0 -> BigDecimal.ZERO tyyppivirheen korjaamiseksi
+			java.math.BigDecimal maara = r.getMaara() != null ? r.getMaara() : java.math.BigDecimal.ZERO;
+			java.math.BigDecimal hinta = r.getYksikkohinta() != null ? r.getYksikkohinta() : java.math.BigDecimal.ZERO;
+			java.math.BigDecimal alv = r.getAlvProsentti() != null ? r.getAlvProsentti() : java.math.BigDecimal.ZERO;
+			
+			// KORJATTU: Tehty BigDecimal-laskenta oikeilla metodeilla operaattorien (*, +, /) sijaan
+			java.math.BigDecimal riviVeroton = maara.multiply(hinta);
+			java.math.BigDecimal alvKerroin = java.math.BigDecimal.ONE.add(
+					alv.divide(java.math.BigDecimal.valueOf(100.0), 4, java.math.RoundingMode.HALF_UP)
+			);
+			java.math.BigDecimal riviVerollinen = riviVeroton.multiply(alvKerroin)
+					.setScale(2, java.math.RoundingMode.HALF_UP);
+
+			com.lowagie.text.pdf.PdfPCell solu1 = new com.lowagie.text.pdf.PdfPCell(
+					new com.lowagie.text.Paragraph(r.getTuotteenNimi(), tekstiFontti));
+			solu1.setPadding(6);
+			riviTaulu.addCell(solu1);
+
+			com.lowagie.text.pdf.PdfPCell solu2 = new com.lowagie.text.pdf.PdfPCell(
+					new com.lowagie.text.Paragraph(String.format("%.2f", maara), tekstiFontti));
+			solu2.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_CENTER);
+			solu2.setPadding(6);
+			riviTaulu.addCell(solu2);
+
+			com.lowagie.text.pdf.PdfPCell solu3 = new com.lowagie.text.pdf.PdfPCell(
+					new com.lowagie.text.Paragraph(String.format("%.2f €", hinta), tekstiFontti));
+			solu3.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
+			solu3.setPadding(6);
+			riviTaulu.addCell(solu3);
+
+			com.lowagie.text.pdf.PdfPCell solu4 = new com.lowagie.text.pdf.PdfPCell(
+					new com.lowagie.text.Paragraph(String.format("%.1f %%", alv), tekstiFontti));
+			solu4.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_CENTER);
+			solu4.setPadding(6);
+			riviTaulu.addCell(solu4);
+
+			com.lowagie.text.pdf.PdfPCell solu5 = new com.lowagie.text.pdf.PdfPCell(
+					new com.lowagie.text.Paragraph(String.format("%.2f €", riviVerollinen), tekstiFontti));
+			solu5.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
+			solu5.setPadding(6);
+			riviTaulu.addCell(solu5);
+		}
+		document.add(riviTaulu);
+
+		// 5. YHTEENVETOLAATIKKO
+		com.lowagie.text.pdf.PdfPTable summaTaulu = new com.lowagie.text.pdf.PdfPTable(2);
+		summaTaulu.setWidthPercentage(40);
+		summaTaulu.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
+		summaTaulu.setSpacingAfter(30);
+
+		com.lowagie.text.pdf.PdfPCell lblVeroton = new com.lowagie.text.pdf.PdfPCell(
+				new com.lowagie.text.Paragraph("Veroton yhteensä:", tekstiFontti));
+		lblVeroton.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
+		summaTaulu.addCell(lblVeroton);
+
+		com.lowagie.text.pdf.PdfPCell sv = new com.lowagie.text.pdf.PdfPCell(new com.lowagie.text.Paragraph(
+				String.format("%.2f €", tarjous.getVerotonYhteensa()), tekstiFontti));
+		sv.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
+		sv.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
+		summaTaulu.addCell(sv);
+
+		com.lowagie.text.pdf.PdfPCell lblAlv = new com.lowagie.text.pdf.PdfPCell(
+				new com.lowagie.text.Paragraph("ALV yhteensä:", tekstiFontti));
+		lblAlv.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
+		summaTaulu.addCell(lblAlv);
+
+		com.lowagie.text.pdf.PdfPCell sa = new com.lowagie.text.pdf.PdfPCell(
+				new com.lowagie.text.Paragraph(String.format("%.2f €", tarjous.getAlvYhteensa()), tekstiFontti));
+		sa.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
+		sa.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
+		summaTaulu.addCell(sa);
+
+		com.lowagie.text.pdf.PdfPCell lblLoppusumma = new com.lowagie.text.pdf.PdfPCell(
+				new com.lowagie.text.Paragraph("Loppusumma:", lihavoituTeksti));
+		lblLoppusumma.setBorder(com.lowagie.text.pdf.PdfPCell.BOTTOM);
+		summaTaulu.addCell(lblLoppusumma);
+
+		com.lowagie.text.pdf.PdfPCell sll = new com.lowagie.text.pdf.PdfPCell(new com.lowagie.text.Paragraph(
+				String.format("%.2f €", tarjous.getVerollinenYhteensa()), lihavoituTeksti));
+		sll.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
+		sll.setBorder(com.lowagie.text.pdf.PdfPCell.BOTTOM);
+		summaTaulu.addCell(sll);
+
+		document.add(summaTaulu);
+		
+		// Luetaan ja lisätään lisätiedot jos ne ovat olemassa (täydennetty katkennut logiikka)
+		if (tarjous.getLisatiedot() != null && !tarjous.getLisatiedot().trim().isEmpty()) {
+			document.add(new com.lowagie.text.Paragraph("Lisätiedot:", alaOtsikkoFontti));
+			com.lowagie.text.Paragraph lt = new com.lowagie.text.Paragraph(tarjous.getLisatiedot(), tekstiFontti);
+			lt.setSpacingBefore(5);
+			document.add(lt);
+		}
+		
+		document.close();
 	}
+
+	// 4. Poistaa tarjouksen ID-numeron perusteella ja ohjaa takaisin asiakkaan sivulle
+	@Transactional
+	@PostMapping("/tarjous/{tarjousId}/poista")
+	public String poistaTarjous(@PathVariable Long tarjousId, jakarta.servlet.http.HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		Tarjous tarjous = tarjousRepository.findById(tarjousId)
+				.orElseThrow(() -> new IllegalArgumentException("Tarjousta ei löytynyt ID-numerolla: " + tarjousId));
+
+		Long asiakasId = tarjous.getAsiakas().getId();
+		tarjousRepository.delete(tarjous);
+
+		return "redirect:/asiakas/" + asiakasId + "/tarjoukset";
+	}
+	
+
+
+
 }

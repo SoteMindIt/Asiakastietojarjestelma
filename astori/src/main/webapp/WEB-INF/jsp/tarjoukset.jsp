@@ -53,6 +53,13 @@ body {
 	</nav>
 
 	<div class="container py-2">
+
+		<c:if test="${not empty virheViesti}">
+			<div
+				class="alert alert-danger alert-dismissible fade show fw-bold mb-3"
+				role="alert">${virheViesti}</div>
+		</c:if> 
+		
 		<!-- TAKAISIN-LINKKI -->
 		<div class="mb-3">
 			<a class="btn btn-link p-0 text-decoration-none"
@@ -99,10 +106,21 @@ body {
 										<td><strong class="text-success"><fmt:formatNumber
 													value="${t.verollinenYhteensa}" pattern="#,##0.00 €" /></strong></td>
 										<td>
-											<!-- 2. LISÄTTY TÄMÄ LATAUSPAINIKE --> <a
-											class="btn btn-sm btn-danger fw-bold"
-											href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf">
-												Lataa PDF </a>
+											<div class="d-flex gap-2">
+												<!-- Latauspainike (muutettu siniseksi, jotta se erottuu poistonapista) -->
+												<a class="btn btn-sm btn-primary fw-bold"
+													href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf">
+													Lataa PDF </a>
+
+												<!-- Poistolomake varmistuksella -->
+												<form
+													action="${pageContext.request.contextPath}/tarjous/${t.id}/poista"
+													method="post" style="display: inline;"
+													onsubmit="return confirm('Haluatko varmasti poistaa tarjouksen ${t.tarjousNumero}?');">
+													<button type="submit" class="btn btn-sm btn-danger fw-bold">
+														Poista</button>
+												</form>
+											</div>
 										</td>
 									</tr>
 								</c:forEach>
@@ -216,97 +234,111 @@ body {
 	</div>
 	<!-- REAALIAIKAINEN LASKENTALOGIIKKA JA AUTOMAATTINEN HINNAN PAIVITYS -->
 	<script>
-        // UUSI FUNKTIO: Hakee valitun tuotteen hinnan rekisteristä ja asettaa sen hinta-kenttään
-        function paivitaRivinHinta(selectElement) {
-            var valittuOption = selectElement.options[selectElement.selectedIndex];
-            var hinta = valittuOption.getAttribute('data-hinta') || 0;
-            
-            // Esitään saman rivin hinta-input-kenttä
-            var rivi = selectElement.parentNode.parentNode;
-            var hintaInput = rivi.querySelector('input[name="hinta[]"]');
-            
-            if (hintaInput) {
-                hintaInput.value = hinta;
-            }
-            
-            // Lasketaan heti koko tarjouksen summat uusiksi
-            laskeYhteissummat();
-        }
+		// 1. Hakee valitun tuotteen hinnan rekisteristä ja päivittää sen riville
+		function paivitaRivinHinta(selectElement) {
+			var valittuOption = selectElement.options[selectElement.selectedIndex];
+			var hinta = valittuOption.getAttribute('data-hinta') || 0;
 
-        // Laskee koko tarjouksen summat reaaliajassa
-        function laskeYhteissummat() {
-            var taulukko = document.getElementById("rivit-table");
-            var rivit = taulukko.getElementsByTagName('tbody')[0].rows;
-            
-            var kokonaisVeroton = 0;
-            var kokonaisAlv = 0;
-            var kokonaisVerollinen = 0;
+			var rivi = selectElement.closest('tr');
+			var hintaInput = rivi.querySelector('input[name="hinta[]"]');
 
-            for (var i = 0; i < rivit.length; i++) {
-                var maaraInput = rivit[i].querySelector('input[name="maara[]"]');
-                var hintaInput = rivit[i].querySelector('input[name="hinta[]"]');
-                var alvSelect = rivit[i].querySelector('select[name="alv[]"]');
+			if (hintaInput) {
+				hintaInput.value = hinta;
+			}
 
-                if (maaraInput && hintaInput && alvSelect) {
-                    var maara = parseFloat(maaraInput.value) || 0;
-                    var hinta = parseFloat(hintaInput.value) || 0;
-                    var alvProsentti = parseFloat(alvSelect.value) || 0;
+			laskeYhteissummat();
+		}
 
-                    var riviVeroton = maara * hinta;
-                    var riviAlv = riviVeroton * (alvProsentti / 100);
-                    var riviVerollinen = riviVeroton + riviAlv;
+		// 2. Laskee kaikkien rivien summat reaaliaikaisesti yhteenvetolaatikkoon
+		function laskeYhteissummat() {
+			var verotonYhteensa = 0;
+			var alvYhteensa = 0;
 
-                    kokonaisVeroton += riviVeroton;
-                    kokonaisAlv += riviAlv;
-                    kokonaisVerollinen += riviVerollinen;
-                }
-            }
+			var rivit = document.querySelectorAll('#rivit-table tbody tr');
 
-            document.getElementById("summa-veroton").innerText = kokonaisVeroton.toFixed(2) + " €";
-            document.getElementById("summa-alv").innerText = kokonaisAlv.toFixed(2) + " €";
-            document.getElementById("summa-verollinen").innerText = kokonaisVerollinen.toFixed(2) + " €";
-        }
+			rivit.forEach(function(rivi) {
+				var maaraInput = rivi.querySelector('input[name="maara[]"]');
+				var hintaInput = rivi.querySelector('input[name="hinta[]"]');
+				var alvSelect = rivi.querySelector('select[name="alv[]"]');
 
-        // Lisää uuden rivin ja monistaa tuoterekisterin valinnan siihen
-        function lisaaRivi() {
-            var table = document.getElementById("rivit-table").getElementsByTagName('tbody')[0];
-            var uusiRivi = table.insertRow(table.rows.length);
-            
-            uusiRivi.innerHTML = `
-                <td>
-                    <select class="form-select" name="tuote[]" required onchange="paivitaRivinHinta(this)">
-                        <option value="" data-hinta="0">-- Valitse tuote --</option>
-                        <c:forEach var="t" items="${kaikkiTuotteet}">
-                            <option value="${t.nimi}" data-hinta="${t.hinta}">${t.nimi} (${t.hinta} €)</option>
-                        </c:forEach>
-                    </select>
-                </td>
-                <td><input type="number" class="form-control" name="maara[]" value="1" step="any" required oninput="laskeYhteissummat()"></td>
-                <td><input type="number" class="form-control" name="hinta[]" step="any" required oninput="laskeYhteissummat()"></td>
-                <td>
-                    <select class="form-select" name="alv[]" onchange="laskeYhteissummat()">
-                        <option value="25.5">25.5 %</option>
-                        <option value="14.0">14.0 %</option>
-                        <option value="10.0">10.0 %</option>
-                        <option value="0.0">0.0 %</option>
-                    </select>
-                </td>
-                <td><button type="button" class="btn btn-outline-danger w-100" onclick="poistaRivi(this)">Poista</button></td>
-            `;
-            laskeYhteissummat();
-        }
+				if (maaraInput && hintaInput && alvSelect) {
+					var maara = parseFloat(maaraInput.value) || 0;
+					var hinta = parseFloat(hintaInput.value) || 0;
+					var alvProsentti = parseFloat(alvSelect.value) || 0;
 
-        // Poistaa rivin
-        function poistaRivi(button) {
-            var row = button.parentNode.parentNode;
-            var tbody = row.parentNode;
-            if (tbody.rows.length > 1) {
-                tbody.removeChild(row);
-                laskeYhteissummat();
-            } else {
-                alert("Tarjouksessa täytyy olla vähintään yksi rivi.");
-            }
-        }
-    </script>
+					var riviVeroton = maara * hinta;
+					var riviAlv = riviVeroton * (alvProsentti / 100.0);
+
+					verotonYhteensa += riviVeroton;
+					alvYhteensa += riviAlv;
+				}
+			});
+
+			var verollinenYhteensa = verotonYhteensa + alvYhteensa;
+
+			// Päivitetään summat käyttöliittymään suomalaisella muotoilulla
+			document.getElementById('summa-veroton').innerText = verotonYhteensa
+					.toFixed(2).replace('.', ',')
+					+ ' €';
+			document.getElementById('summa-alv').innerText = alvYhteensa
+					.toFixed(2).replace('.', ',')
+					+ ' €';
+			document.getElementById('summa-verollinen').innerText = verollinenYhteensa
+					.toFixed(2).replace('.', ',')
+					+ ' €';
+		}
+
+		// 3. Lisää uuden tyhjän tuoterivin taulukkoon
+		function lisaaRivi() {
+			var tBody = document.querySelector('#rivit-table tbody');
+			var ensimmainenRivi = tBody.querySelector('tr');
+
+			if (!ensimmainenRivi)
+				return;
+
+			// Monistetaan ensimmäinen rivi pohjaksi
+			var uusiRivi = ensimmainenRivi.cloneNode(true);
+
+			// Tyhjennetään uuden rivin syötekentät
+			var select = uusiRivi.querySelector('select[name="tuote[]"]');
+			if (select)
+				select.selectedIndex = 0;
+
+			var maara = uusiRivi.querySelector('input[name="maara[]"]');
+			if (maara)
+				maara.value = "1";
+
+			var hinta = uusiRivi.querySelector('input[name="hinta[]"]');
+			if (hinta)
+				hinta.value = "";
+
+			var alv = uusiRivi.querySelector('select[name="alv[]"]');
+			if (alv)
+				alv.selectedIndex = 0; // Oletuksena 25.5 %
+
+			tBody.appendChild(uusiRivi);
+			laskeYhteissummat();
+		}
+
+		// 4. Poistaa valitun tuoterivin taulukosta
+		function poistaRivi(painike) {
+			var tBody = document.querySelector('#rivit-table tbody');
+
+			// Estetään viimeisen rivin poistaminen, jotta taulukkoon jää aina vähintään yksi rivi
+			if (tBody.querySelectorAll('tr').length <= 1) {
+				alert('Tarjouksessa täytyy olla vähintään yksi rivi.');
+				return;
+			}
+
+			var rivi = painike.closest('tr');
+			rivi.remove();
+			laskeYhteissummat();
+		}
+
+		// Ajetaan laskenta kerran käynnistyksen yhteydessä varmuuden vuoksi
+		document.addEventListener('DOMContentLoaded', function() {
+			laskeYhteissummat();
+		});
+	</script>
 </body>
 </html>

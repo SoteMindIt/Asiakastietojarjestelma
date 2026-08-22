@@ -11,9 +11,9 @@ public class TarjousRivi {
 	private Long id;
 
 	private String tuotteenNimi;
-	private Double maara;
-	private Double yksikkohinta;
-	private Double alvProsentti;
+	private java.math.BigDecimal maara;
+	private java.math.BigDecimal yksikkohinta;
+	private java.math.BigDecimal alvProsentti;
 
 	@ManyToOne
 	@JoinColumn(name = "tarjous_id", nullable = false)
@@ -21,7 +21,7 @@ public class TarjousRivi {
 
 	public TarjousRivi() {}
 
-	public TarjousRivi(String tuotteenNimi, Double maara, Double yksikkohinta, Double alvProsentti, Tarjous tarjous) {
+	public TarjousRivi(String tuotteenNimi, java.math.BigDecimal maara, java.math.BigDecimal yksikkohinta, java.math.BigDecimal alvProsentti, Tarjous tarjous) {
 		this.tuotteenNimi = tuotteenNimi;
 		this.maara = maara;
 		this.yksikkohinta = yksikkohinta;
@@ -34,12 +34,12 @@ public class TarjousRivi {
 	public void setId(Long id) { this.id = id; }
 	public String getTuotteenNimi() { return tuotteenNimi; }
 	public void setTuotteenNimi(String tuotteenNimi) { this.tuotteenNimi = tuotteenNimi; }
-	public Double getMaara() { return maara; }
-	public void setMaara(Double maara) { this.maara = maara; }
-	public Double getYksikkohinta() { return yksikkohinta; }
-	public void setYksikkohinta(Double yksikkohinta) { this.yksikkohinta = yksikkohinta; }
-	public Double getAlvProsentti() { return alvProsentti; }
-	public void setAlvProsentti(Double alvProsentti) { this.alvProsentti = alvProsentti; }
+	public java.math.BigDecimal getMaara() { return maara; }
+	public void setMaara(java.math.BigDecimal maara) { this.maara = maara; }
+	public java.math.BigDecimal getYksikkohinta() { return yksikkohinta; }
+	public void setYksikkohinta(java.math.BigDecimal yksikkohinta) { this.yksikkohinta = yksikkohinta; }
+	public java.math.BigDecimal getAlvProsentti() { return alvProsentti; }
+	public void setAlvProsentti(java.math.BigDecimal alvProsentti) { this.alvProsentti = alvProsentti; }
 	public Tarjous getTarjous() { return tarjous; }
 	public void setTarjous(Tarjous tarjous) { this.tarjous = tarjous; }
 }
