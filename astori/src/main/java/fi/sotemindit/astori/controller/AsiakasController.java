@@ -20,6 +20,7 @@ import fi.sotemindit.astori.model.AsiakasTuote;
 import fi.sotemindit.astori.model.AsiakkaanTila;
 import fi.sotemindit.astori.model.Kirjaus;
 import fi.sotemindit.astori.model.Liitetiedosto;
+import fi.sotemindit.astori.model.Loki;
 import fi.sotemindit.astori.model.Tarjous;
 import fi.sotemindit.astori.model.Tuote;
 import fi.sotemindit.astori.model.Yhteyshenkilo;
@@ -31,6 +32,7 @@ import fi.sotemindit.astori.repository.LiitetiedostoRepository;
 import fi.sotemindit.astori.repository.TarjousRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.repository.YhteyshenkiloRepository;
+import fi.sotemindit.astori.repository.LokiRepository;
 
 @Controller
 public class AsiakasController {
@@ -59,24 +61,26 @@ public class AsiakasController {
 	@Autowired
 	private TarjousRepository tarjousRepository;
 
+	@Autowired
+	private LokiRepository lokiRepository;
+
 	// 1. PÄÄSIVU: Listaa asiakkaat sivutettuna (10 kpl kerrallaan)
 	@GetMapping("/")
-	public String listaaAsiakkaat(
-			jakarta.servlet.http.HttpSession session, 
-			@RequestParam(defaultValue = "0") int page, 
+	public String listaaAsiakkaat(jakarta.servlet.http.HttpSession session, @RequestParam(defaultValue = "0") int page,
 			Model model) {
-		
+
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan nousevasti
+		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan
+		// nousevasti
 		Pageable pageable = PageRequest.of(page, 10, Sort.by("nimi").ascending());
-		
+
 		// Haetaan vain kirjautuneen käyttäjän asiakkaat sivutettuna
 		Page<Asiakas> asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnus(istuntoTunnus, pageable);
-		
+
 		// Viedään tiedot JSP-sivulle (index.jsp)
 		model.addAttribute("asiakkaat", asiakasSivu.getContent()); // Tässä on max 10 asiakasta listana
 		model.addAttribute("currentPage", page);
@@ -104,10 +108,10 @@ public class AsiakasController {
 		fi.sotemindit.astori.model.Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
 				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
 
-		
 		// Luodaan uusi asiakas kaikilla tiedoilla
-		Asiakas uusiAsiakas = new Asiakas(nimi, puhelin, sahkoposti, katuosoite, postinumero, postitoimipaikka, kotisivu, tila);
-		
+		Asiakas uusiAsiakas = new Asiakas(nimi, puhelin, sahkoposti, katuosoite, postinumero, postitoimipaikka,
+				kotisivu, tila);
+
 		// TÄMÄ LIITOS PITÄÄ OLLA MUKANA: Kytketään asiakas kirjautuneeseen käyttäjään
 		uusiAsiakas.setKayttaja(nykyinenKayttaja);
 
@@ -127,6 +131,11 @@ public class AsiakasController {
 
 		Asiakas asiakas = asiakasRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + id));
+
+		// KÄYTTÖLOKITUS: Tallennetaan tieto tietokantaan, että profiilia on katseltu
+		String kuvaus = "Katseltu asiakkaan '" + asiakas.getNimi() + "' (ID: " + id + ") tietoja.";
+		lokiRepository.save(new Loki(istuntoTunnus, "KATSELU", kuvaus));
+
 		List<Liitetiedosto> liitteet = liitetiedostoRepository.findByAsiakasIdOrderByLatausaikaDesc(id);
 		List<Yhteyshenkilo> yhteyshenkilot = yhteyshenkiloRepository.findByAsiakasId(id);
 		List<Kirjaus> kirjaukset = kirjausRepository.findByAsiakasIdOrderByLuontiaikaDesc(id);
@@ -184,6 +193,7 @@ public class AsiakasController {
 
 		return "redirect:/asiakas/" + asiakasId;
 	}
+
 	// 6. TUOTEMYYNNIN KIRJAUS
 	@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
 	public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId, @RequestParam Integer maara,
@@ -254,6 +264,13 @@ public class AsiakasController {
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
+
+		Asiakas asiakas = asiakasRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + id));
+
+		// KÄYTTÖLOKITUS: Otetaan nimi talteen ennen poistoa, jotta se saadaan lokiin
+		String kuvaus = "Poistettu asiakas '" + asiakas.getNimi() + "' (ID: " + id + ") ja kaikki sen liitostiedot.";
+		lokiRepository.save(new Loki(istuntoTunnus, "POISTO", kuvaus));
 
 		// Varmistetaan, että asiakas on olemassa ennen poistoa
 		if (!asiakasRepository.existsById(id)) {

@@ -14,58 +14,114 @@ import java.util.ArrayList;
 @Table(name = "kayttajat")
 public class Kayttaja {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String kayttajatunnus;
+	@Column(unique = true, nullable = false)
+	private String kayttajatunnus;
 
-    @Column(nullable = false)
-    private String salasana;
+	@Column(nullable = false)
+	private String salasana;
 
-    private String etunimi;
-    private String sukunimi;
-    private String sahkoposti;
-    private String puhelin; // UUSI KENTTÄ
+	@Column(nullable = false)
+	private String rooli = "USER";
 
-    @OneToMany(mappedBy = "kayttaja")
-    private List<Asiakas> asiakkaat = new ArrayList<>();
+	private String etunimi;
+	private String sukunimi;
+	private String sahkoposti;
+	private String puhelin; // UUSI KENTTÄ
 
-    public Kayttaja() {}
+	@OneToMany(mappedBy = "kayttaja")
+	private List<Asiakas> asiakkaat = new ArrayList<>();
 
-    // Päivitetty konstruktori sisältäen puhelinnumeron
-    public Kayttaja(String kayttajatunnus, String salasana, String etunimi, String sukunimi, String sahkoposti, String puhelin) {
-        this.kayttajatunnus = kayttajatunnus;
-        this.salasana = salasana;
-        this.etunimi = etunimi;
-        this.sukunimi = sukunimi;
-        this.sahkoposti = sahkoposti;
-        this.puhelin = puhelin;
-    }
+	public Kayttaja() {
+		this.rooli = "USER";
+	}
 
-    // Getterit ja Setterit
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+	// Päivitetty konstruktori sisältäen puhelinnumeron
+	public Kayttaja(String kayttajatunnus, String salasana, String etunimi, String sukunimi, String sahkoposti,
+			String puhelin) {
+		this.kayttajatunnus = kayttajatunnus;
+		this.salasana = salasana;
+		this.etunimi = etunimi;
+		this.sukunimi = sukunimi;
+		this.sahkoposti = sahkoposti;
+		this.puhelin = puhelin;
+		this.rooli = "USER";
+	}
 
-    public String getKayttajatunnus() { return kayttajatunnus; }
-    public void setKayttajatunnus(String kayttajatunnus) { this.kayttajatunnus = kayttajatunnus; }
+	// Getterit ja Setterit
+	public Long getId() {
+		return id;
+	}
 
-    public String getSalasana() { return salasana; }
-    public void setSalasana(String salasana) { this.salasana = salasana; }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public String getEtunimi() { return etunimi; }
-    public void setEtunimi(String etunimi) { this.etunimi = etunimi; }
+	public String getKayttajatunnus() {
+		return kayttajatunnus;
+	}
 
-    public String getSukunimi() { return sukunimi; }
-    public void setSukunimi(String sukunimi) { this.sukunimi = sukunimi; }
+	public void setKayttajatunnus(String kayttajatunnus) {
+		this.kayttajatunnus = kayttajatunnus;
+	}
 
-    public String getSahkoposti() { return sahkoposti; }
-    public void setSahkoposti(String sahkoposti) { this.sahkoposti = sahkoposti; }
+	public String getSalasana() {
+		return salasana;
+	}
 
-    public String getPuhelin() { return puhelin; } // UUSI GETTER
-    public void setPuhelin(String puhelin) { this.puhelin = puhelin; } // UUSI SETTER
+	public void setSalasana(String salasana) {
+		this.salasana = salasana;
+	}
 
-    public List<Asiakas> getAsiakkaat() { return asiakkaat; }
-    public void setAsiakkaat(List<Asiakas> asiakkaat) { this.asiakkaat = asiakkaat; }
+	public String getEtunimi() {
+		return etunimi;
+	}
+
+	public void setEtunimi(String etunimi) {
+		this.etunimi = etunimi;
+	}
+
+	public String getSukunimi() {
+		return sukunimi;
+	}
+
+	public void setSukunimi(String sukunimi) {
+		this.sukunimi = sukunimi;
+	}
+
+	public String getSahkoposti() {
+		return sahkoposti;
+	}
+
+	public void setSahkoposti(String sahkoposti) {
+		this.sahkoposti = sahkoposti;
+	}
+
+	public String getPuhelin() {
+		return puhelin;
+	} 
+
+	public void setPuhelin(String puhelin) {
+		this.puhelin = puhelin;
+	} 
+
+	public List<Asiakas> getAsiakkaat() {
+		return asiakkaat;
+	}
+
+	public void setAsiakkaat(List<Asiakas> asiakkaat) {
+		this.asiakkaat = asiakkaat;
+	}
+
+	public String getRooli() {
+		return rooli;
+	}
+
+	
+	public void setRooli(String rooli) {
+		this.rooli = rooli;
+	}
 }

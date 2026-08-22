@@ -68,6 +68,25 @@ body {
 					aria-label="Close"></button>
 			</div>
 		</c:if>
+
+		<!-- ILMOITUKSET KÄYTTÄJÄHALLINNASTA -->
+		<c:if test="${param.success == 'user_created'}">
+			<div class="alert alert-success alert-dismissible fade show fw-bold"
+				role="alert">
+				✓ Uusi käyttäjätunnus luotu onnistuneesti!
+				<button type="button" class="btn-close" data-bs-dismiss="alert"
+					aria-label="Close"></button>
+			</div>
+		</c:if>
+		<c:if test="${param.success == 'user_updated'}">
+			<div class="alert alert-success alert-dismissible fade show fw-bold"
+				role="alert">
+				✓ Käyttäjän tiedot ja käyttöoikeustaso päivitetty!
+				<button type="button" class="btn-close" data-bs-dismiss="alert"
+					aria-label="Close"></button>
+			</div>
+		</c:if>
+
 		<div class="row g-4">
 			<!-- 1. OSAN ALLA: TUOTEHALLINTA -->
 			<div class="col-md-12">
@@ -120,8 +139,6 @@ body {
 							PostgreSQL-tietokannastasi (.sql). Tiedosto sisältää kaikki
 							tallennetut asiakkaat, lokitiedot, yhteyshenkilöt, tuotteet sekä
 							tehdyt tarjoukset riveineen.</p>
-
-						<!-- VARMUUSKOPIOPAINIKE -->
 						<a
 							href="${pageContext.request.contextPath}/asetukset/varmuuskopio"
 							class="btn btn-warning fw-bold text-dark px-4 shadow-sm"> 💾
@@ -129,7 +146,6 @@ body {
 					</div>
 				</div>
 			</div>
-
 
 			<!-- UUSI OSIO: OMAN YRITYKSEN TIEDOT TARJOUKSIA VARTEN -->
 			<div class="col-md-12">
@@ -208,6 +224,8 @@ body {
 									<th>Nimi</th>
 									<th>Sähköposti</th>
 									<th>Puhelin</th>
+									<th>Käyttötaso</th>
+									<th class="text-end">Toiminnot</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -218,7 +236,78 @@ body {
 										<td><strong>${k.etunimi} ${k.sukunimi}</strong></td>
 										<td>${k.sahkoposti}</td>
 										<td class="text-secondary">${k.puhelin}</td>
+										<td><span
+											class="badge ${k.rooli == 'ADMIN' ? 'bg-danger' : 'bg-secondary'}">
+												${k.rooli == 'ADMIN' ? 'Pääkäyttäjä (Admin)' : 'Työntekijä'}
+										</span></td>
+										<td class="text-end">
+											<button type="button"
+												class="btn btn-sm btn-outline-primary rounded-pill px-3"
+												data-bs-toggle="modal"
+												data-bs-target="#muokkaaKayttajaModal${k.id}">
+												Muokkaa</button>
+										</td>
 									</tr>
+
+									<!-- MODAL-IKKUNA JOKAISEN KÄYTTÄJÄN MUOKKAUSTA VARTEN -->
+									<div class="modal fade" id="muokkaaKayttajaModal${k.id}"
+										tabindex="-1" aria-hidden="true">
+										<div class="modal-dialog modal-dialog-centered">
+											<div class="modal-content border-0 shadow-lg">
+												<div class="modal-header bg-primary text-white">
+													<h5 class="modal-title fw-bold">Muokkaa käyttäjää:
+														${k.kayttajatunnus}</h5>
+													<button type="button" class="btn-close btn-close-white"
+														data-bs-dismiss="modal"></button>
+												</div>
+												<form
+													action="${pageContext.request.contextPath}/asetukset/muokkaa-kayttajaa/${k.id}"
+													method="post">
+													<div class="modal-body p-4">
+														<div class="row">
+															<div class="col-md-6 mb-3">
+																<label class="form-label small fw-bold text-secondary">Etunimi</label>
+																<input type="text" class="form-control" name="etunimi"
+																	value="${k.etunimi}" required>
+															</div>
+															<div class="col-md-6 mb-3">
+																<label class="form-label small fw-bold text-secondary">Sukunimi</label>
+																<input type="text" class="form-control" name="sukunimi"
+																	value="${k.sukunimi}" required>
+															</div>
+														</div>
+														<div class="mb-3">
+															<label class="form-label small fw-bold text-secondary">Sähköposti</label>
+															<input type="email" class="form-control"
+																name="sahkoposti" value="${k.sahkoposti}" required>
+														</div>
+														<div class="mb-3">
+															<label class="form-label small fw-bold text-secondary">Puhelinnumero</label>
+															<input type="text" class="form-control" name="puhelin"
+																value="${k.puhelin}" required>
+														</div>
+														<div class="mb-3">
+															<label class="form-label small fw-bold text-secondary">Käyttöoikeustaso</label>
+															<select class="form-select" name="rooli" required>
+																<option value="USER"
+																	${k.rooli == 'USER' ? 'selected' : ''}>Työntekijä
+																	(USER)</option>
+																<option value="ADMIN"
+																	${k.rooli == 'ADMIN' ? 'selected' : ''}>Pääkäyttäjä
+																	(ADMIN)</option>
+															</select>
+														</div>
+													</div>
+													<div class="modal-footer bg-light">
+														<button type="button" class="btn btn-secondary"
+															data-bs-dismiss="modal">Peruuta</button>
+														<button type="submit" class="btn btn-primary fw-bold px-4">Tallenna
+															muutokset</button>
+													</div>
+												</form>
+											</div>
+										</div>
+									</div>
 								</c:forEach>
 							</tbody>
 						</table>
@@ -277,6 +366,13 @@ body {
 							<label class="form-label fw-semibold text-secondary">Puhelin</label>
 							<input type="text" class="form-control" name="puhelin" required
 								placeholder="040 123 4567">
+						</div>
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Käyttöoikeustaso</label>
+							<select class="form-select" name="rooli" required>
+								<option value="USER" selected>Työntekijä (USER)</option>
+								<option value="ADMIN">Pääkäyttäjä (ADMIN)</option>
+							</select>
 						</div>
 					</div>
 					<div class="modal-footer bg-light">

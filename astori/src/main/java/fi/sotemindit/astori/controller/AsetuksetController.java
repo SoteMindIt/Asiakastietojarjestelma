@@ -1,41 +1,36 @@
 package fi.sotemindit.astori.controller;
 
-import java.math.BigDecimal;
 import java.util.List;
+import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import fi.sotemindit.astori.model.Tuote;
-import fi.sotemindit.astori.model.TuoteYksikko;
 import fi.sotemindit.astori.model.Kayttaja;
-import fi.sotemindit.astori.model.Yritystiedot;
-import fi.sotemindit.astori.repository.TuoteRepository;
+import fi.sotemindit.astori.model.Tuote;
 import fi.sotemindit.astori.repository.KayttajaRepository;
-import fi.sotemindit.astori.repository.YritystiedotRepository;
-import jakarta.servlet.http.HttpSession;
+import fi.sotemindit.astori.repository.TuoteRepository;
 
 @Controller
 public class AsetuksetController {
 
 	@Autowired
-	private TuoteRepository tuoteRepository;
-
-	@Autowired
 	private KayttajaRepository kayttajaRepository;
 
 	@Autowired
-	private YritystiedotRepository yritystiedotRepository;
+	private TuoteRepository tuoteRepository;
 
 	@Autowired
 	private BCryptPasswordEncoder passwordEncoder;
 
-	// 1. REITTI: Näyttää asetussivun
+	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat
+	// tiedot
 	@GetMapping("/asetukset")
 	public String naytaAsetukset(HttpSession session, Model model) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -43,131 +38,91 @@ public class AsetuksetController {
 			return "redirect:/login";
 		}
 
-		List<Tuote> tuotteet = tuoteRepository.findAll();
-		List<Kayttaja> kayttajat = kayttajaRepository.findAll();
-		Yritystiedot yritys = yritystiedotRepository.findById(1L).orElse(new Yritystiedot());
+		// Haetaan nykyisen käyttäjän tiedot roolitarkistusta varten
+		kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
 
-		model.addAttribute("tuotteet", tuotteet);
-		model.addAttribute("kayttajat", kayttajat);
-		model.addAttribute("yritys", yritys);
 
-		return "asetukset";
+		// Viedään kaikki käyttäjät listaukseen (tämä korjaa aiemman virheen)
+		List<Kayttaja> kaikkiKayttajat = kayttajaRepository.findAll();
+		model.addAttribute("kayttajat", kaikkiKayttajat);
+
+		// Viedään tuoterekisterin tiedot
+		List<Tuote> kaikkiTuotteet = tuoteRepository.findAll();
+		model.addAttribute("tuotteet", kaikkiTuotteet);
+
+		// Tähän voit lisätä oman yrityksesi tiedon hakemisen, jos sinulla on sille oma
+		// repo:
+		// model.addAttribute("yritys", yritysRepository.findFirst());
+
+		return "asetukset"; // Avaa asetukset.jsp
 	}
 
-	// 2. REITTI: Näyttää tuotteen lisäyslomakkeen
-	@GetMapping("/asetukset/uusi")
-	public String naytaLisaaTuoteSivu(HttpSession session) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-		return "lisaa-tuote";
-	}
-
-	// 3. REITTI: Tuotteen tallennus
-	@PostMapping("/asetukset/lisaa-tuote")
-	public String lisaaTuote(HttpSession session, @RequestParam String nimi, @RequestParam String kuvaus,
-			@RequestParam BigDecimal hinta, @RequestParam TuoteYksikko yksikko) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-
-		Tuote uusiTuote = new Tuote(nimi, kuvaus, hinta, yksikko);
-		tuoteRepository.save(uusiTuote);
-
-		return "redirect:/asetukset";
-	}
-
-	// 4. REITTI: Ottaa vastaan uuden käyttäjän tiedot ja tallentaa ne turvallisesti
+	// 2. REITTI: Luo uuden käyttäjätunnuksen roolivalinnalla (Vain Admin)
 	@PostMapping("/asetukset/lisaa-kayttaja")
-	public String lisaaKayttaja(HttpSession session, @RequestParam String tunnus, @RequestParam String salasana,
-			@RequestParam String etunimi, @RequestParam String sukunimi, @RequestParam String sahkoposti,
-			@RequestParam String puhelin, Model model) {
+	public String lisaaKayttaja(HttpSession session, @RequestParam("tunnus") String tunnus,
+			@RequestParam("salasana") String salasana, @RequestParam("etunimi") String etunimi,
+			@RequestParam("sukunimi") String sukunimi, @RequestParam("sahkoposti") String sahkoposti,
+			@RequestParam("puhelin") String puhelin, @RequestParam("rooli") String rooli) {
+
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		// Varmistetaan, ettei tunnus ole jo varattu
+		// Varmistetaan, että tekijä on ADMIN
+		Kayttaja tekija = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
+		if (!"ADMIN".equals(tekija.getRooli())) {
+			return "redirect:/?error=access_denied";
+		}
+
+		// Tarkistetaan, onko käyttäjätunnus jo varattu
 		if (kayttajaRepository.findByKayttajatunnus(tunnus).isPresent()) {
 			return "redirect:/asetukset?virhe=tunnus_varattu";
 		}
 
-		// Kryptataan salasana ennen tallennusta
-		String suojattuSalasana = passwordEncoder.encode(salasana);
+		// Kryptataan salasana ennen tallennusta tietokantaan
+		String kryptattuSalasana = passwordEncoder.encode(salasana);
 
-		Kayttaja uusiKayttaja = new Kayttaja(tunnus, suojattuSalasana, etunimi, sukunimi, sahkoposti, puhelin);
+		// Luodaan uusi käyttäjäolio ja asetetaan sille lomakkeelta tullut rooli
+		Kayttaja uusiKayttaja = new Kayttaja(tunnus, kryptattuSalasana, etunimi, sukunimi, sahkoposti, puhelin);
+		uusiKayttaja.setRooli(rooli);
+
 		kayttajaRepository.save(uusiKayttaja);
-
-		return "redirect:/asetukset";
+		return "redirect:/asetukset?success=user_created";
 	}
 
-	// 5. REITTI: Ottaa vastaan yrityksen tiedot ja tallentaa/päivittää ne
-	// kiinteälle ID:lle 1
-	@PostMapping("/asetukset/tallenna-yritys")
-	public String tallennaYritystiedot(HttpSession session, @RequestParam String nimi, @RequestParam String yTunnus,
-			@RequestParam String sahkoposti, @RequestParam String puhelin, @RequestParam String osoite,
-			@RequestParam String iban, @RequestParam String bic) {
+	// 3. REITTI: Muokkaa olemassa olevan käyttäjän tietoja ja roolia (Vain Admin)
+	@PostMapping("/asetukset/muokkaa-kayttajaa/{id}")
+	public String muokkaaKayttajaa(HttpSession session, @PathVariable Long id, @RequestParam String etunimi,
+			@RequestParam String sukunimi, @RequestParam String sahkoposti, @RequestParam String puhelin,
+			@RequestParam String rooli) {
+
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		// Haetaan olemassa oleva rivi tai luodaan uusi, jos tietokanta on tyhjä
-		Yritystiedot yritys = yritystiedotRepository.findById(1L).orElse(new Yritystiedot());
-
-		// Päivitetään lomakkeen kentät
-		yritys.setNimi(nimi);
-		yritys.setyTunnus(yTunnus);
-		yritys.setSahkoposti(sahkoposti);
-		yritys.setPuhelin(puhelin);
-		yritys.setOsoite(osoite);
-		yritys.setIban(iban);
-		yritys.setBic(bic);
-
-		// Tallennetaan PostgreSQL:ään
-		yritystiedotRepository.save(yritys);
-
-		return "redirect:/asetukset?tallennettu=true";
-	}
-
-	// 6. REITTI: Luo ja lataa PostgreSQL-tietokannan täydellinen varmuuskopio
-	// (.sql)
-	@GetMapping("/asetukset/varmuuskopio")
-	@org.springframework.web.bind.annotation.ResponseBody
-	public void lataaVarmuuskopio(jakarta.servlet.http.HttpServletResponse response, HttpSession session)
-			throws java.io.IOException {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			response.sendRedirect("/login");
-			return;
+		// Varmistetaan, että muokkaaja on ADMIN
+		Kayttaja tekija = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
+		if (!"ADMIN".equals(tekija.getRooli())) {
+			return "redirect:/?error=access_denied";
 		}
 
-		String tiedostonNimi = "astori_varmuuskopio_" + java.time.LocalDate.now() + ".sql";
-		response.setContentType("application/octet-stream");
-		response.setHeader("Content-Disposition", "attachment; filename=\"" + tiedostonNimi + "\"");
+		// Haetaan muokattava työntekijä tietokannasta
+		Kayttaja muokattava = kayttajaRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Muokattavaa käyttäjää ei löydy ID:llä: " + id));
 
-		ProcessBuilder pb = new ProcessBuilder("E:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\pg_dump.exe", "-U", "postgres", "-h", "localhost", "-p", "5432",
-				"asiakastiedot");
+		// Päivitetään muuttuneet perustiedot ja rooli
+		muokattava.setEtunimi(etunimi);
+		muokattava.setSukunimi(sukunimi);
+		muokattava.setSahkoposti(sahkoposti);
+		muokattava.setPuhelin(puhelin);
+		muokattava.setRooli(rooli);
 
-		java.util.Map<String, String> env = pb.environment();
-		env.put("PGPASSWORD", "admin");
-
-		Process prosessi = pb.start();
-
-		try (java.io.InputStream in = prosessi.getInputStream();
-				java.io.OutputStream out = response.getOutputStream()) {
-
-			byte[] puskuri = new byte[4096];
-			int luettu;
-			while ((luettu = in.read(puskuri)) != -1) {
-				out.write(puskuri, 0, luettu);
-			}
-			out.flush();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		kayttajaRepository.save(muokattava);
+		return "redirect:/asetukset?success=user_updated";
 	}
-
 }
