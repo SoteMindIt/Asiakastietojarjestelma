@@ -28,9 +28,7 @@ public class AsetuksetController {
 
 	@Autowired
 	private BCryptPasswordEncoder passwordEncoder;
-
-	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat
-	// tiedot
+	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat tiedot
 	@GetMapping("/asetukset")
 	public String naytaAsetukset(HttpSession session, Model model) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -38,22 +36,17 @@ public class AsetuksetController {
 			return "redirect:/login";
 		}
 
-		// Haetaan nykyisen käyttäjän tiedot roolitarkistusta varten
+		// Haetaan nykyisen käyttäjän tiedot ja varmistetaan olemassaolo
 		kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
 				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
 
-
-		// Viedään kaikki käyttäjät listaukseen (tämä korjaa aiemman virheen)
+		// Viedään kaikki käyttäjät listaukseen
 		List<Kayttaja> kaikkiKayttajat = kayttajaRepository.findAll();
 		model.addAttribute("kayttajat", kaikkiKayttajat);
 
 		// Viedään tuoterekisterin tiedot
 		List<Tuote> kaikkiTuotteet = tuoteRepository.findAll();
 		model.addAttribute("tuotteet", kaikkiTuotteet);
-
-		// Tähän voit lisätä oman yrityksesi tiedon hakemisen, jos sinulla on sille oma
-		// repo:
-		// model.addAttribute("yritys", yritysRepository.findFirst());
 
 		return "asetukset"; // Avaa asetukset.jsp
 	}
@@ -92,7 +85,6 @@ public class AsetuksetController {
 		kayttajaRepository.save(uusiKayttaja);
 		return "redirect:/asetukset?success=user_created";
 	}
-
 	// 3. REITTI: Muokkaa olemassa olevan käyttäjän tietoja ja roolia (Vain Admin)
 	@PostMapping("/asetukset/muokkaa-kayttajaa/{id}")
 	public String muokkaaKayttajaa(HttpSession session, @PathVariable Long id, @RequestParam String etunimi,
@@ -113,7 +105,7 @@ public class AsetuksetController {
 
 		// Haetaan muokattava työntekijä tietokannasta
 		Kayttaja muokattava = kayttajaRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Muokattavaa käyttäjää ei löydy ID:llä: " + id));
+				.orElseThrow(() -> new IllegalArgumentException("Muokattavaa käyttäjää ei löytynyt ID-numerolla: " + id));
 
 		// Päivitetään muuttuneet perustiedot ja rooli
 		muokattava.setEtunimi(etunimi);
@@ -125,4 +117,80 @@ public class AsetuksetController {
 		kayttajaRepository.save(muokattava);
 		return "redirect:/asetukset?success=user_updated";
 	}
+
+	// 4. REITTI: Näyttää uuden tuotteen lisäyslomakkeen (lisaa-tuote.jsp)
+	@GetMapping("/asetukset/lisaa-tuote")
+	public String naytaUusiTuoteLomake(HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		// Palauttaa sinun "lisaa-tuote.jsp" -tiedostosi
+		return "lisaa-tuote";
+	}
+
+	// 5. REITTI: Ottaa vastaan sinun lomakkeesi tiedot sisältäen yksikön
+	@PostMapping("/asetukset/lisaa-tuote")
+	public String tallennaUusiTuote(HttpSession session, @RequestParam String nimi, @RequestParam String kuvaus,
+			@RequestParam java.math.BigDecimal hinta, @RequestParam String yksikko) {
+
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		// Luodaan uusi tuoteolio ja asetetaan lomakkeeltasi tulleet arvot
+		Tuote uusiTuote = new Tuote();
+		uusiTuote.setNimi(nimi);
+		uusiTuote.setKuvaus(kuvaus);
+		uusiTuote.setHinta(hinta);
+
+		// Muunnetaan lomakkeelta tullut teksti (esim. "KPL") enumin arvoksi.
+		try {
+			uusiTuote.setYksikko(fi.sotemindit.astori.model.TuoteYksikko.valueOf(yksikko));
+		} catch (IllegalArgumentException e) {
+			// Jos arvo ei täsmää enumiin, virhe napataan kiinni tässä ilman sovelluksen kaatumista
+		}
+
+		tuoteRepository.save(uusiTuote);
+
+		// Ohjataan takaisin asetussivulle onnistumisilmoituksen kanssa
+		return "redirect:/asetukset?success=product_created";
+	}
+	
+	// 6. REITTI: Muokkaa olemassa olevan tuotteen tietoja (UUSI)
+	@PostMapping("/asetukset/muokkaa-tuotetta/{id}")
+	public String muokkaaTuotetta(HttpSession session,
+			@PathVariable Long id,
+			@RequestParam String nimi,
+			@RequestParam String kuvaus,
+			@RequestParam java.math.BigDecimal hinta,
+			@RequestParam String yksikko) {
+
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		// Haetaan muokattava tuote tietokannasta
+		Tuote muokattava = tuoteRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt ID-numerolla: " + id));
+
+		// Päivitetään uudet tiedot
+		muokattava.setNimi(nimi);
+		muokattava.setKuvaus(kuvaus);
+		muokattava.setHinta(hinta);
+
+		try {
+			muokattava.setYksikko(fi.sotemindit.astori.model.TuoteYksikko.valueOf(yksikko));
+		} catch (IllegalArgumentException e) {
+			// Virheen sattuessa pidetään vanha yksikkö
+		}
+
+		tuoteRepository.save(muokattava);
+		return "redirect:/asetukset?success=product_updated";
+	}
+
+
 }

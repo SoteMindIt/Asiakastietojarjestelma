@@ -1,6 +1,7 @@
 package fi.sotemindit.astori.controller;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -12,9 +13,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import fi.sotemindit.astori.model.Kayttaja;
 import fi.sotemindit.astori.model.Tapahtuma;
 import fi.sotemindit.astori.model.TapahtumaTyyppi;
+import fi.sotemindit.astori.model.Loki;
 import fi.sotemindit.astori.repository.AsiakasRepository;
 import fi.sotemindit.astori.repository.TapahtumaRepository;
 import fi.sotemindit.astori.repository.KayttajaRepository;
+import fi.sotemindit.astori.repository.LokiRepository;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
@@ -27,9 +30,12 @@ public class KalenteriController {
 	private AsiakasRepository asiakasRepository;
 
 	@Autowired
-	private KayttajaRepository kayttajaRepository; // Lisää tämä repositorio alkuun
+	private KayttajaRepository kayttajaRepository;
 
-	// 1. REITTI: Näyttää VAIN OMAN kalenterin
+	@Autowired
+	private LokiRepository lokiRepository; // Auditoitavuutta varten
+
+	// 1. REITTI: Näyttää kalenterin (Riippuen roolista: ADMIN näkee kaikki, USER vain omansa)
 	@GetMapping("/kalenteri")
 	public String naytaKalenteri(HttpSession session, Model model) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -37,12 +43,25 @@ public class KalenteriController {
 			return "redirect:/login";
 		}
 
+		// Haetaan kirjautunut käyttäjä roolitarkistusta varten
+		Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löytynyt"));
+
 		model.addAttribute("asiakkaat", asiakasRepository.findAll());
 		model.addAttribute("tyypit", TapahtumaTyyppi.values());
 
-		// Päivitetty vastaamaan uutta siistiä metodin nimeä
-		model.addAttribute("tapahtumat", tapahtumaRepository.findByKayttajatunnus(istuntoTunnus));
-
+		List<Tapahtuma> tapahtumat;
+		
+		// Jos käyttäjä on ADMIN, ladataan kaikki järjestelmän kalenterimerkinnät
+		if ("ADMIN".equals(nykyinenKayttaja.getRooli())) {
+			tapahtumat = tapahtumaRepository.findAll();
+			lokiRepository.save(new Loki(istuntoTunnus, "KATSELU", "Pääkäyttäjä avasi kaikkien työntekijöiden kalenterinäkymän."));
+		} else {
+			// Tavallinen työntekijä näkee vain omansa
+			tapahtumat = tapahtumaRepository.findByKayttajatunnus(istuntoTunnus);
+		}
+		
+		model.addAttribute("tapahtumat", tapahtumat);
 		return "kalenteri";
 	}
 
@@ -62,18 +81,19 @@ public class KalenteriController {
 		fi.sotemindit.astori.model.Asiakas asiakas = asiakasRepository.findById(asiakasId)
 				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
 
-		// HAETAAN KIRJAUTUNUT KÄYTTÄJÄ TIETOKANNASTA
 		Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
 				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löytynyt"));
 
-		// Luodaan tapahtuma ja annetaan sille myös nykyinen käyttäjä
 		Tapahtuma uusiTapahtuma = new Tapahtuma(otsikko, kuvaus, ajankohta, tyyppi, asiakas, nykyinenKayttaja);
 		tapahtumaRepository.save(uusiTapahtuma);
+
+		// Lisätään lokimerkintä uuden tapahtuman luonnista
+		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS", "Luotu uusi kalenteritapahtuma: '" + otsikko + "' asiakkaalle ID: " + asiakasId));
 
 		return "redirect:/kalenteri";
 	}
 
-	// 3. REITTI: Poistaa kalenteritapahtuman
+	// 3. REITTI: Poistaa kalenteritapahtuman (Sallittu omistajalle tai ADMINille)
 	@PostMapping("/kalenteri/poista")
 	public String poistaKalenteriTapahtuma(@RequestParam Long tapahtumaId, HttpSession session) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -81,20 +101,25 @@ public class KalenteriController {
 			return "redirect:/login";
 		}
 
-		// Haetaan poistettava tapahtuma
 		Tapahtuma tapahtuma = tapahtumaRepository.findById(tapahtumaId)
 				.orElseThrow(() -> new IllegalArgumentException("Tapahtumaa ei löytynyt id-numerolla: " + tapahtumaId));
 
-		// TIETOTURVAVARMISTUS: Varmistetaan, että tapahtuma kuuluu kirjautuneelle
-		// käyttäjälle
-		if (!tapahtuma.getKayttaja().getKayttajatunnus().equals(istuntoTunnus)) {
+		Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löytynyt"));
+
+		// TIETOTURVAVARMISTUS: Sallitaan poisto, jos käyttäjä on tapahtuman luoja TAI jos käyttäjä on ADMIN
+		boolean onOmistaja = tapahtuma.getKayttaja().getKayttajatunnus().equals(istuntoTunnus);
+		boolean onAdmin = "ADMIN".equals(nykyinenKayttaja.getRooli());
+
+		if (!onOmistaja && !onAdmin) {
 			throw new SecurityException("Sinulla ei ole oikeutta poistaa tämän käyttäjän tapahtumia!");
 		}
 
-		// Poistetaan tapahtuma tietokannasta
 		tapahtumaRepository.delete(tapahtuma);
 
-		return "redirect:/kalenteri"; // Palataan takaisin kalenterinäkymään
-	}
+		// Lokitetaan poisto
+		lokiRepository.save(new Loki(istuntoTunnus, "POISTO", "Poistettu kalenteritapahtuma ID: " + tapahtumaId + " (Otsikko: " + tapahtuma.getOtsikko() + ")"));
 
+		return "redirect:/kalenteri";
+	}
 }

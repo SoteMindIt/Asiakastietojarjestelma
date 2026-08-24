@@ -12,5 +12,8 @@ public interface TapahtumaRepository extends JpaRepository<Tapahtuma, Long> {
     
     // TÄMÄ TOIMII: Nimi on siisti, ja @Query hoitaa relaation linkityksen taustalla
     @Query("SELECT t FROM Tapahtuma t WHERE t.kayttaja.kayttajatunnus = :tunnus")
-    List<Tapahtuma> findByKayttajatunnus(@Param("tunnus") String tunnus);
+    List<Tapahtuma> findByKayttajatunnus(String kayttajatunnus);
+    // UUSI METODI ETUSIVUA VARTEN: hakee käyttäjän tulevat tapahtumat aikajärjestyksessä
+    List<Tapahtuma> findByKayttajaKayttajatunnusAndAjankohtaAfterOrderByAjankohtaAsc(String kayttajatunnus, java.time.LocalDateTime nyt);
+
 }

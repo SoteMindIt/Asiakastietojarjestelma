@@ -21,6 +21,7 @@ import fi.sotemindit.astori.model.AsiakkaanTila;
 import fi.sotemindit.astori.model.Kirjaus;
 import fi.sotemindit.astori.model.Liitetiedosto;
 import fi.sotemindit.astori.model.Loki;
+import fi.sotemindit.astori.model.Tapahtuma;
 import fi.sotemindit.astori.model.Tarjous;
 import fi.sotemindit.astori.model.Tuote;
 import fi.sotemindit.astori.model.Yhteyshenkilo;
@@ -33,6 +34,7 @@ import fi.sotemindit.astori.repository.TarjousRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.repository.YhteyshenkiloRepository;
 import fi.sotemindit.astori.repository.LokiRepository;
+import fi.sotemindit.astori.repository.TapahtumaRepository;
 
 @Controller
 public class AsiakasController {
@@ -63,6 +65,9 @@ public class AsiakasController {
 
 	@Autowired
 	private LokiRepository lokiRepository;
+	
+	@Autowired
+	private TapahtumaRepository tapahtumaRepository;
 
 	// 1. PÄÄSIVU: Listaa asiakkaat sivutettuna (10 kpl kerrallaan)
 	@GetMapping("/")
@@ -80,14 +85,20 @@ public class AsiakasController {
 
 		// Haetaan vain kirjautuneen käyttäjän asiakkaat sivutettuna
 		Page<Asiakas> asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnus(istuntoTunnus, pageable);
+		
+		// 1. Haetaan palvelimen reaaliaikainen kellonaika
+		java.time.LocalDateTime nyt = java.time.LocalDateTime.now();
+
+		// 2. TÄRKEÄ: Luodaan muuttuja ja haetaan tiedot tietokannasta
+		List<Tapahtuma> tulevatTapahtumat = tapahtumaRepository
+		        .findByKayttajaKayttajatunnusAndAjankohtaAfterOrderByAjankohtaAsc(istuntoTunnus, nyt);
 
 		// Viedään tiedot JSP-sivulle (index.jsp)
 		model.addAttribute("asiakkaat", asiakasSivu.getContent()); // Tässä on max 10 asiakasta listana
 		model.addAttribute("currentPage", page);
 		model.addAttribute("totalPages", asiakasSivu.getTotalPages());
-
-		// Viedään myyntiputken tilat index.jsp-sivulle uuden lisäystä varten
 		model.addAttribute("tilat", AsiakkaanTila.values());
+		model.addAttribute("tulevatTapahtumat", tulevatTapahtumat);
 
 		return "index";
 	}
