@@ -120,13 +120,12 @@ body {
 							<small class="form-text text-muted">Jätä tyhjäksi, jos
 								kyseessä on sisäinen merkintä.</small>
 						</div>
-
 						<div class="mb-3">
 							<label for="tyyppi" class="form-label fw-semibold text-secondary">Tapahtuman
 								tyyppi</label> <select class="form-select" id="tyyppi" name="tyyppi"
 								required>
 								<c:forEach var="t" items="${tyypit}">
-									<option value="${t}">${t.nayttorivi}</option>
+									<option value="${t}">${t}</option>
 								</c:forEach>
 							</select>
 						</div>
@@ -165,49 +164,86 @@ body {
 		</div>
 	</div>
 
-	<!-- BOOTSTRAP POP-UP VALMIIN MERKINNÄN KATSELUUN JA POISTOON -->
-	<div class="modal fade" id="katsoTapahtumaModal" tabindex="-1"
+	<!-- 🎛️ GENEERINEN PONNAHDUSIKKUNA (MODAL) TAPAHTUMAN MUOKKAUKSELLE -->
+	<div class="modal fade" id="muokkaaTapahtumaModal" tabindex="-1"
 		aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content border-0 shadow-lg">
 				<div class="modal-header bg-dark text-white">
-					<h5 class="modal-title fw-bold" id="viewOtsikko">Kalenteritapahtuma</h5>
+					<h5 class="modal-title fw-bold">Muokkaa tapahtumaa</h5>
 					<button type="button" class="btn-close btn-close-white"
 						data-bs-dismiss="modal"></button>
 				</div>
-				<div class="modal-body p-4">
-					<div class="mb-3">
-						<small class="text-uppercase fw-bold text-muted d-block">Asiakas</small>
-						<span id="viewAsiakas" class="fs-5 fw-semibold text-dark">-</span>
+
+				<form id="muokkaaTapahtumaForm" method="post">
+					<!-- Lähde-parametrin avulla ohjain tietää palata takaisin kalenterisivulle -->
+					<input type="hidden" name="lahde" value="kalenteri">
+
+					<div class="modal-body p-4 text-start">
+
+						<!-- Otsikko -->
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Otsikko
+								/ Aihe</label> <input type="text" class="form-control"
+								id="muokkaaOtsikko" name="otsikko" required>
+						</div>
+
+						<!-- Tyyppi -->
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Tapahtuman
+								tyyppi</label> <select class="form-select" id="muokkaaTyyppi"
+								name="tyyppi" required>
+								<c:forEach var="t" items="${tyypit}">
+									<option value="${t}">${t}</option>
+								</c:forEach>
+							</select>
+						</div>
+
+						<!-- Ajankohta -->
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Ajankohta
+								ja kellonaika</label> <input type="datetime-local" class="form-control"
+								id="muokkaaAjankohta" name="ajankohtaStr" required>
+						</div>
+
+						<!-- Asiakasliitos -->
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Liitetty
+								asiakas</label> <select class="form-select" id="muokkaaAsiakasId"
+								name="asiakasId">
+								<option value="">-- Ei kytketty asiakkaaseen --</option>
+								<c:forEach var="a" items="${asiakkaat}">
+									<option value="${a.id}">${a.nimi}</option>
+								</c:forEach>
+							</select>
+						</div>
+
+						<!-- Kuvaus -->
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Lisätiedot
+								/ Muistiinpanot</label>
+							<textarea class="form-control" id="muokkaaKuvaus" name="kuvaus"
+								rows="3"></textarea>
+						</div>
+
 					</div>
-					<div class="mb-3">
-						<small class="text-uppercase fw-bold text-muted d-block">Ajankohta</small>
-						<span id="viewAika" class="fs-5 text-dark">-</span>
+					<div class="modal-footer bg-light d-flex justify-content-between">
+						<!-- POISTOPAINIKE MODALISTA KÄSIN -->
+						<button type="submit" id="poistaTapahtumaPainike"
+							class="btn btn-outline-danger fw-bold"
+							onclick="return confirm('Haluatko varmasti poistaa tämän tapahtuman?');">
+							Poista</button>
+
+						<div>
+							<button type="button" class="btn btn-secondary me-2"
+								data-bs-dismiss="modal">Peruuta</button>
+							<button type="submit" class="btn btn-success px-4 fw-bold">Tallenna</button>
+						</div>
 					</div>
-					<div class="mb-3">
-						<small class="text-uppercase fw-bold text-muted d-block">Kuvaus
-							/ Muistiinpanot</small>
-						<p id="viewKuvaus"
-							class="bg-light p-3 rounded border text-secondary"
-							style="white-space: pre-wrap;">-</p>
-					</div>
-				</div>
-				<div class="modal-footer bg-light d-flex justify-content-between">
-					<!-- POISTOLOMAKE -->
-					<form action="${pageContext.request.contextPath}/kalenteri/poista"
-						method="post"
-						onsubmit="return confirm('Haluatko varmasti poistaa tämän kalenterivarauksen?');">
-						<input type="hidden" id="poistaTapahtumaId" name="tapahtumaId">
-						<button type="submit" class="btn btn-danger fw-bold">Poista
-							varaus</button>
-					</form>
-					<button type="button" class="btn btn-secondary px-4"
-						data-bs-dismiss="modal">Sulje</button>
-				</div>
+				</form>
 			</div>
 		</div>
 	</div>
-
 	<!-- BOOTSTRAP JAVASCRIPT REKISTERISTÄ -->
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
@@ -217,14 +253,13 @@ body {
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
             
-            // Muuttujat tuplaklikkauksen tunnistamiseen
             var lastClickedDate = null;
             var lastClickTime = 0;
 
             var calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
-                locale: 'fi', // Asetetaan kalenterin kieleksi suomi
-                firstDay: 1,  // Viikko alkaa maanantaista
+                locale: 'fi',
+                firstDay: 1,
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
@@ -237,31 +272,61 @@ body {
                     list: 'Lista'
                 },
                 
-                // 1. TOIMINTO: TAPAHTUMAN KLIKKAUS (TIETOJEN KATSELU)
+                // 1. TOIMINTO: TAPAHTUMAN KLIKKAUS
                 eventClick: function(info) {
                     info.jsEvent.preventDefault();
 
-                    // Täytetään klikatun tapahtuman tiedot modal-ikkunan kenttiin
-                    document.getElementById('viewOtsikko').innerText = info.event.title;
-                    document.getElementById('viewKuvaus').innerText = info.event.extendedProps.description || 'Ei kuvausta.';
-                    
-                    // Muotoillaan alkamisaika siististi suomalaiseen silmään
-                    if (info.event.start) {
-                        let pvm = new Date(info.event.start);
-                        let muotoiltuAika = pvm.toLocaleDateString('fi-FI') + ' klo ' + 
-                                            pvm.toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'});
-                        document.getElementById('viewAika').innerText = muotoiltuAika;
+                    // A. Täytetään otsikko ja kuvaus turvallisesti lomakkeen kenttiin
+                    var otsikkoKentta = document.getElementById('muokkaaOtsikko');
+                    if (otsikkoKentta) {
+                        let fullTitle = info.event.title || '';
+                        otsikkoKentta.value = fullTitle.includes(' [') ? fullTitle.split(' [')[0] : fullTitle;
                     }
                     
-                    // Syötetään asiakkaan nimi extendedProps-lohkosta
-                    document.getElementById('viewAsiakas').innerText = info.event.extendedProps.asiakasNimi || 'Liitetty asiakkaaseen';
+                    var kuvausKentta = document.getElementById('muokkaaKuvaus');
+                    if (kuvausKentta) {
+                        kuvausKentta.value = info.event.extendedProps.description || '';
+                    }
+                    
+                    // B. Muotoillaan alkamisaika datetime-local -kentälle sopivaksi (YYYY-MM-DDTHH:MM)
+                    var ajankohtaKentta = document.getElementById('muokkaaAjankohta');
+                    if (ajankohtaKentta && info.event.start) {
+                        let pvm = new Date(info.event.start);
+                        let vuosi = pvm.getFullYear();
+                        let kuukausi = String(pvm.getMonth() + 1).padStart(2, '0');
+                        let paiva = String(pvm.getDate()).padStart(2, '0');
+                        let tunnit = String(pvm.getHours()).padStart(2, '0');
+                        let minuutit = String(pvm.getMinutes()).padStart(2, '0');
+                        
+                        ajankohtaKentta.value = vuosi + '-' + kuukausi + '-' + paiva + 'T' + tunnit + ':' + minuutit;
+                    }
+                    
+                    // C. Asetetaan oikea Tyyppi valittuna pudotusvalikkoon
+                    var tyyppiSelect = document.getElementById('muokkaaTyyppi');
+                    if(tyyppiSelect) {
+                        tyyppiSelect.value = info.event.extendedProps.tyyppiNimi;
+                    }
 
-                    // Asetetaan ID piilokenttään poistamista varten
-                    document.getElementById('poistaTapahtumaId').value = info.event.id;
+                    // D. Asetetaan oikea Asiakas-ID valittuna pudotusvalikkoon
+                    var asiakasSelect = document.getElementById('muokkaaAsiakasId');
+                    if (asiakasSelect) {
+                        asiakasSelect.value = info.event.extendedProps.asiakasId || "";
+                    }
 
-                    // Avataan katselu-modal ohjelmallisesti
-                    var viewModal = new bootstrap.Modal(document.getElementById('katsoTapahtumaModal'));
-                    viewModal.show();
+                    // E. Päivitetään lomakkeen tallennus- ja poistoreitit dynaamisesti oikealle ID:lle
+                    var form = document.getElementById('muokkaaTapahtumaForm');
+                    if(form) {
+                        form.action = "${pageContext.request.contextPath}/kalenteri/paivita/" + info.event.id;
+                    }
+                    
+                    var poistoNappi = document.getElementById('poistaTapahtumaPainike');
+                    if(poistoNappi) {
+                        poistoNappi.setAttribute('formaction', "${pageContext.request.contextPath}/kalenteri/poista-suoraan/" + info.event.id);
+                    }
+
+                    // F. Avataan muokkaus-modal ohjelmallisesti etualalle
+                    var editModal = new bootstrap.Modal(document.getElementById('muokkaaTapahtumaModal'));
+                    editModal.show();
                 },
                 
                 // 2. TOIMINTO: TYHJÄN RUUDUN TUPLAKLIKKAUS (UUSI VARAUS)
@@ -273,7 +338,7 @@ body {
                         let valittuPvm = info.dateStr; 
                         
                         if (valittuPvm.length === 10) {
-                            valittuPvm += "T09:00"; // Oletusaika kuukausinäkymässä
+                            valittuPvm += "T09:00"; 
                         } else {
                             valittuPvm = valittuPvm.substring(0, 16);
                         }
@@ -288,7 +353,7 @@ body {
                     lastClickTime = currentTime;
                 },
                 
-                // LADATAAN TAPAHTUMAT TIETOKANNASTA ILMAN HERJAAVIA KENOWIIVOJA
+                // LADATAAN TAPAHTUMAT TIETOKANNASTA DYNAAMISESTI JSTL-SILMUKALLA
                 events: [
                     <c:forEach var="tap" items="${tapahtumat}" varStatus="status">
                         {
@@ -296,21 +361,21 @@ body {
                             title: '<c:out value="${tap.otsikko}"/> [${tap.kayttaja.etunimi} ${tap.kayttaja.sukunimi.substring(0,1)}.]',
                             start: '${tap.ajankohta.toString()}', 
                             extendedProps: {
-                                // c:out siivoaa automaattisesti kaikki vaaralliset merkit, jotka voisivat rikkoa JavaScriptin
                                 description: '<c:out value="${tap.kuvaus}"/>',
+                                asiakasId: '${not empty tap.asiakas ? tap.asiakas.id : ""}',
                                 asiakasNimi: '<c:out value="${tap.asiakas.nimi}"/>',
-                                tyyppiRivi: '${tap.tyyppi.nayttorivi}'
+                                tyyppiNimi: '${tap.tyyppi}', 
+                                tyyppiRivi: '${tap.tyyppi}'
                             },
                             
-                            // Väritetään tapahtumat dynaamisesti tyypin perusteella
                             <c:choose>
-                            <c:when test="${tap.tyyppi.name() == 'PUHELU' || tap.tyyppi.name() == 'SOITTO'}">
+                            <c:when test="${tap.tyyppi.toString() == 'PUHELU' || tap.tyyppi.toString() == 'SOITTO'}">
                                 backgroundColor: '#ffc107', borderColor: '#ffc107', textColor: '#000000'
                             </c:when>
-                            <c:when test="${tap.tyyppi.name() == 'TAPAAMINEN'}">
+                            <c:when test="${tap.tyyppi.toString() == 'TAPAAMINEN'}">
                                 backgroundColor: '#198754', borderColor: '#198754', textColor: '#ffffff'
                             </c:when>
-                            <c:when test="${tap.tyyppi.name() == 'SÄHKÖPOSTI'}">
+                            <c:when test="${tap.tyyppi.toString() == 'SÄHKÖPOSTI'}">
                                 backgroundColor: '#0dcaf0', borderColor: '#0dcaf0', textColor: '#000000'
                             </c:when>
                             <c:otherwise>
@@ -323,13 +388,14 @@ body {
             });
             
             calendar.render();
+
             // Kuunnellaan hakukentän kirjoitusta ja muutetaan teksti ID-numeroksi
             document.getElementById('asiakasHaku').addEventListener('input', function(e) {
                 var inputValue = e.target.value;
                 var options = document.querySelectorAll('#asiakasLista option');
                 var hiddenInput = document.getElementById('asiakasId');
                 
-                hiddenInput.value = ""; // Nollataan ID oletuksena
+                hiddenInput.value = ""; 
 
                 for (var i = 0; i < options.length; i++) {
                     if (options[i].value === inputValue) {
@@ -344,11 +410,6 @@ body {
                 document.getElementById('asiakasHaku').value = "";
                 document.getElementById('asiakasId').value = "";
             });
-            
-            // =================================================================
-            // UUSI KOODI PÄÄTTYY
-            // =================================================================
-
         });
     </script>
 </body>

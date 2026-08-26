@@ -320,14 +320,6 @@ public class TarjousController {
 
 		document.add(summaTaulu);
 		
-		// Luetaan ja lisätään lisätiedot jos ne ovat olemassa (täydennetty katkennut logiikka)
-		if (tarjous.getLisatiedot() != null && !tarjous.getLisatiedot().trim().isEmpty()) {
-			document.add(new com.lowagie.text.Paragraph("Lisätiedot:", alaOtsikkoFontti));
-			com.lowagie.text.Paragraph lt = new com.lowagie.text.Paragraph(tarjous.getLisatiedot(), tekstiFontti);
-			lt.setSpacingBefore(5);
-			document.add(lt);
-		}
-		
 		document.close();
 	}
 

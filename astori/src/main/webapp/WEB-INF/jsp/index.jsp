@@ -55,7 +55,23 @@ body {
 				+ Lisää uusi asiakas</button>
 		</div>
 
-		
+		<!-- 🔍 HAKULOMAKE -->
+		<div class="row mb-3">
+			<div class="col-md-6 col-lg-5">
+				<form action="${pageContext.request.contextPath}/" method="get"
+					class="d-flex gap-2">
+					<input type="text" name="haku" class="form-control shadow-sm"
+						placeholder="Hae nimellä, sähköpostilla, puhelimella tai Y-tunnuksella..."
+						value="${haku}">
+					<button type="submit" class="btn btn-primary fw-bold shadow-sm">Hae</button>
+					<c:if test="${not empty haku}">
+						<a href="${pageContext.request.contextPath}/"
+							class="btn btn-outline-secondary shadow-sm">Tyhjennä</a>
+					</c:if>
+				</form>
+			</div>
+		</div>
+
 		<div class="row g-4">
 			<!-- VASEN SARAKE: ASIAKASLISTA (Leveys 8/12 työpöydällä) -->
 			<div class="col-lg-8">
@@ -66,6 +82,7 @@ body {
 							<tr>
 								<th>ID</th>
 								<th>Nimi</th>
+								<th>Y-tunnus</th>
 								<th>Sähköposti</th>
 								<th>Puhelin</th>
 								<th>Tila</th>
@@ -77,6 +94,7 @@ body {
 								<tr>
 									<td class="text-muted">#${asiakas.id}</td>
 									<td><strong class="text-dark">${asiakas.nimi}</strong></td>
+									<td><span class="text-muted">${not empty asiakas.YTunnus ? asiakas.YTunnus : '-'}</span></td>
 									<td>${asiakas.sahkoposti}</td>
 									<td>${asiakas.puhelin}</td>
 									<td><span
@@ -88,7 +106,7 @@ body {
 												<c:when test="${asiakas.tila == 'AKTIIVINEN'}">bg-success</c:when>
 												<c:otherwise>bg-secondary</c:otherwise>
 											</c:choose>">
-											${asiakas.tila.nayttorivi} </span></td>
+											${asiakas.tila} </span></td>
 									<td class="text-end"><a
 										href="${pageContext.request.contextPath}/asiakas/${asiakas.id}"
 										class="btn btn-sm btn-outline-primary px-3 rounded-pill fw-semibold">
@@ -97,38 +115,39 @@ body {
 							</c:forEach>
 							<c:if test="${empty asiakkaat}">
 								<tr>
-									<td colspan="6" class="text-center py-4 text-muted">Järjestelmässä
-										ei ole vielä asiakkaita.</td>
+									<td colspan="7" class="text-center py-4 text-muted">Ei
+										hakutuloksia tai asiakkaita järjestelmässä.</td>
 								</tr>
 							</c:if>
 						</tbody>
 					</table>
 				</div>
 
-				<!-- TÄHÄN TULEE SE AIEMMIN TEHTY ASIAKASLISTAN SIVUTUS -->
+				<!-- SIVUTUSLINKIT -->
 				<c:if test="${totalPages > 1}">
 					<nav aria-label="Asiakaslistan sivutus"
 						class="d-flex justify-content-center mt-4">
 						<ul class="pagination shadow-sm">
 							<li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
-								<a class="page-link" href="?page=${currentPage - 1}">&laquo;
+								<a class="page-link"
+								href="?page=${currentPage - 1}&haku=${haku}">&laquo;
 									Edellinen</a>
 							</li>
 							<c:forEach var="i" begin="0" end="${totalPages - 1}">
 								<li class="page-item ${currentPage == i ? 'active' : ''}">
-									<a class="page-link" href="?page=${i}">${i + 1}</a>
+									<a class="page-link" href="?page=${i}&haku=${haku}">${i + 1}</a>
 								</li>
 							</c:forEach>
 							<li
 								class="page-item ${currentPage >= totalPages - 1 ? 'disabled' : ''}">
-								<a class="page-link" href="?page=${currentPage + 1}">Seuraava
+								<a class="page-link"
+								href="?page=${currentPage + 1}&haku=${haku}">Seuraava
 									&raquo;</a>
 							</li>
 						</ul>
 					</nav>
 				</c:if>
 			</div>
-
 			<!-- OIKEA SARAKE: TULEVAT KALENTERIMERKINNÄT (Leveys 4/12) -->
 			<div class="col-lg-4">
 				<h4 class="text-secondary mb-3">Tulevat tehtävät ja tapaamiset</h4>
@@ -137,15 +156,21 @@ body {
 						<c:forEach var="tap" items="${tulevatTapahtumat}">
 							<div
 								class="p-3 mb-2 rounded border-start border-4 
-								<c:choose>
-									<c:when test="${tap.tyyppi.name() == 'TAPAAMINEN'}">border-success bg-success bg-opacity-10</c:when>
-									<c:when test="${tap.tyyppi.name() == 'PUHELU' || tap.tyyppi.name() == 'SOITTO'}">border-warning bg-warning bg-opacity-10</c:when>
-									<c:when test="${tap.tyyppi.name() == 'SÄHKÖPOSTI'}">border-info bg-info bg-opacity-10</c:when>
-									<c:otherwise>border-primary bg-primary bg-opacity-10</c:otherwise>
-								</c:choose>">
+		<c:choose>
+			<c:when test="${tap.tyyppi.name() == 'TAPAAMINEN'}">border-success bg-success bg-opacity-10</c:when>
+			<c:when test="${tap.tyyppi.name() == 'PUHELU' || tap.tyyppi.name() == 'SOITTO'}">border-warning bg-warning bg-opacity-10</c:when>
+			<c:when test="${tap.tyyppi.name() == 'SÄHKÖPOSTI'}">border-info bg-info bg-opacity-10</c:when>
+			<c:otherwise>border-primary bg-primary bg-opacity-10</c:otherwise>
+		</c:choose>">
+
 								<div class="d-flex justify-content-between align-items-start">
-									<strong class="text-dark d-block mb-1">${tap.otsikko}</strong>
-									<span class="badge bg-white text-dark border small">${tap.tyyppi.nayttorivi}</span>
+									<!-- 🔗 1. KLIKATTAVA SININEN LINKKI JOKA AVAA MODALIN -->
+									<a href="#"
+										class="text-primary fw-bold d-block mb-1 text-decoration-none"
+										data-bs-toggle="modal"
+										data-bs-target="#muokkaaTapahtumaModal${tap.id}">
+										${tap.otsikko} </a> <span
+										class="badge bg-white text-dark border small">${tap.tyyppi}</span>
 								</div>
 
 								<!-- Jos tapahtumaan on kytketty asiakas, näytetään linkki häneen -->
@@ -161,7 +186,78 @@ body {
 									${tap.ajankohta.toString().replace('T', ' ').substring(0, 16)}
 								</small>
 							</div>
+
+							<!-- 🎛️ 2. DYNAAMINEN POKSAHDUSIKKUNA (MODAL) JOKAISELLE TAPAHTUMALLE -->
+							<div class="modal fade" id="muokkaaTapahtumaModal${tap.id}"
+								tabindex="-1" aria-hidden="true">
+								<div class="modal-dialog modal-dialog-centered">
+									<div class="modal-content border-0 shadow-lg">
+										<div class="modal-header bg-dark text-white">
+											<h5 class="modal-title fw-bold">Muokkaa tapahtumaa</h5>
+											<button type="button" class="btn-close btn-close-white"
+												data-bs-dismiss="modal"></button>
+										</div>
+										<!-- Lomake lähettää tiedot suoraan controllerin päivitysreittiin -->
+										<form
+											action="${pageContext.request.contextPath}/kalenteri/paivita/${tap.id}"
+											method="post">
+											<div class="modal-body p-4">
+
+												<!-- Otsikko -->
+												<div class="mb-3">
+													<label class="form-label fw-semibold text-secondary">Otsikko</label>
+													<input type="text" class="form-control" name="otsikko"
+														value="${tap.otsikko}" required>
+												</div>
+
+												<!-- Tyyppi -->
+												<div class="mb-3">
+													<label class="form-label fw-semibold text-secondary">Tyyppi</label>
+													<select class="form-select" name="tyyppi" required>
+														<c:forEach var="tyyppiOption" items="${tilat}">
+															<!-- Hyödynnetään enumeja -->
+															<!-- Huom: Koska etusivulle viedään 'tilat', käytetään vakioita tai arvoja vapaasti -->
+															<option value="TAPAAMINEN"
+																${tap.tyyppi.name() == 'TAPAAMINEN' ? 'selected' : ''}>TAPAAMINEN</option>
+															<option value="PUHELU"
+																${tap.tyyppi.name() == 'PUHELU' ? 'selected' : ''}>PUHELU</option>
+															<option value="SÄHKÖPOSTI"
+																${tap.tyyppi.name() == 'SÄHKÖPOSTI' ? 'selected' : ''}>SÄHKÖPOSTI</option>
+														</c:forEach>
+													</select>
+												</div>
+
+												<!-- Ajankohta -->
+												<div class="mb-3">
+													<label class="form-label fw-semibold text-secondary">Ajankohta</label>
+													<input type="datetime-local" class="form-control"
+														name="ajankohtaStr" value="${tap.ajankohta}" required>
+												</div>
+
+												<!-- Kuvaus -->
+												<div class="mb-3">
+													<label class="form-label fw-semibold text-secondary">Kuvaus
+														/ Muistiinpanot</label>
+													<textarea class="form-control" name="kuvaus" rows="3">${tap.kuvaus}</textarea>
+												</div>
+
+												<!-- Piilotettu asiakasId varmuuden vuoksi, jos sitä ei muuteta etusivulta -->
+												<input type="hidden" name="asiakasId"
+													value="${not empty tap.asiakas ? tap.asiakas.id : ''}">
+
+											</div>
+											<div class="modal-footer bg-light">
+												<button type="button" class="btn btn-secondary"
+													data-bs-dismiss="modal">Peruuta</button>
+												<button type="submit" class="btn btn-success px-4 fw-bold">Tallenna
+													muutokset</button>
+											</div>
+										</form>
+									</div>
+								</div>
+							</div>
 						</c:forEach>
+
 
 						<c:if test="${empty tulevatTapahtumat}">
 							<div class="text-center py-4 text-muted small">Ei tulevia
@@ -170,11 +266,11 @@ body {
 					</div>
 				</div>
 			</div>
-		
-		<!-- .row päättyminen -->
-
-
+		</div>
+		<!-- .row päättyminen kunnolla -->
 	</div>
+	<!-- .container päättyminen -->
+
 	<!-- BOOTSTRAP POP-UP LOMAKE (MODAL) UUDELLE ASIAKKAALLE -->
 	<div class="modal fade" id="lisaaAsiakasModal" tabindex="-1"
 		aria-hidden="true">
@@ -193,6 +289,16 @@ body {
 								/ Organisaatio</label> <input type="text" class="form-control" id="nimi"
 								name="nimi" required placeholder="esim. Sote-Hyvinvointi Oy">
 						</div>
+
+						<!-- LISÄTTY Y-TUNNUS UUDEN ASIAKKAAN LOMAKKEELLE -->
+						<div class="mb-3">
+							<label for="yTunnus"
+								class="form-label fw-semibold text-secondary">Y-tunnus
+								(vapaaehtoinen)</label> <input type="text" class="form-control"
+								id="yTunnus" name="yTunnus" placeholder="esim. 1234567-8"
+								maxlength="9">
+						</div>
+
 						<div class="mb-3">
 							<label for="sahkoposti"
 								class="form-label fw-semibold text-secondary">Sähköposti</label>
@@ -209,9 +315,8 @@ body {
 							<label for="tila" class="form-label fw-semibold text-secondary">Asiakkuuden
 								alkutila</label> <select class="form-select" id="tila" name="tila"
 								required>
-								<!-- Tulostetaan kaikki ohjaimesta tulleet uudet tilat dynaamisesti loopissa -->
 								<c:forEach var="t" items="${tilat}">
-									<option value="${t}">${t.nayttorivi}</option>
+									<option value="${t}">${t}</option>
 								</c:forEach>
 							</select>
 						</div>

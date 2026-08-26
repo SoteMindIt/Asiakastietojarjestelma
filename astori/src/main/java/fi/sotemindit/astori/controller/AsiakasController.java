@@ -69,9 +69,13 @@ public class AsiakasController {
 	@Autowired
 	private TapahtumaRepository tapahtumaRepository;
 
-	// 1. PÄÄSIVU: Listaa asiakkaat sivutettuna (10 kpl kerrallaan)
+	
+	// 1. PÄÄSIVU: Listaa asiakkaat sivutettuna (10 kpl kerrallaan) JA tukee hakua
 	@GetMapping("/")
-	public String listaaAsiakkaat(jakarta.servlet.http.HttpSession session, @RequestParam(defaultValue = "0") int page,
+	public String listaaAsiakkaat(
+			jakarta.servlet.http.HttpSession session, 
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(value = "haku", required = false) String haku, // Lukee hakusanan osoiteriviltä
 			Model model) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -79,17 +83,25 @@ public class AsiakasController {
 			return "redirect:/login";
 		}
 
-		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan
-		// nousevasti
+		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan nousevasti
 		Pageable pageable = PageRequest.of(page, 10, Sort.by("nimi").ascending());
-
-		// Haetaan vain kirjautuneen käyttäjän asiakkaat sivutettuna
-		Page<Asiakas> asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnus(istuntoTunnus, pageable);
 		
-		// 1. Haetaan palvelimen reaaliaikainen kellonaika
+		// 👇 TÄMÄ RIVI KORJAA VIRHEEN: Esitellään muuttuja tässä alussa 👇
+		Page<Asiakas> asiakasSivu;
+		
+		// 🔍 TARKISTETAAN ONKO HAKUSANAA ANNETTU:
+		if (haku != null && !haku.trim().isEmpty()) {
+			String hakusana = haku.trim();
+			// Haetaan hakuun täsmäävät asiakkaat sivutettuna
+			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHaku(istuntoTunnus, hakusana, pageable);
+		} else {
+			// Jos hakua ei ole, haetaan kaikki asiakkaat sivutettuna kuten ennenkin
+			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnus(istuntoTunnus, pageable);
+		}
+		
+		// Palvelimen reaaliaikainen kellonaika tapahtumille
 		java.time.LocalDateTime nyt = java.time.LocalDateTime.now();
 
-		// 2. TÄRKEÄ: Luodaan muuttuja ja haetaan tiedot tietokannasta
 		List<Tapahtuma> tulevatTapahtumat = tapahtumaRepository
 		        .findByKayttajaKayttajatunnusAndAjankohtaAfterOrderByAjankohtaAsc(istuntoTunnus, nyt);
 
@@ -99,9 +111,13 @@ public class AsiakasController {
 		model.addAttribute("totalPages", asiakasSivu.getTotalPages());
 		model.addAttribute("tilat", AsiakkaanTila.values());
 		model.addAttribute("tulevatTapahtumat", tulevatTapahtumat);
+		
+		// Viedään hakusana takaisin sivulle sivunumerointia varten
+		model.addAttribute("haku", haku != null ? haku.trim() : "");
 
 		return "index";
 	}
+
 
 	// 2. ASIAKKAAN LISÄYS: Tallentaa uuden asiakkaan tiedot osoitteineen ja
 	// kotisivuineen
@@ -235,9 +251,11 @@ public class AsiakasController {
 
 	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot, tilan ja uudet
 	// osoitetiedot sekä kotisivun
+	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot, tilan, osoitteet, kotisivun ja Y-TUNNUKSEN
 	@PostMapping("/asiakas/{id}/muokkaa")
 	public String muokkaaAsiakasta(@PathVariable Long id, @RequestParam String nimi,
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
+			@RequestParam(required = false) String yTunnus, // 👈 UUSI PARAMETRI LOMAKKEELTA
 			@RequestParam fi.sotemindit.astori.model.AsiakkaanTila tila,
 			@RequestParam(required = false) String katuosoite, @RequestParam(required = false) String postinumero,
 			@RequestParam(required = false) String postitoimipaikka, @RequestParam(required = false) String kotisivu,
@@ -255,6 +273,7 @@ public class AsiakasController {
 		asiakas.setNimi(nimi);
 		asiakas.setSahkoposti(sahkoposti);
 		asiakas.setPuhelin(puhelin);
+		asiakas.setYTunnus(yTunnus); // 👈 TÄMÄ TALLENTAA MUUTETUN Y-TUNNUKSEN
 		asiakas.setTila(tila);
 		asiakas.setKatuosoite(katuosoite);
 		asiakas.setPostinumero(postinumero);
@@ -265,6 +284,7 @@ public class AsiakasController {
 
 		return "redirect:/asiakas/" + id;
 	}
+
 
 	// 7b. ASIAKKAAN POISTO: Poistaa asiakkaan ja kaikki siihen liittyvät tiedot
 	// (Cascade)

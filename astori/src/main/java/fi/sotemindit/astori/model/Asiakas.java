@@ -32,11 +32,14 @@ public class Asiakas {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private AsiakkaanTila tila = AsiakkaanTila.PROSPEKTI; // Oletuksena uusi asiakas on Prospekti
-	
-	 // Lisää tämä muiden muuttujien joukkoon (esim. tilan alapuolelle)
-    @jakarta.persistence.ManyToOne
-    @jakarta.persistence.JoinColumn(name = "kayttaja_id")
-    private Kayttaja kayttaja;
+
+	// Lisää tämä muiden muuttujien joukkoon (esim. tilan alapuolelle)
+	@jakarta.persistence.ManyToOne
+	@jakarta.persistence.JoinColumn(name = "kayttaja_id")
+	private Kayttaja kayttaja;
+
+	@Column(name = "y_tunnus", length = 9) // Suomalainen Y-tunnus on aina 9 merkkiä (esim. 1234567-8)
+	private String yTunnus;
 
 	// Tyhjä konstruktori JPA:ta varten
 	public Asiakas() {
@@ -127,11 +130,20 @@ public class Asiakas {
 	public void setTila(AsiakkaanTila tila) {
 		this.tila = tila;
 	}
-    public Kayttaja getKayttaja() {
-        return kayttaja;
-    }
 
-    public void setKayttaja(Kayttaja kayttaja) {
-        this.kayttaja = kayttaja;
-    }
+	public Kayttaja getKayttaja() {
+		return kayttaja;
+	}
+
+	public void setKayttaja(Kayttaja kayttaja) {
+		this.kayttaja = kayttaja;
+	}
+
+	public String getYTunnus() {
+		return this.yTunnus;
+	}
+
+	public void setYTunnus(String yTunnus) {
+		this.yTunnus = yTunnus;
+	}
 }
