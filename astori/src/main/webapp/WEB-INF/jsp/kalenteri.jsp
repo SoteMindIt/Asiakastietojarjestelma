@@ -52,16 +52,24 @@ body {
 	<!-- YLÄPALKKI -->
 	<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
 		<div class="container">
+			<!-- Logo vie aina etusivulle (Dashboard) -->
 			<a class="navbar-brand fw-bold"
 				href="${pageContext.request.contextPath}/">Astori</a>
+
 			<div class="navbar-nav me-auto">
-				<a class="nav-link" href="${pageContext.request.contextPath}/">Asiakkaat</a>
+				<!-- 1. Etusivu -->
+				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a>
+
+				<!-- 2. Asiakkaat (Vie omalle sivulleen) -->
 				<a class="nav-link"
+					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a
+					class="nav-link"
 					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
 					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
-				<a class="nav-link active fw-bold"
+				<a class="nav-link"
 					href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
 			</div>
+
 			<div class="d-flex align-items-center">
 				<span class="navbar-text text-white me-3">Käyttäjä: <strong>${kirjautunutKayttaja}</strong></span>
 				<a href="${pageContext.request.contextPath}/logout"
@@ -69,6 +77,7 @@ body {
 			</div>
 		</div>
 	</nav>
+
 
 	<div class="container py-2">
 		<div class="d-flex justify-content-between align-items-center mb-4">

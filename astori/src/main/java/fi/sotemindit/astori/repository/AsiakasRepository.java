@@ -10,11 +10,10 @@ import fi.sotemindit.astori.model.Asiakas;
 
 public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 
-	// 1. Haetaan tietyn käyttäjän asiakkaat sivutettuna (Ilman hakua)
+	// Haetaan käyttäjän asiakkaat sivutettuna
 	Page<Asiakas> findByKayttajaKayttajatunnus(String kayttajatunnus, Pageable pageable);
 
-	// 2. Haetaan tietyn käyttäjän asiakkaat hakuominaisuudella ja sivutuksella
-	// Tämä etsii nimen, sähköpostin, puhelimen tai Y-tunnuksen perusteella (case-insensitive)
+	// Hakutoiminto neljälle kentälle
 	@Query("SELECT a FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus AND " +
 	       "(LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
 	       " LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
@@ -24,4 +23,8 @@ public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 			@Param("tunnus") String tunnus, 
 			@Param("haku") String haku, 
 			Pageable pageable);
+
+	// 📈 KORJATTU LASKURI: Käyttää Javan luokkarakennetta (Asiakas isolla), toimii satavarmasti ilman SQL-ongelmia
+	@Query("SELECT COUNT(a) FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus")
+	long countByKayttajaKayttajatunnus(@Param("tunnus") String tunnus);
 }

@@ -65,59 +65,82 @@ public class AsiakasController {
 
 	@Autowired
 	private LokiRepository lokiRepository;
-	
+
 	@Autowired
 	private TapahtumaRepository tapahtumaRepository;
 
-	
-	// 1. PÄÄSIVU: Listaa asiakkaat sivutettuna (10 kpl kerrallaan) JA tukee hakua
+	// 1a. PÄIVITETTY ETUSIVU: Lasketaan reaaliaikaiset tiedot tietolaatikoihin
+	// (Dashboard)
 	@GetMapping("/")
-	public String listaaAsiakkaat(
-			jakarta.servlet.http.HttpSession session, 
-			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(value = "haku", required = false) String haku, // Lukee hakusanan osoiteriviltä
-			Model model) {
+	public String naytaEtusivu(jakarta.servlet.http.HttpSession session, Model model) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		// 1. Haetaan palvelimen reaaliaikainen kellonaika tapahtumille
+		java.time.LocalDateTime nyt = java.time.LocalDateTime.now();
+
+		// 2. Haetaan tulevat kalenterimerkinnät etusivun koosteeseen
+		List<Tapahtuma> tulevatTapahtumat = tapahtumaRepository
+				.findByKayttajaKayttajatunnusAndAjankohtaAfterOrderByAjankohtaAsc(istuntoTunnus, nyt);
+
+		// 📈 3. DYNAAMISET LASKURIT TIETOKANNASTA DASHBOARD-KORTEILLE:
+		// Lasketaan vain kyseisen kirjautuneen käyttäjän omat datat
+		long asiakkaatYhteensa = asiakasRepository.countByKayttajaKayttajatunnus(istuntoTunnus);
+		long tarjouksetYhteensa = tarjousRepository.countByAsiakasKayttajaKayttajatunnus(istuntoTunnus);
+
+		// Tehtävät tälle päivälle (haetaan tämän vuorokauden loppuun asti olevat
+		// tehtävät)
+		java.time.LocalDateTime vuorokaudenLoppu = java.time.LocalDate.now().atTime(23, 59, 59);
+		long tehtavatTanaan = tapahtumaRepository.countByKayttajaKayttajatunnusAndAjankohtaBetween(istuntoTunnus, nyt,
+				vuorokaudenLoppu);
+
+		// 🗳️ 4. Viedään laskurit ja datat JSP-sivulle (dashboard.jsp)
+		model.addAttribute("tulevatTapahtumat", tulevatTapahtumat);
+		model.addAttribute("asiakkaatLaskuri", asiakkaatYhteensa);
+		model.addAttribute("tarjouksetLaskuri", tarjouksetYhteensa);
+		model.addAttribute("tehtavatLaskuri", tehtavatTanaan);
+		
+		model.addAttribute("asiakkaatLaskuri", asiakkaatYhteensa);
+		model.addAttribute("tarjouksetLaskuri", tarjouksetYhteensa);
+		model.addAttribute("tehtavatLaskuri", tehtavatTanaan);
+
+		return "dashboard";
+	}
+
+	// 1b. ASIAKKAAT OMA SIVU: Kaikki asiakkaat, haku ja sivutus siirretty tänne
+	@GetMapping("/asiakkaat")
+	public String listaaAsiakkaat(jakarta.servlet.http.HttpSession session, @RequestParam(defaultValue = "0") int page,
+			@RequestParam(value = "haku", required = false) String haku, Model model) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan nousevasti
+		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan
+		// nousevasti
 		Pageable pageable = PageRequest.of(page, 10, Sort.by("nimi").ascending());
-		
-		// 👇 TÄMÄ RIVI KORJAA VIRHEEN: Esitellään muuttuja tässä alussa 👇
 		Page<Asiakas> asiakasSivu;
-		
-		// 🔍 TARKISTETAAN ONKO HAKUSANAA ANNETTU:
+
+		// 🔍 Tarkistetaan hakusana:
 		if (haku != null && !haku.trim().isEmpty()) {
 			String hakusana = haku.trim();
-			// Haetaan hakuun täsmäävät asiakkaat sivutettuna
 			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHaku(istuntoTunnus, hakusana, pageable);
 		} else {
-			// Jos hakua ei ole, haetaan kaikki asiakkaat sivutettuna kuten ennenkin
 			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnus(istuntoTunnus, pageable);
 		}
-		
-		// Palvelimen reaaliaikainen kellonaika tapahtumille
-		java.time.LocalDateTime nyt = java.time.LocalDateTime.now();
 
-		List<Tapahtuma> tulevatTapahtumat = tapahtumaRepository
-		        .findByKayttajaKayttajatunnusAndAjankohtaAfterOrderByAjankohtaAsc(istuntoTunnus, nyt);
-
-		// Viedään tiedot JSP-sivulle (index.jsp)
-		model.addAttribute("asiakkaat", asiakasSivu.getContent()); // Tässä on max 10 asiakasta listana
+		// Viedään tiedot asiakkaat.jsp-sivulle
+		model.addAttribute("asiakkaat", asiakasSivu.getContent());
 		model.addAttribute("currentPage", page);
 		model.addAttribute("totalPages", asiakasSivu.getTotalPages());
 		model.addAttribute("tilat", AsiakkaanTila.values());
-		model.addAttribute("tulevatTapahtumat", tulevatTapahtumat);
-		
-		// Viedään hakusana takaisin sivulle sivunumerointia varten
 		model.addAttribute("haku", haku != null ? haku.trim() : "");
 
-		return "index";
+		return "asiakkaat"; // 💡 KORJATTU: Avaa uuden asiakkaat.jsp -sivun!
 	}
-
 
 	// 2. ASIAKKAAN LISÄYS: Tallentaa uuden asiakkaan tiedot osoitteineen ja
 	// kotisivuineen
@@ -143,7 +166,7 @@ public class AsiakasController {
 		uusiAsiakas.setKayttaja(nykyinenKayttaja);
 
 		asiakasRepository.save(uusiAsiakas);
-		return "redirect:/";
+		return "redirect:/asiakkaat";
 	}
 
 	// 3. ASIAKASPROFIILI: Näyttää yhden asiakkaan tarkemmat tiedot, yhteyshenkilöt,
@@ -251,7 +274,8 @@ public class AsiakasController {
 
 	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot, tilan ja uudet
 	// osoitetiedot sekä kotisivun
-	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot, tilan, osoitteet, kotisivun ja Y-TUNNUKSEN
+	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot, tilan, osoitteet,
+	// kotisivun ja Y-TUNNUKSEN
 	@PostMapping("/asiakas/{id}/muokkaa")
 	public String muokkaaAsiakasta(@PathVariable Long id, @RequestParam String nimi,
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
@@ -285,7 +309,6 @@ public class AsiakasController {
 		return "redirect:/asiakas/" + id;
 	}
 
-
 	// 7b. ASIAKKAAN POISTO: Poistaa asiakkaan ja kaikki siihen liittyvät tiedot
 	// (Cascade)
 	@Transactional
@@ -313,7 +336,7 @@ public class AsiakasController {
 		asiakasRepository.deleteById(id);
 
 		// Palataan onnistuneen poiston jälkeen takaisin pääsivun asiakaslistaukseen
-		return "redirect:/";
+		return "redirect:/asiakkaat";
 	}
 
 }
