@@ -24,7 +24,7 @@ public class AsiakasTuote {
 	private BigDecimal myyntihinta; // Yksikköhinta myyntihetkellä
 
 	@Column(nullable = false)
-	private Integer maara = 1; // UUSI KENTTÄ: Myyty määrä (oletus 1)
+	private Integer maara = 1; // Myyty määrä (oletus 1)
 
 	@Column(name = "ostopaivamaara", nullable = false)
 	private java.time.LocalDate ostopaivamaara;
@@ -103,5 +103,4 @@ public class AsiakasTuote {
 	public void setOstopaivamaara(java.time.LocalDate ostopaivamaara) {
 		this.ostopaivamaara = ostopaivamaara;
 	}
-
 }

@@ -63,26 +63,24 @@ public class LoginController {
                                   @RequestParam String sukunimi,
                                   @RequestParam String sahkoposti,
                                   @RequestParam String puhelin,
-                                  @RequestParam String rooli) { // Vastaanotetaan rooli lomakkeelta
+                                  @RequestParam String rooli) {
         
         String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
         if (istuntoTunnus == null) return "redirect:/login";
 
-        // Varmistetaan tietoturva: vain ADMIN saa luoda tilejä
         Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
                 .orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
         if (!"ADMIN".equals(nykyinenKayttaja.getRooli())) {
             return "redirect:/?error=access_denied";
         }
 
-        // Kryptataan uuden käyttäjän salasana ennen tallennusta
         String kryptattuSalasana = passwordEncoder.encode(salasana);
 
         Kayttaja uusiKayttaja = new Kayttaja(kayttajatunnus, kryptattuSalasana, etunimi, sukunimi, sahkoposti, puhelin);
-        uusiKayttaja.setRooli(rooli); // Asetetaan valittu rooli (USER tai ADMIN)
+        uusiKayttaja.setRooli(rooli);
 
         kayttajaRepository.save(uusiKayttaja);
-        return "redirect:/asetukset?success=user_created"; // Palataan asetuksiin
+        return "redirect:/asetukset?success=user_created";
     }
 
     // 5. REITTI: KÄYTTÄJÄN MUOKKAUS SISÄLTÄEN ROOLIN (Vain pääkäyttäjälle)
@@ -98,23 +96,20 @@ public class LoginController {
         String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
         if (istuntoTunnus == null) return "redirect:/login";
 
-        // Varmistetaan tietoturva
         Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
                 .orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
         if (!"ADMIN".equals(nykyinenKayttaja.getRooli())) {
             return "redirect:/?error=access_denied";
         }
 
-        // Haetaan muokattava käyttäjä
         Kayttaja muokattava = kayttajaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Muokattavaa käyttäjää ei löydy ID: " + id));
 
-        // Päivitetään tiedot
         muokattava.setEtunimi(etunimi);
         muokattava.setSukunimi(sukunimi);
         muokattava.setSahkoposti(sahkoposti);
         muokattava.setPuhelin(puhelin);
-        muokattava.setRooli(rooli); // Päivitetään rooli
+        muokattava.setRooli(rooli);
 
         kayttajaRepository.save(muokattava);
         return "redirect:/asetukset?success=user_updated";

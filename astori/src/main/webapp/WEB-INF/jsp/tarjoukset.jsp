@@ -41,19 +41,21 @@ body {
 			<!-- Logo vie aina etusivulle (Dashboard) -->
 			<a class="navbar-brand fw-bold"
 				href="${pageContext.request.contextPath}/">Astori</a>
-			
+
 			<div class="navbar-nav me-auto">
 				<!-- 1. Etusivu -->
-				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a> 
-				
+				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a>
+
 				<!-- 2. Asiakkaat (Vie omalle sivulleen) -->
-				<a class="nav-link" href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> 
-				
-				<a class="nav-link" href="${pageContext.request.contextPath}/asetukset">Asetukset</a> 
-				<a class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
-				<a class="nav-link" href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
+				<a class="nav-link"
+					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a
+					class="nav-link"
+					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
+					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
+				<a class="nav-link"
+					href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
 			</div>
-			
+
 			<div class="d-flex align-items-center">
 				<span class="navbar-text text-white me-3">Käyttäjä: <strong>${kirjautunutKayttaja}</strong></span>
 				<a href="${pageContext.request.contextPath}/logout"
@@ -68,15 +70,14 @@ body {
 			<div
 				class="alert alert-danger alert-dismissible fade show fw-bold mb-3"
 				role="alert">${virheViesti}</div>
-		</c:if> 
-		
+		</c:if>
+
 		<!-- TAKAISIN-LINKKI -->
 		<div class="mb-3">
 			<a class="btn btn-link p-0 text-decoration-none"
 				href="${pageContext.request.contextPath}/asiakas/${asiakas.id}">&larr;
 				Takaisin asiakasprofiiliin</a>
 		</div>
-
 		<div class="main-card border mb-4">
 			<span class="text-muted small">Asiakkaan tarjoushallinta</span>
 			<h1 class="text-dark fw-bold mb-3">${asiakas.nimi}</h1>
@@ -100,7 +101,6 @@ body {
 									<th>ALV (€)</th>
 									<th>Loppusumma (€)</th>
 									<th>Toiminnot</th>
-									<!-- 1. LISÄTTY TÄMÄ OTSikko -->
 								</tr>
 							</thead>
 							<tbody>
@@ -117,18 +117,14 @@ body {
 													value="${t.verollinenYhteensa}" pattern="#,##0.00 €" /></strong></td>
 										<td>
 											<div class="d-flex gap-2">
-												<!-- Latauspainike (muutettu siniseksi, jotta se erottuu poistonapista) -->
 												<a class="btn btn-sm btn-primary fw-bold"
 													href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf">
 													Lataa PDF </a>
-
-												<!-- Poistolomake varmistuksella -->
 												<form
 													action="${pageContext.request.contextPath}/tarjous/${t.id}/poista"
 													method="post" style="display: inline;"
 													onsubmit="return confirm('Haluatko varmasti poistaa tarjouksen ${t.tarjousNumero}?');">
-													<button type="submit" class="btn btn-sm btn-danger fw-bold">
-														Poista</button>
+													<button type="submit" class="btn btn-sm btn-danger fw-bold">Poista</button>
 												</form>
 											</div>
 										</td>
@@ -136,11 +132,11 @@ body {
 								</c:forEach>
 							</tbody>
 						</table>
-
 					</div>
 				</c:otherwise>
 			</c:choose>
 		</div>
+
 		<!-- UUDEN TARJOUKSEN LASKENTA JA LUONTI -->
 		<div class="main-card border">
 			<h3 class="fw-bold h4 mb-4 text-dark">Luo uusi tarjouslaskelma</h3>
@@ -181,17 +177,17 @@ body {
 						</thead>
 						<tbody>
 							<tr>
-								<td>
-									<!-- Tuotevalinta rekisteristä dynaamisella hinnan asetuksella -->
-									<select class="form-select" name="tuote[]" required
+								<td><select class="form-select" name="tuote[]" required
 									onchange="paivitaRivinHinta(this)">
 										<option value="" data-hinta="0">-- Valitse tuote --</option>
-										<c:forEach var="t" items="${kaikkiTuotteet}">
-											<option value="${t.nimi}" data-hinta="${t.hinta}">${t.nimi}
-												(${t.hinta} €)</option>
+										<!-- 💡 KORJAUS: kaikkiTuotteet muutettu muotoon tuoteLista kontrollerin mukaiseksi -->
+										<c:forEach var="tuote" items="${tuoteLista}">
+											<option
+												value="${tuote.name != null ? tuote.name : tuote.nimi}"
+												data-hinta="${tuote.hinta}">${tuote.name != null ? tuote.name : tuote.nimi}
+												(${tuote.hinta} €)</option>
 										</c:forEach>
-								</select>
-								</td>
+								</select></td>
 								<td><input type="number" class="form-control"
 									name="maara[]" value="1" step="any" required
 									oninput="laskeYhteissummat()"></td>
@@ -212,7 +208,6 @@ body {
 						</tbody>
 					</table>
 				</div>
-
 				<div class="d-flex justify-content-between align-items-start mt-3">
 					<button type="button" class="btn btn-outline-primary fw-bold"
 						onclick="lisaaRivi()">+ Lisää uusi rivi</button>
@@ -242,20 +237,18 @@ body {
 			</form>
 		</div>
 	</div>
+
 	<!-- REAALIAIKAINEN LASKENTALOGIIKKA JA AUTOMAATTINEN HINNAN PAIVITYS -->
 	<script>
 		// 1. Hakee valitun tuotteen hinnan rekisteristä ja päivittää sen riville
 		function paivitaRivinHinta(selectElement) {
 			var valittuOption = selectElement.options[selectElement.selectedIndex];
 			var hinta = valittuOption.getAttribute('data-hinta') || 0;
-
 			var rivi = selectElement.closest('tr');
 			var hintaInput = rivi.querySelector('input[name="hinta[]"]');
-
 			if (hintaInput) {
 				hintaInput.value = hinta;
 			}
-
 			laskeYhteissummat();
 		}
 
@@ -263,7 +256,6 @@ body {
 		function laskeYhteissummat() {
 			var verotonYhteensa = 0;
 			var alvYhteensa = 0;
-
 			var rivit = document.querySelectorAll('#rivit-table tbody tr');
 
 			rivit.forEach(function(rivi) {
@@ -302,7 +294,6 @@ body {
 		function lisaaRivi() {
 			var tBody = document.querySelector('#rivit-table tbody');
 			var ensimmainenRivi = tBody.querySelector('tr');
-
 			if (!ensimmainenRivi)
 				return;
 
@@ -339,7 +330,6 @@ body {
 				alert('Tarjouksessa täytyy olla vähintään yksi rivi.');
 				return;
 			}
-
 			var rivi = painike.closest('tr');
 			rivi.remove();
 			laskeYhteissummat();

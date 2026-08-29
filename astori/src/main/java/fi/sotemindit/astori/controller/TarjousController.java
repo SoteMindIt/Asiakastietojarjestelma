@@ -50,15 +50,16 @@ public class TarjousController {
 
 		model.addAttribute("asiakas", asiakas);
 		model.addAttribute("tarjoukset", tarjoukset);
-		model.addAttribute("kaikkiTuotteet", tuoteLista);
+		
+		// 💡 KORJAUS: Muutettu kaikkiTuotteet -> tuoteLista, jotta se täsmää dynaamisen tarjoukset.jsp -pudotusvalikon kanssa
+		model.addAttribute("tuoteLista", tuoteLista);
 
 		return "tarjoukset";
 	}
-
 	// 2. Vastaanottaa dynaamiset tarjousrivit ja laskee summat tietokantaan
 	@Transactional
 	@PostMapping("/asiakkaat/{asiakasId}/tarjoukset/tallenna")
-	public String tallennaTarjous(@PathVariable Long asiakasId, @RequestParam String tarjousNumero,
+	public String tallennaTarjous(@PathVariable("asiakasId") Long asiakasId, @RequestParam String tarjousNumero,
 			@RequestParam String voimassaoloPvm, @RequestParam(required = false) String lisatiedot,
 			@RequestParam("tuote[]") List<String> tuotteet, 
 			@RequestParam("maara[]") List<java.math.BigDecimal> maarat, 
@@ -108,7 +109,6 @@ public class TarjousController {
 			kokonaisVeroton = kokonaisVeroton.add(riviVeroton);
 			kokonaisAlv = kokonaisAlv.add(riviAlv);
 
-			// KORJATTU: Välitetään puhtaat BigDecimal-oliot suoraan konstruktorille ilman double-muunnosta
 			TarjousRivi rivi = new TarjousRivi(tuoteNimi, bdMaara, bdHinta, bdAlvProsentti, tarjous);
 			tarjous.getRivit().add(rivi);
 		}
@@ -121,8 +121,6 @@ public class TarjousController {
 
 		return "redirect:/asiakas/" + asiakasId + "/tarjoukset";
 	}
-
-
 
 	// 3. Generoi ja lataa tarjous PDF-muodossa
 	@Transactional
@@ -160,13 +158,13 @@ public class TarjousController {
 		com.lowagie.text.Font lihavoituTeksti = com.lowagie.text.FontFactory
 				.getFont(com.lowagie.text.FontFactory.HELVETICA_BOLD, 10);
 
-		// 1. DOKUMENTIN OTSIKKO
+		// A. DOKUMENTIN OTSIKKO
 		com.lowagie.text.Paragraph otsikko = new com.lowagie.text.Paragraph("TARJOUS", otsikkoFontti);
 		otsikko.setAlignment(com.lowagie.text.Element.ALIGN_LEFT);
 		otsikko.setSpacingAfter(20);
 		document.add(otsikko);
 
-		// 2. METATIEDOT (Päivämäärät ja tarjousnumero)
+		// B. METATIEDOT (Päivämäärät ja tarjousnumero)
 		com.lowagie.text.pdf.PdfPTable metaTaulu = new com.lowagie.text.pdf.PdfPTable(2);
 		metaTaulu.setWidthPercentage(100);
 		metaTaulu.setSpacingAfter(20);
@@ -176,13 +174,11 @@ public class TarjousController {
 		cell1.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
 		metaTaulu.addCell(cell1);
 
-		// Päivitetty suomalaisella muotoilulla:
 		com.lowagie.text.pdf.PdfPCell cell2 = new com.lowagie.text.pdf.PdfPCell(
 				new com.lowagie.text.Paragraph("Päivämäärä: " + tarjous.getPvm().format(suomiPvm), tekstiFontti));
 		cell2.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
 		metaTaulu.addCell(cell2);
 
-		// Päivitetty suomalaisella muotoilulla:
 		com.lowagie.text.pdf.PdfPCell cell3 = new com.lowagie.text.pdf.PdfPCell(new com.lowagie.text.Paragraph(
 				"Voimassaolo: " + tarjous.getVoimassaoloPvm().format(suomiPvm), tekstiFontti));
 		cell3.setBorder(com.lowagie.text.pdf.PdfPCell.NO_BORDER);
@@ -195,7 +191,7 @@ public class TarjousController {
 
 		document.add(metaTaulu);
 
-		// 3. ASIAKKAAN TIEDOT
+		// C. ASIAKKAAN TIEDOT
 		document.add(new com.lowagie.text.Paragraph("Asiakas:", alaOtsikkoFontti));
 		com.lowagie.text.Paragraph asiakasTiedot = new com.lowagie.text.Paragraph(
 				asiakas.getNimi() + "\n" + (asiakas.getSahkoposti() != null ? asiakas.getSahkoposti() : "") + "\n"
@@ -204,7 +200,6 @@ public class TarjousController {
 		asiakasTiedot.setSpacingAfter(30);
 		document.add(asiakasTiedot);
 
-		// TULOSTETAAN LISÄTIEDOT JOS NIITÄ ON KIRJOITETTU
 		if (tarjous.getLisatiedot() != null && !tarjous.getLisatiedot().trim().isEmpty()) {
 			document.add(new com.lowagie.text.Paragraph("Lisätiedot ja ehdot:", alaOtsikkoFontti));
 			com.lowagie.text.Paragraph pLisatiedot = new com.lowagie.text.Paragraph(tarjous.getLisatiedot(),
@@ -212,7 +207,6 @@ public class TarjousController {
 			pLisatiedot.setSpacingAfter(20);
 			document.add(pLisatiedot);
 		}
-		
 		// 4. TARJOUSRIVIT TAULUKKONA
 		document.add(new com.lowagie.text.Paragraph("Tarjouksen sisältö:", alaOtsikkoFontti));
 		com.lowagie.text.Paragraph vali = new com.lowagie.text.Paragraph(" ");
@@ -232,15 +226,13 @@ public class TarjousController {
 			solu.setPadding(6);
 			solu.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_CENTER);
 			riviTaulu.addCell(solu);
-		} // KORJATTU: Otsikkosilmukka suljetaan tässä oikeaoppisesti ennen rivejä!
+		}
 
 		for (fi.sotemindit.astori.model.TarjousRivi r : tarjous.getRivit()) {
-			// KORJATTU: Vaihdettu 0.0 -> BigDecimal.ZERO tyyppivirheen korjaamiseksi
 			java.math.BigDecimal maara = r.getMaara() != null ? r.getMaara() : java.math.BigDecimal.ZERO;
 			java.math.BigDecimal hinta = r.getYksikkohinta() != null ? r.getYksikkohinta() : java.math.BigDecimal.ZERO;
 			java.math.BigDecimal alv = r.getAlvProsentti() != null ? r.getAlvProsentti() : java.math.BigDecimal.ZERO;
 			
-			// KORJATTU: Tehty BigDecimal-laskenta oikeilla metodeilla operaattorien (*, +, /) sijaan
 			java.math.BigDecimal riviVeroton = maara.multiply(hinta);
 			java.math.BigDecimal alvKerroin = java.math.BigDecimal.ONE.add(
 					alv.divide(java.math.BigDecimal.valueOf(100.0), 4, java.math.RoundingMode.HALF_UP)
@@ -340,8 +332,4 @@ public class TarjousController {
 
 		return "redirect:/asiakas/" + asiakasId + "/tarjoukset";
 	}
-	
-
-
-
 }

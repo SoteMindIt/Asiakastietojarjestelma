@@ -40,4 +40,3 @@ public class RaportitController {
 		return "raportit";
 	}
 }
-

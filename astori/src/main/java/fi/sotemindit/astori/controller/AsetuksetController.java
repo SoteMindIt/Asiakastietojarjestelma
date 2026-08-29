@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import fi.sotemindit.astori.model.Kayttaja;
 import fi.sotemindit.astori.model.Tuote;
+import fi.sotemindit.astori.model.Yritystiedot;
 import fi.sotemindit.astori.repository.KayttajaRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
 
@@ -28,7 +29,12 @@ public class AsetuksetController {
 
 	@Autowired
 	private BCryptPasswordEncoder passwordEncoder;
-	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat tiedot
+
+	@Autowired
+	private fi.sotemindit.astori.repository.YritystiedotRepository yritystiedotRepository;
+
+	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat
+	// tiedot
 	@GetMapping("/asetukset")
 	public String naytaAsetukset(HttpSession session, Model model) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -47,6 +53,9 @@ public class AsetuksetController {
 		// Viedään tuoterekisterin tiedot
 		List<Tuote> kaikkiTuotteet = tuoteRepository.findAll();
 		model.addAttribute("tuotteet", kaikkiTuotteet);
+		
+		Yritystiedot yritys = yritystiedotRepository.findById(1L).orElse(null);
+		model.addAttribute("yritys", yritys);
 
 		return "asetukset"; // Avaa asetukset.jsp
 	}
@@ -85,6 +94,7 @@ public class AsetuksetController {
 		kayttajaRepository.save(uusiKayttaja);
 		return "redirect:/asetukset?success=user_created";
 	}
+
 	// 3. REITTI: Muokkaa olemassa olevan käyttäjän tietoja ja roolia (Vain Admin)
 	@PostMapping("/asetukset/muokkaa-kayttajaa/{id}")
 	public String muokkaaKayttajaa(HttpSession session, @PathVariable Long id, @RequestParam String etunimi,
@@ -104,8 +114,8 @@ public class AsetuksetController {
 		}
 
 		// Haetaan muokattava työntekijä tietokannasta
-		Kayttaja muokattava = kayttajaRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Muokattavaa käyttäjää ei löytynyt ID-numerolla: " + id));
+		Kayttaja muokattava = kayttajaRepository.findById(id).orElseThrow(
+				() -> new IllegalArgumentException("Muokattavaa käyttäjää ei löytynyt ID-numerolla: " + id));
 
 		// Päivitetään muuttuneet perustiedot ja rooli
 		muokattava.setEtunimi(etunimi);
@@ -150,7 +160,8 @@ public class AsetuksetController {
 		try {
 			uusiTuote.setYksikko(fi.sotemindit.astori.model.TuoteYksikko.valueOf(yksikko));
 		} catch (IllegalArgumentException e) {
-			// Jos arvo ei täsmää enumiin, virhe napataan kiinni tässä ilman sovelluksen kaatumista
+			// Jos arvo ei täsmää enumiin, virhe napataan kiinni tässä ilman sovelluksen
+			// kaatumista
 		}
 
 		tuoteRepository.save(uusiTuote);
@@ -158,15 +169,11 @@ public class AsetuksetController {
 		// Ohjataan takaisin asetussivulle onnistumisilmoituksen kanssa
 		return "redirect:/asetukset?success=product_created";
 	}
-	
+
 	// 6. REITTI: Muokkaa olemassa olevan tuotteen tietoja (UUSI)
 	@PostMapping("/asetukset/muokkaa-tuotetta/{id}")
-	public String muokkaaTuotetta(HttpSession session,
-			@PathVariable Long id,
-			@RequestParam String nimi,
-			@RequestParam String kuvaus,
-			@RequestParam java.math.BigDecimal hinta,
-			@RequestParam String yksikko) {
+	public String muokkaaTuotetta(HttpSession session, @PathVariable Long id, @RequestParam String nimi,
+			@RequestParam String kuvaus, @RequestParam java.math.BigDecimal hinta, @RequestParam String yksikko) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
@@ -192,5 +199,34 @@ public class AsetuksetController {
 		return "redirect:/asetukset?success=product_updated";
 	}
 
+	@PostMapping("/asetukset/tallenna-yritys")
+	public String tallennaYrityksenTiedot(HttpSession session, @RequestParam String nimi, @RequestParam String yTunnus,
+			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
+			@RequestParam(required = false) String osoite, @RequestParam(required = false) String iban,
+			@RequestParam(required = false) String bic) {
+
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		// Haetaan olemassa oleva yritystietorivi tai luodaan uusi, jos kanta on tyhjä
+		fi.sotemindit.astori.model.Yritystiedot yritys = yritystiedotRepository.findById(1L)
+				.orElse(new fi.sotemindit.astori.model.Yritystiedot());
+
+		// Varmistetaan kiinteä ID 1, jotta rivejä ei synny useampia
+		yritys.setId(1L);
+		yritys.setNimi(nimi);
+		yritys.setyTunnus(yTunnus);
+		yritys.setSahkoposti(sahkoposti);
+		yritys.setPuhelin(puhelin);
+		yritys.setOsoite(osoite);
+		yritys.setIban(iban);
+		yritys.setBic(bic);
+
+		yritystiedotRepository.save(yritys);
+
+		return "redirect:/asetukset?success=company_updated";
+	}
 
 }

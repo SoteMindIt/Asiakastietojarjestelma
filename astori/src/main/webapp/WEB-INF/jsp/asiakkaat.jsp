@@ -31,11 +31,14 @@ body {
 			<a class="navbar-brand fw-bold"
 				href="${pageContext.request.contextPath}/">Astori</a>
 			<div class="navbar-nav me-auto">
-				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a> 
-				<a class="nav-link active fw-bold" href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> 
-				<a class="nav-link" href="${pageContext.request.contextPath}/asetukset">Asetukset</a> 
-				<a class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
-				<a class="nav-link" href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
+				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a>
+				<a class="nav-link active fw-bold"
+					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a
+					class="nav-link"
+					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
+					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
+				<a class="nav-link"
+					href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
 			</div>
 			<div class="d-flex align-items-center">
 				<span class="navbar-text text-white me-3">Käyttäjä: <strong>${kirjautunutKayttaja}</strong></span>
@@ -56,18 +59,20 @@ body {
 		<!-- 🔍 HAKULOMAKE -->
 		<div class="row mb-4">
 			<div class="col-md-6 col-lg-5">
-				<form action="${pageContext.request.contextPath}/asiakkaat" method="get" class="d-flex gap-2">
-					<input type="text" name="haku" class="form-control shadow-sm" 
-						   placeholder="Hae nimellä, sähköpostilla, puhelimella tai Y-tunnuksella..." 
-						   value="${haku}">
+				<form action="${pageContext.request.contextPath}/asiakkaat"
+					method="get" class="d-flex gap-2">
+					<input type="text" name="haku" class="form-control shadow-sm"
+						placeholder="Hae nimellä, sähköpostilla, puhelimella tai Y-tunnuksella..."
+						value="${haku}">
 					<button type="submit" class="btn btn-primary fw-bold shadow-sm">Hae</button>
 					<c:if test="${not empty haku}">
-						<a href="${pageContext.request.contextPath}/asiakkaat" class="btn btn-outline-secondary shadow-sm">Tyhjennä</a>
+						<a href="${pageContext.request.contextPath}/asiakkaat"
+							class="btn btn-outline-secondary shadow-sm">Tyhjennä</a>
 					</c:if>
 				</form>
 			</div>
 		</div>
-		
+
 		<!-- 💡 HUOM: col-lg-8 muutettu muotoon col-12, jolloin taulukko saa täyden leveyden eikä kalenteri enää mahdu viereen -->
 		<div class="row">
 			<div class="col-12 mb-4">
@@ -110,7 +115,8 @@ body {
 							</c:forEach>
 							<c:if test="${empty asiakkaat}">
 								<tr>
-									<td colspan="7" class="text-center py-4 text-muted">Ei hakutuloksia tai asiakkaita järjestelmässä.</td>
+									<td colspan="7" class="text-center py-4 text-muted">Ei
+										hakutuloksia tai asiakkaita järjestelmässä.</td>
 								</tr>
 							</c:if>
 						</tbody>
@@ -122,22 +128,29 @@ body {
 						class="d-flex justify-content-center mt-4">
 						<ul class="pagination shadow-sm">
 							<li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
-								<a class="page-link" href="?page=${currentPage - 1}&haku=${haku}">&laquo; Edellinen</a>
+								<a class="page-link"
+								href="?page=${currentPage - 1}&haku=${haku}">&laquo;
+									Edellinen</a>
 							</li>
 							<c:forEach var="i" begin="0" end="${totalPages - 1}">
 								<li class="page-item ${currentPage == i ? 'active' : ''}">
 									<a class="page-link" href="?page=${i}&haku=${haku}">${i + 1}</a>
 								</li>
 							</c:forEach>
-							<li class="page-item ${currentPage >= totalPages - 1 ? 'disabled' : ''}">
-								<a class="page-link" href="?page=${currentPage + 1}&haku=${haku}">Seuraava &raquo;</a>
+							<li
+								class="page-item ${currentPage >= totalPages - 1 ? 'disabled' : ''}">
+								<a class="page-link"
+								href="?page=${currentPage + 1}&haku=${haku}">Seuraava
+									&raquo;</a>
 							</li>
 						</ul>
 					</nav>
 				</c:if>
 			</div>
-		</div> <!-- .row päättyminen -->
-	</div> <!-- .container päättyminen -->
+		</div>
+		<!-- .row päättyminen -->
+	</div>
+	<!-- .container päättyminen -->
 
 	<!-- BOOTSTRAP POP-UP LOMAKE (MODAL) UUDELLE ASIAKKAALLE -->
 	<div class="modal fade" id="lisaaAsiakasModal" tabindex="-1"
@@ -157,14 +170,16 @@ body {
 								/ Organisaatio</label> <input type="text" class="form-control" id="nimi"
 								name="nimi" required placeholder="esim. Sote-Hyvinvointi Oy">
 						</div>
-						
+
 						<!-- Y-TUNNUS UUDEN ASIAKKAAN LOMAKKEELLE -->
 						<div class="mb-3">
-							<label for="yTunnus" class="form-label fw-semibold text-secondary">Y-tunnus (vapaaehtoinen)</label> 
-							<input type="text" class="form-control" id="yTunnus" name="yTunnus" 
-								   placeholder="esim. 1234567-8" maxlength="9">
+							<label for="yTunnus"
+								class="form-label fw-semibold text-secondary">Y-tunnus
+								(vapaaehtoinen)</label> <input type="text" class="form-control"
+								id="yTunnus" name="yTunnus" placeholder="esim. 1234567-8"
+								maxlength="9">
 						</div>
-						
+
 						<div class="mb-3">
 							<label for="sahkoposti"
 								class="form-label fw-semibold text-secondary">Sähköposti</label>
@@ -186,6 +201,38 @@ body {
 								</c:forEach>
 							</select>
 						</div>
+
+						<!-- 🗺️ KORJAUS: LISÄTTY PUUTTUVAT PARAMETRIT KONTROLLERIA VARTEN -->
+						<hr class="text-mutedmy-3">
+						<h6 class="fw-bold text-dark mb-3">Osoite- ja käyntitiedot
+							(vapaaehtoinen)</h6>
+
+						<div class="mb-3">
+							<label for="katuosoite"
+								class="form-label fw-semibold text-secondary">Katuosoite</label>
+							<input type="text" class="form-control" id="katuosoite"
+								name="katuosoite" placeholder="esim. Keskuskatu 10">
+						</div>
+						<div class="row">
+							<div class="col-md-4 mb-3">
+								<label for="postinumero"
+									class="form-label fw-semibold text-secondary">Postinumero</label>
+								<input type="text" class="form-control" id="postinumero"
+									name="postinumero" placeholder="00100" maxlength="5">
+							</div>
+							<div class="col-md-8 mb-3">
+								<label for="postitoimipaikka"
+									class="form-label fw-semibold text-secondary">Postitoimipaikka</label>
+								<input type="text" class="form-control" id="postitoimipaikka"
+									name="postitoimipaikka" placeholder="Helsinki">
+							</div>
+						</div>
+						<div class="mb-3">
+							<label for="kotisivu"
+								class="form-label fw-semibold text-secondary">Kotisivut
+								(URL)</label> <input type="url" class="form-control" id="kotisivu"
+								name="kotisivu" placeholder="https://yritys.fi">
+						</div>
 					</div>
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary"
@@ -203,4 +250,3 @@ body {
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-				

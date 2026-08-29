@@ -66,7 +66,7 @@ body {
 					class="nav-link"
 					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
 					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
-				<a class="nav-link"
+				<a class="nav-link active fw-bold"
 					href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
 			</div>
 
@@ -92,7 +92,6 @@ body {
 			<div id="calendar"></div>
 		</div>
 	</div>
-
 	<!-- BOOTSTRAP POP-UP LOMAKE UUDELLE VARAUKSELLE -->
 	<div class="modal fade" id="lisaaTapahtumaModal" tabindex="-1"
 		aria-hidden="true">
@@ -111,16 +110,10 @@ body {
 							<label for="asiakasHaku"
 								class="form-label fw-semibold text-secondary">Liitä
 								asiakkaaseen (Valinnainen)</label>
-
-							<!-- Hakukenttä, joka näyttää pudotusvalikon ja suodattaa tekstiä -->
 							<input type="text" class="form-control" id="asiakasHaku"
 								list="asiakasLista"
 								placeholder="Kirjoita nimi tai valitse listasta...">
-
-							<!-- Piilokenttä, joka lähettää varsinaisen tietokanta-ID:n palvelimelle -->
 							<input type="hidden" id="asiakasId" name="asiakasId">
-
-							<!-- Dynaaminen lista, jonka selain näyttää pudotusvalikkona -->
 							<datalist id="asiakasLista">
 								<c:forEach var="a" items="${asiakkaat}">
 									<option data-id="${a.id}" value="${a.nimi}"></option>
@@ -130,9 +123,8 @@ body {
 								kyseessä on sisäinen merkintä.</small>
 						</div>
 						<div class="mb-3">
-							<label for="tyyppi" class="form-label fw-semibold text-secondary">Tapahtuman
-								tyyppi</label> <select class="form-select" id="tyyppi" name="tyyppi"
-								required>
+							<label for="tyyppi" class="form-label fw-semibold text-secondary">Tapahtuman tyyppi</label> 
+							<select class="form-select" id="tyyppi" name="tyyppi" required>
 								<c:forEach var="t" items="${tyypit}">
 									<option value="${t}">${t}</option>
 								</c:forEach>
@@ -141,22 +133,20 @@ body {
 
 						<div class="mb-3">
 							<label for="otsikko"
-								class="form-label fw-semibold text-secondary">Otsikko /
-								Aihe</label> <input type="text" class="form-control" id="otsikko"
+								class="form-label fw-semibold text-secondary">Otsikko / Aihe</label> 
+							<input type="text" class="form-control" id="otsikko"
 								name="otsikko" required
 								placeholder="esim. Sopimusneuvottelu, Seurantapuhelu">
 						</div>
 
 						<div class="mb-3">
 							<label for="ajankohtaStr"
-								class="form-label fw-semibold text-secondary">Ajankohta
-								ja kellonaika</label> <input type="datetime-local" class="form-control"
-								id="ajankohtaStr" name="ajankohtaStr" required>
+								class="form-label fw-semibold text-secondary">Ajankohta ja kellonaika</label> 
+							<input type="datetime-local" class="form-control" id="ajankohtaStr" name="ajankohtaStr" required>
 						</div>
 
 						<div class="mb-3">
-							<label for="kuvaus" class="form-label fw-semibold text-secondary">Lisätiedot
-								/ Muistiinpanot</label>
+							<label for="kuvaus" class="form-label fw-semibold text-secondary">Lisätiedot / Muistiinpanot</label>
 							<textarea class="form-control" id="kuvaus" name="kuvaus" rows="3"
 								placeholder="Mitä sovitaan tai käydään läpi..."></textarea>
 						</div>
@@ -165,15 +155,14 @@ body {
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary"
 							data-bs-dismiss="modal">Peruuta</button>
-						<button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna
-							kalenteriin</button>
+						<button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna kalenteriin</button>
 					</div>
 				</form>
 			</div>
 		</div>
 	</div>
 
-	<!-- 🎛️ GENEERINEN PONNAHDUSIKKUNA (MODAL) TAPAHTUMAN MUOKKAUKSELLE -->
+	<!-- GENEERINEN PONNAHDUSIKKUNA (MODAL) TAPAHTUMAN MUOKKAUKSELLE -->
 	<div class="modal fade" id="muokkaaTapahtumaModal" tabindex="-1"
 		aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered">
@@ -185,64 +174,43 @@ body {
 				</div>
 
 				<form id="muokkaaTapahtumaForm" method="post">
-					<!-- Lähde-parametrin avulla ohjain tietää palata takaisin kalenterisivulle -->
 					<input type="hidden" name="lahde" value="kalenteri">
-
 					<div class="modal-body p-4 text-start">
-
-						<!-- Otsikko -->
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Otsikko
-								/ Aihe</label> <input type="text" class="form-control"
-								id="muokkaaOtsikko" name="otsikko" required>
+							<label class="form-label fw-semibold text-secondary">Otsikko / Aihe</label> 
+							<input type="text" class="form-control" id="muokkaaOtsikko" name="otsikko" required>
 						</div>
-
-						<!-- Tyyppi -->
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Tapahtuman
-								tyyppi</label> <select class="form-select" id="muokkaaTyyppi"
-								name="tyyppi" required>
+							<label class="form-label fw-semibold text-secondary">Tapahtuman tyyppi</label> 
+							<select class="form-select" id="muokkaaTyyppi" name="tyyppi" required>
 								<c:forEach var="t" items="${tyypit}">
 									<option value="${t}">${t}</option>
 								</c:forEach>
 							</select>
 						</div>
-
-						<!-- Ajankohta -->
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Ajankohta
-								ja kellonaika</label> <input type="datetime-local" class="form-control"
-								id="muokkaaAjankohta" name="ajankohtaStr" required>
+							<label class="form-label fw-semibold text-secondary">Ajankohta ja kellonaika</label> 
+							<input type="datetime-local" class="form-control" id="muokkaaAjankohta" name="ajankohtaStr" required>
 						</div>
-
-						<!-- Asiakasliitos -->
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Liitetty
-								asiakas</label> <select class="form-select" id="muokkaaAsiakasId"
-								name="asiakasId">
+							<label class="form-label fw-semibold text-secondary">Liitetty asiakas</label> 
+							<select class="form-select" id="muokkaaAsiakasId" name="asiakasId">
 								<option value="">-- Ei kytketty asiakkaaseen --</option>
 								<c:forEach var="a" items="${asiakkaat}">
 									<option value="${a.id}">${a.nimi}</option>
 								</c:forEach>
 							</select>
 						</div>
-
-						<!-- Kuvaus -->
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Lisätiedot
-								/ Muistiinpanot</label>
-							<textarea class="form-control" id="muokkaaKuvaus" name="kuvaus"
-								rows="3"></textarea>
+							<label class="form-label fw-semibold text-secondary">Lisätiedot / Muistiinpanot</label>
+							<textarea class="form-control" id="muokkaaKuvaus" name="kuvaus" rows="3"></textarea>
 						</div>
-
 					</div>
 					<div class="modal-footer bg-light d-flex justify-content-between">
-						<!-- POISTOPAINIKE MODALISTA KÄSIN -->
 						<button type="submit" id="poistaTapahtumaPainike"
 							class="btn btn-outline-danger fw-bold"
 							onclick="return confirm('Haluatko varmasti poistaa tämän tapahtuman?');">
 							Poista</button>
-
 						<div>
 							<button type="button" class="btn btn-secondary me-2"
 								data-bs-dismiss="modal">Peruuta</button>
@@ -253,15 +221,11 @@ body {
 			</div>
 		</div>
 	</div>
-	<!-- BOOTSTRAP JAVASCRIPT REKISTERISTÄ -->
-	<script
-		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 
-	<!-- JAVASCRIPT-ALUSTUS KALENTERIN PIIRTÄMISEKSI -->
-	<script>
+	<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+		<script>
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
-            
             var lastClickedDate = null;
             var lastClickTime = 0;
 
@@ -281,23 +245,17 @@ body {
                     list: 'Lista'
                 },
                 
-                // 1. TOIMINTO: TAPAHTUMAN KLIKKAUS
                 eventClick: function(info) {
                     info.jsEvent.preventDefault();
-
-                    // A. Täytetään otsikko ja kuvaus turvallisesti lomakkeen kenttiin
                     var otsikkoKentta = document.getElementById('muokkaaOtsikko');
                     if (otsikkoKentta) {
                         let fullTitle = info.event.title || '';
                         otsikkoKentta.value = fullTitle.includes(' [') ? fullTitle.split(' [')[0] : fullTitle;
                     }
-                    
                     var kuvausKentta = document.getElementById('muokkaaKuvaus');
                     if (kuvausKentta) {
                         kuvausKentta.value = info.event.extendedProps.description || '';
                     }
-                    
-                    // B. Muotoillaan alkamisaika datetime-local -kentälle sopivaksi (YYYY-MM-DDTHH:MM)
                     var ajankohtaKentta = document.getElementById('muokkaaAjankohta');
                     if (ajankohtaKentta && info.event.start) {
                         let pvm = new Date(info.event.start);
@@ -306,106 +264,83 @@ body {
                         let paiva = String(pvm.getDate()).padStart(2, '0');
                         let tunnit = String(pvm.getHours()).padStart(2, '0');
                         let minuutit = String(pvm.getMinutes()).padStart(2, '0');
-                        
                         ajankohtaKentta.value = vuosi + '-' + kuukausi + '-' + paiva + 'T' + tunnit + ':' + minuutit;
                     }
-                    
-                    // C. Asetetaan oikea Tyyppi valittuna pudotusvalikkoon
                     var tyyppiSelect = document.getElementById('muokkaaTyyppi');
                     if(tyyppiSelect) {
                         tyyppiSelect.value = info.event.extendedProps.tyyppiNimi;
                     }
-
-                    // D. Asetetaan oikea Asiakas-ID valittuna pudotusvalikkoon
                     var asiakasSelect = document.getElementById('muokkaaAsiakasId');
                     if (asiakasSelect) {
                         asiakasSelect.value = info.event.extendedProps.asiakasId || "";
                     }
-
-                    // E. Päivitetään lomakkeen tallennus- ja poistoreitit dynaamisesti oikealle ID:lle
                     var form = document.getElementById('muokkaaTapahtumaForm');
                     if(form) {
                         form.action = "${pageContext.request.contextPath}/kalenteri/paivita/" + info.event.id;
                     }
-                    
                     var poistoNappi = document.getElementById('poistaTapahtumaPainike');
                     if(poistoNappi) {
                         poistoNappi.setAttribute('formaction', "${pageContext.request.contextPath}/kalenteri/poista-suoraan/" + info.event.id);
                     }
-
-                    // F. Avataan muokkaus-modal ohjelmallisesti etualalle
                     var editModal = new bootstrap.Modal(document.getElementById('muokkaaTapahtumaModal'));
                     editModal.show();
                 },
                 
-                // 2. TOIMINTO: TYHJÄN RUUDUN TUPLAKLIKKAUS (UUSI VARAUS)
                 dateClick: function(info) {
                     var currentTime = new Date().getTime();
                     var clickDelay = currentTime - lastClickTime;
-
                     if (lastClickedDate === info.dateStr && clickDelay < 400) {
                         let valittuPvm = info.dateStr; 
-                        
-                        if (valittuPvm.length === 10) {
-                            valittuPvm += "T09:00"; 
-                        } else {
-                            valittuPvm = valittuPvm.substring(0, 16);
-                        }
-
+                        if (valittuPvm.length === 10) { valittuPvm += "T09:00"; } 
+                        else { valittuPvm = valittuPvm.substring(0, 16); }
                         document.getElementById('ajankohtaStr').value = valittuPvm;
-
                         var addModal = new bootstrap.Modal(document.getElementById('lisaaTapahtumaModal'));
                         addModal.show();
                     }
-
                     lastClickedDate = info.dateStr;
                     lastClickTime = currentTime;
                 },
                 
-                // LADATAAN TAPAHTUMAT TIETOKANNASTA DYNAAMISESTI JSTL-SILMUKALLA
                 events: [
                     <c:forEach var="tap" items="${tapahtumat}" varStatus="status">
                         {
                             id: '${tap.id}',
-                            title: '<c:out value="${tap.otsikko}"/> [${tap.kayttaja.etunimi} ${tap.kayttaja.sukunimi.substring(0,1)}.]',
+                            /* 💡 KORJAUS: Sukunimen katkaisu suojattu tyhjien (null) varalta estämään sivun HTTP 500 -kaatumiset */
+                            title: '<c:out value="${tap.otsikko}"/> [${tap.kayttaja.etunimi} ${not empty tap.kayttaja.sukunimi ? tap.kayttaja.sukunimi.substring(0,1) : ''}.]',
                             start: '${tap.ajankohta.toString()}', 
                             extendedProps: {
                                 description: '<c:out value="${tap.kuvaus}"/>',
                                 asiakasId: '${not empty tap.asiakas ? tap.asiakas.id : ""}',
                                 asiakasNimi: '<c:out value="${tap.asiakas.nimi}"/>',
-                                tyyppiNimi: '${tap.tyyppi}', 
-                                tyyppiRivi: '${tap.tyyppi}'
+                                tyyppiNimi: '${tap.tyyppi}'
                             },
-                            
                             <c:choose>
-                            <c:when test="${tap.tyyppi.toString() == 'PUHELU' || tap.tyyppi.toString() == 'SOITTO'}">
-                                backgroundColor: '#ffc107', borderColor: '#ffc107', textColor: '#000000'
-                            </c:when>
-                            <c:when test="${tap.tyyppi.toString() == 'TAPAAMINEN'}">
-                                backgroundColor: '#198754', borderColor: '#198754', textColor: '#ffffff'
-                            </c:when>
-                            <c:when test="${tap.tyyppi.toString() == 'SÄHKÖPOSTI'}">
-                                backgroundColor: '#0dcaf0', borderColor: '#0dcaf0', textColor: '#000000'
-                            </c:when>
-                            <c:otherwise>
-                                backgroundColor: '#0d6efd', borderColor: '#0d6efd', textColor: '#ffffff'
-                            </c:otherwise>
-                        </c:choose>
+                                <c:when test="${tap.tyyppi.toString() == 'PUHELU' || tap.tyyppi.toString() == 'SOITTO'}">
+                                    backgroundColor: '#ffc107', borderColor: '#ffc107', textColor: '#000000'
+                                </c:when>
+                                <c:when test="${tap.tyyppi.toString() == 'TAPAAMINEN'}">
+                                    backgroundColor: '#198754', borderColor: '#198754', textColor: '#ffffff'
+                                </c:when>
+                                <c:when test="${tap.tyyppi.toString() == 'SÄHKÖPOSTI'}">
+                                    backgroundColor: '#0dcaf0', borderColor: '#0dcaf0', textColor: '#000000'
+                                </c:when>
+                                <c:otherwise>
+                                    backgroundColor: '#0d6efd', borderColor: '#0d6efd', textColor: '#ffffff'
+                                </c:otherwise>
+                            </c:choose>
                         }${!status.last ? ',' : ''}
                     </c:forEach>
                 ]
             });
             
+            /* 💡 KORJAUS: Alustettu ja piirretty kalenteri näkyviin sivulle */
             calendar.render();
 
-            // Kuunnellaan hakukentän kirjoitusta ja muutetaan teksti ID-numeroksi
             document.getElementById('asiakasHaku').addEventListener('input', function(e) {
                 var inputValue = e.target.value;
                 var options = document.querySelectorAll('#asiakasLista option');
                 var hiddenInput = document.getElementById('asiakasId');
-                
                 hiddenInput.value = ""; 
-
                 for (var i = 0; i < options.length; i++) {
                     if (options[i].value === inputValue) {
                         hiddenInput.value = options[i].getAttribute('data-id');
@@ -414,7 +349,6 @@ body {
                 }
             });
 
-            // Tyhjennetään hakukentät aina, kun uusi modal-lomake avataan
             document.getElementById('lisaaTapahtumaModal').addEventListener('show.bs.modal', function () {
                 document.getElementById('asiakasHaku').value = "";
                 document.getElementById('asiakasId').value = "";
@@ -423,3 +357,4 @@ body {
     </script>
 </body>
 </html>
+	
