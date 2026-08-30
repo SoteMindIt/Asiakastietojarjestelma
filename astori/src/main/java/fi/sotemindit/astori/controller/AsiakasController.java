@@ -147,7 +147,7 @@ public class AsiakasController {
 	// kotisivuineen
 	@PostMapping("/lisaa-asiakas")
 	public String lisaaAsiakas(jakarta.servlet.http.HttpSession session, @RequestParam String nimi,
-			@RequestParam(value = "YTunnus", required = false) String yTunnus,
+			@RequestParam(value = "yTunnus", required = false) String yTunnus,
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
 			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,

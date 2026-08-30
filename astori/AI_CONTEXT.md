@@ -27,7 +27,7 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 - Tila: `@Enumerated(EnumType.STRING) AsiakkaanTila tila` (Oletus: `PROSPEKTI`).
 - Relaatiot: `@ManyToOne`, `@JoinColumn(name = "kayttaja_id") Kayttaja kayttaja`.
 - Metodit: JavaBean-standardin mukaiset `getyTunnus()` ja `setyTunnus(String yTunnus)` (y pienellä, T isolla).
-- Konstruktori: `public Asiakas(String nimi, String puhelin, String sahkoposti, String katuosoite, String postinumero, String postitoimipaikka, String kotisivu, AsiakkaanTila tila, String yTunnus)` -> 9 argumentin standardikonstruktori, jossa Y-tunnus välitetään suoraan olion pystytyksessä.
+- Konstruktori: `public Asiakas(String nimi, String puhelin, String sahkoposti, String katuosoite, String postinumero, String postitoimipaikka, String kotisivu, AsiakkaanTila tila, String yTunnus)` -> 9 argumentin standardikonstruktori, jossa Y-tunnus asetetaan suoraan olion pystytyksessä.
 
 ### AsiakkaanTila.java (Enum)
 - Arvot: `PROSPEKTI` ("Prospekti (Potentiaalinen)"), `KONTAKTOITU` ("Kontaktoitu / Keskustelussa"), `TARJOUS_JATETTY` ("Tarjous jätetty"), `AKTIIVINEN` ("Aktiivinen asiakas"), `PAATTYNYT` ("Yhteistyö päättynyt").
@@ -110,7 +110,7 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 ## 🎮 4. Backend-kontrollerit (Controllers & Routes)
 
 - **`AsiakasController.java`**: Hoitaa dashboardin, dynaamiset laskurit, asiakaslistauksen (10 kpl sivutus **Sort.by(ASC, "nimi")** dynaamisella aakkosjärjestyksellä), asiakasprofiilin (`@Transactional` ja `KATSELU`-lokitus) sekä dynaamisen 9-muuttujaisen konstruktoriluonnin (sisältäen `yTunnus` standardinmukaisesti pienellä y-kirjaimella).
-- **`AsiakasController.java (Live Search)`**: `/asiakkaat/live-haku` reitti, joka palauttaa pelkät taulukon rivit koko tietokannasta ohittaen sivutusrajat dynaamista Fetch-pikahakua varten.
+- **`AsiakasController.java (Live Search)`**: `/asiakkaat/live-haku` reitti, joka palauttaa dynaamisesti StringBuilderilla generoidut puhtaat `<tr>`-taulukkorivit suoraan vastauksena (`@ResponseBody`) yli sivutusrajojen.
 - **`TarjousController.java`**: Vastaanottaa dynaamiset tarjousrivit. Laskee summat `BigDecimal`-luokalla (25.5 % ALV-tuki). Generoi PDF-tulosteet OpenPDF-kirjastolla suoraan response-virtaan upottaen alareunaan automaattisesti `Yritystiedot (ID 1L)` mukaiset IBAN/BIC/Y-tunnus-tiedot.
 - **`AsetuksetController.java`**: Työntekijöiden luonnit BCrypt-salauksella (Vain `ADMIN`), työntekijätietojen päivitykset ja tuoterekisterin dynaamiset lisäykset/muokkaukset. Sisältää dynaamisen `/asetukset/tallenna-yritys` reitin yritystietojen muokkaamiseen (Aina kiinteä ID 1L).
 - **`KalenteriController.java`**: Ohjaa FullCalendar-näkymiä (ADMIN näkee kaikki, USER vain omat). Hoitaa tuplaklikkausvaraukset, joustavat paluuosoitteet (`lahde`) ja modal-poistot.
@@ -125,7 +125,7 @@ Kaikki sivut käyttävät dynaamista kontekstipolkua `${pageContext.request.cont
 
 - **`login.jsp`** & **`rekisterointi.jsp`**: Kirjautumisportti ja erillinen uuden työntekijän rekisteröitymislomake.
 - **`dashboard.jsp`**: Työpöytä laskureilla ja kalenterikoosteella. Tapahtuma-ajat muotoiltu suojatulla sekuntiluennan ohittavalla parsimisella (`substring(0, 16)`) muotoon **`dd.MM.yyyy 'klo' HH:mm`**.
-- **`asiakkaat.jsp`**: Korjattu asiakaslista ilman teknistä ID-sarakekuvausta, dynaamisella aakkosjärjestyksellä (`<c:forEach var="a" items="${asiakkaat}">`) ja tulostamalla Y-tunnuksen suoraan standardimuodossa **`${a.yTunnus}`**. Hakukenttä kytketty dynaamiseen Fetch-hakuun, joka lataa `/asiakkaat/live-haku` kautta dynaamisen **`asiakkaat-rivit-pala.jsp`** sisällön lennosta ja piilottaa sivutuspainikkeet haun ajaksi. Kentän `name="yTunnus"` synkronoitu kontrollerin kanssa.
+- **`asiakkaat.jsp`**: Korjattu asiakaslista ilman teknistä ID-sarakekuvausta, dynaamisella aakkosjärjestyksellä (`<c:forEach var="a" items="${asiakkaat}">`) ja tulostamalla Y-tunnuksen suoraan standardimuodossa **`${a.yTunnus}`**. Hakukenttä kytketty dynaamiseen Fetch-hakuun, joka lataa `/asiakkaat/live-haku` kautta dynaamiset rivit lennosta ja piilottaa sivutuspainikkeet haun ajaksi. Kaikki JavaScript-lohkojen perässä olleet turhat puolipisteet poistettu siisteyden maksimoimiseksi.
 - **`asiakasprofiili.jsp`**: Kolmesarakkeinen profiilinäkymä (yhteyshenkilöt, muistiinpanot, palveluostot summalaskureilla ja tarjoukset). Y-tunnuksen tulostus ja muokkauslomakkeen esitäyttö hyödyntää puhdasta standardimuotoa **`${asiakas.yTunnus}`**.
 - **`tarjoukset.jsp`**: Tarjouslaskentasivu. Listaa vanhat tarjoukset (PDF-lataus ja poisto). Sisältää dynaamisen JavaScript-taulukon rivien monistamiseen (`cloneNode`). Synkronoituna kontrollerin `${tuoteLista}`-muuttujan kanssa. Sisältää valmiina uuden **25.5 % ALV**-verokannan.
 - **`asetukset.jsp`** & **`lisaa-tuote.jsp`**: Tuoterekisteri dynaamisilla muokkausmodaalelle, varmuuskopiointipainike, yritystietolomake (kytketty dynaamiseen `${yritys}`-esitäyttöön) ja työntekijöiden hallinta.
