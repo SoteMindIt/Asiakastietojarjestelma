@@ -56,75 +56,59 @@ body {
 				+ Lisää uusi asiakas</button>
 		</div>
 
-		<!-- 🔍 HAKULOMAKE -->
-		<div class="row mb-4">
-			<div class="col-md-6 col-lg-5">
-				<form action="${pageContext.request.contextPath}/asiakkaat"
-					method="get" class="d-flex gap-2">
-					<input type="text" name="haku" class="form-control shadow-sm"
-						placeholder="Hae nimellä, sähköpostilla, puhelimella tai Y-tunnuksella..."
-						value="${haku}">
-					<button type="submit" class="btn btn-primary fw-bold shadow-sm">Hae</button>
-					<c:if test="${not empty haku}">
-						<a href="${pageContext.request.contextPath}/asiakkaat"
-							class="btn btn-outline-secondary shadow-sm">Tyhjennä</a>
-					</c:if>
-				</form>
-			</div>
-		</div>
 
-		<!-- 💡 HUOM: col-lg-8 muutettu muotoon col-12, jolloin taulukko saa täyden leveyden eikä kalenteri enää mahdu viereen -->
+		<form action="${pageContext.request.contextPath}/asiakkaat"
+			method="get" class="mb-4">
+			<div class="mb-4">
+				<input type="text" class="form-control form-control-lg shadow-sm"
+					id="reaaliaikainenHaku"
+					placeholder="Kirjoita asiakkaan nimi, sähköposti tai Y-tunnus etsiäksesi koko tietokannasta...">
+			</div>
+		</form>
+
 		<div class="row">
 			<div class="col-12 mb-4">
 				<div class="table-responsive border">
 					<table class="table table-hover align-middle mb-0">
 						<thead class="table-light">
 							<tr>
-								<th>ID</th>
-								<th>Nimi</th>
+								<th>Asiakkaan nimi</th>
 								<th>Y-tunnus</th>
+								<th>Puhelinnumero</th>
 								<th>Sähköposti</th>
-								<th>Puhelin</th>
 								<th>Tila</th>
 								<th class="text-end">Toiminnot</th>
 							</tr>
 						</thead>
-						<tbody>
-							<c:forEach var="asiakas" items="${asiakkaat}">
+						<tbody id="asiakasTaulukkoRunko">
+							<c:forEach var="a" items="${asiakkaat}">
 								<tr>
-									<td class="text-muted">#${asiakas.id}</td>
-									<td><strong class="text-dark">${asiakas.nimi}</strong></td>
-									<td><span class="text-muted">${not empty asiakas.YTunnus ? asiakas.YTunnus : '-'}</span></td>
-									<td>${asiakas.sahkoposti}</td>
-									<td>${asiakas.puhelin}</td>
-									<td><span
-										class="badge 
-											<c:choose>
-												<c:when test="${asiakas.tila == 'PROSPEKTI'}">bg-info text-white</c:when>
-												<c:when test="${asiakas.tila == 'KONTAKTOITU'}">bg-warning text-dark</c:when>
-												<c:when test="${asiakas.tila == 'TARJOUS_JATETTY'}">bg-primary</c:when>
-												<c:when test="${asiakas.tila == 'AKTIIVINEN'}">bg-success</c:when>
-												<c:otherwise>bg-secondary</c:otherwise>
-											</c:choose>">
-											${asiakas.tila} </span></td>
+									<td><strong><a
+											href="${pageContext.request.contextPath}/asiakas/${a.id}"
+											class="text-decoration-none text-dark">${a.nimi}</a></strong></td>
+									<td>${a.yTunnus}</td>
+									<td>${a.puhelin}</td>
+									<td>${a.sahkoposti}</td>
+									<td><span class="badge bg-primary">${a.tila}</span></td>
 									<td class="text-end"><a
-										href="${pageContext.request.contextPath}/asiakas/${asiakas.id}"
-										class="btn btn-sm btn-outline-primary px-3 rounded-pill fw-semibold">
-											Avaa profiili </a></td>
+										href="${pageContext.request.contextPath}/asiakas/${a.id}"
+										class="btn btn-sm btn-outline-primary fw-bold">Avaa
+											profiili</a></td>
 								</tr>
 							</c:forEach>
 							<c:if test="${empty asiakkaat}">
 								<tr>
-									<td colspan="7" class="text-center py-4 text-muted">Ei
+									<td colspan="6" class="text-center py-4 text-muted">Ei
 										hakutuloksia tai asiakkaita järjestelmässä.</td>
 								</tr>
 							</c:if>
 						</tbody>
 					</table>
 				</div>
+
 				<!-- SIVUTUSLINKIT KOKO SIVUN LEVEYDELLE -->
 				<c:if test="${totalPages > 1}">
-					<nav aria-label="Asiakaslistan sivutus"
+					<nav aria-label="Asiakaslistan sivutus" id="sivutusNavigaatio"
 						class="d-flex justify-content-center mt-4">
 						<ul class="pagination shadow-sm">
 							<li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
@@ -202,8 +186,7 @@ body {
 							</select>
 						</div>
 
-						<!-- 🗺️ KORJAUS: LISÄTTY PUUTTUVAT PARAMETRIT KONTROLLERIA VARTEN -->
-						<hr class="text-mutedmy-3">
+						<hr class="text-muted my-3">
 						<h6 class="fw-bold text-dark mb-3">Osoite- ja käyntitiedot
 							(vapaaehtoinen)</h6>
 
@@ -248,5 +231,50 @@ body {
 	<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+		
+			<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			var hakukentta = document.getElementById('reaaliaikainenHaku')
+			var taulukkoRunko = document.getElementById('asiakasTaulukkoRunko')
+			var sivutusNav = document.getElementById('sivutusNavigaatio')
+			
+			// Tallennetaan alkuperäiset 10 sivutettua asiakasta muistiin
+			var alkuperainenSisalto = taulukkoRunko ? taulukkoRunko.innerHTML : ''
+
+			if (hakukentta && taulukkoRunko) {
+				hakukentta.addEventListener('input', function(e) {
+					var hakusana = e.target.value.trim()
+					
+					// Jos hakukenttä tyhjennetään, palautetaan alkuperäinen sivutettu lista
+					if (hakusana.length === 0) {
+						taulukkoRunko.innerHTML = alkuperainenSisalto
+						if (sivutusNav) {
+							sivutusNav.style.display = ''
+						}
+						return
+					}
+					
+					// Tehdään haku taustalta lennosta ilman sivun lataamista
+					fetch('${pageContext.request.contextPath}/asiakkaat/live-haku?haku=' + encodeURIComponent(hakusana))
+						.then(function(response) {
+							return response.text()
+						})
+						.then(function(htmlRivit) {
+							// Päivitetään taulukon rivit lennosta hakutuloksilla
+							taulukkoRunko.innerHTML = htmlRivit
+							// Piilotetaan sivutuspainikkeet reaaliaikaisen haun ajaksi
+							if (sivutusNav) {
+								sivutusNav.style.display = 'none'
+							}
+						})
+						.catch(function(err) {
+							console.error('Haku epäonnistui:', err)
+						})
+				})
+			}
+		})
+	</script>
+		
+
 </body>
 </html>

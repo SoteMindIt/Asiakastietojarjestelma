@@ -101,7 +101,7 @@ public class AsiakasController {
 		model.addAttribute("asiakkaatLaskuri", asiakkaatYhteensa);
 		model.addAttribute("tarjouksetLaskuri", tarjouksetYhteensa);
 		model.addAttribute("tehtavatLaskuri", tehtavatTanaan);
-		
+
 		model.addAttribute("asiakkaatLaskuri", asiakkaatYhteensa);
 		model.addAttribute("tarjouksetLaskuri", tarjouksetYhteensa);
 		model.addAttribute("tehtavatLaskuri", tehtavatTanaan);
@@ -121,7 +121,8 @@ public class AsiakasController {
 
 		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan
 		// nousevasti
-		Pageable pageable = PageRequest.of(page, 10, Sort.by("nimi").ascending());
+		Pageable pageable = org.springframework.data.domain.PageRequest.of(page, 10,
+				org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "nimi"));
 		Page<Asiakas> asiakasSivu;
 
 		// 🔍 Tarkistetaan hakusana:
@@ -146,6 +147,7 @@ public class AsiakasController {
 	// kotisivuineen
 	@PostMapping("/lisaa-asiakas")
 	public String lisaaAsiakas(jakarta.servlet.http.HttpSession session, @RequestParam String nimi,
+			@RequestParam(value = "YTunnus", required = false) String yTunnus,
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
 			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,
@@ -160,12 +162,13 @@ public class AsiakasController {
 
 		// Luodaan uusi asiakas kaikilla tiedoilla
 		Asiakas uusiAsiakas = new Asiakas(nimi, puhelin, sahkoposti, katuosoite, postinumero, postitoimipaikka,
-				kotisivu, tila);
+				kotisivu, tila, yTunnus);
 
-		// TÄMÄ LIITOS PITÄÄ OLLA MUKANA: Kytketään asiakas kirjautuneeseen käyttäjään
+		// Kytketään asiakas kirjautuneeseen käyttäjään
 		uusiAsiakas.setKayttaja(nykyinenKayttaja);
 
 		asiakasRepository.save(uusiAsiakas);
+
 		return "redirect:/asiakkaat";
 	}
 
@@ -272,15 +275,12 @@ public class AsiakasController {
 		return "redirect:/asiakas/" + asiakasId;
 	}
 
-	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot, tilan ja uudet
-	// osoitetiedot sekä kotisivun
 	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot, tilan, osoitteet,
 	// kotisivun ja Y-TUNNUKSEN
 	@PostMapping("/asiakas/{id}/muokkaa")
 	public String muokkaaAsiakasta(@PathVariable Long id, @RequestParam String nimi,
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
-			@RequestParam(required = false) String yTunnus, // 👈 UUSI PARAMETRI LOMAKKEELTA
-			@RequestParam fi.sotemindit.astori.model.AsiakkaanTila tila,
+			@RequestParam(required = false) String yTunnus, @RequestParam fi.sotemindit.astori.model.AsiakkaanTila tila,
 			@RequestParam(required = false) String katuosoite, @RequestParam(required = false) String postinumero,
 			@RequestParam(required = false) String postitoimipaikka, @RequestParam(required = false) String kotisivu,
 			jakarta.servlet.http.HttpSession session) {
@@ -297,7 +297,7 @@ public class AsiakasController {
 		asiakas.setNimi(nimi);
 		asiakas.setSahkoposti(sahkoposti);
 		asiakas.setPuhelin(puhelin);
-		asiakas.setYTunnus(yTunnus); // 👈 TÄMÄ TALLENTAA MUUTETUN Y-TUNNUKSEN
+		asiakas.setyTunnus(yTunnus); // 👈 TÄMÄ TALLENTAA MUUTETUN Y-TUNNUKSEN
 		asiakas.setTila(tila);
 		asiakas.setKatuosoite(katuosoite);
 		asiakas.setPostinumero(postinumero);
@@ -337,6 +337,45 @@ public class AsiakasController {
 
 		// Palataan onnistuneen poiston jälkeen takaisin pääsivun asiakaslistaukseen
 		return "redirect:/asiakkaat";
+	}
+	
+	// 💡 LISÄTTY: Täydellinen Live Search, joka palauttaa pelkät valmiit taulukkorivit koko kannasta
+	@org.springframework.web.bind.annotation.GetMapping("/asiakkaat/live-haku")
+	@org.springframework.web.bind.annotation.ResponseBody
+	public String liveHaku(jakarta.servlet.http.HttpSession session, 
+	                       @org.springframework.web.bind.annotation.RequestParam("haku") String haku) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null || haku == null || haku.trim().isEmpty()) {
+			return "";
+		}
+
+		// Haetaan max 50 osumaa aakkosjärjestyksessä koko tietokannasta yli sivutusrajojen
+		org.springframework.data.domain.Pageable maxOsumat = 
+				org.springframework.data.domain.PageRequest.of(0, 50, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "nimi"));
+		
+		org.springframework.data.domain.Page<fi.sotemindit.astori.model.Asiakas> tulokset = 
+				asiakasRepository.findByKayttajaKayttajatunnusAndHaku(istuntoTunnus, haku.trim(), maxOsumat);
+
+		// Rakennetaan dynaamiset taulukkorivit puhtaaksi tekstiksi ilman erillistä JSP-tiedostoa
+		StringBuilder html = new StringBuilder();
+		String contextPath = session.getServletContext().getContextPath();
+
+		for (fi.sotemindit.astori.model.Asiakas a : tulokset.getContent()) {
+			html.append("<tr>");
+			html.append("<td><strong><a href=\"").append(contextPath).append("/asiakas/").append(a.getId()).append("\" class=\"text-decoration-none text-dark\">").append(a.getNimi()).append("</a></strong></td>");
+			html.append("<td>").append(a.getyTunnus() != null ? a.getyTunnus() : "").append("</td>");
+			html.append("<td>").append(a.getPuhelin() != null ? a.getPuhelin() : "").append("</td>");
+			html.append("<td>").append(a.getSahkoposti() != null ? a.getSahkoposti() : "").append("</td>");
+			html.append("<td><span class=\"badge bg-primary\">").append(a.getTila()).append("</span></td>");
+			html.append("<td class=\"text-end\"><a href=\"").append(contextPath).append("/asiakas/").append(a.getId()).append("\" class=\"btn btn-sm btn-outline-primary fw-bold\">Avaa profiili</a></td>");
+			html.append("</tr>");
+		}
+
+		if (tulokset.getContent().isEmpty()) {
+			html.append("<tr><td colspan=\"6\" class=\"text-center py-4 text-muted\">Hakuehdolla ei löytynyt yhtään asiakasta koko tietokannasta.</td></tr>");
+		}
+
+		return html.toString();
 	}
 
 }

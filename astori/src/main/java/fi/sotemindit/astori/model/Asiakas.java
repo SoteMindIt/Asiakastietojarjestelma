@@ -47,7 +47,7 @@ public class Asiakas {
 
 	// Konstruktori helpottamaan olioiden luontia kehityksessä
 	public Asiakas(String nimi, String puhelin, String sahkoposti, String katuosoite, String postinumero,
-			String postitoimipaikka, String kotisivu, AsiakkaanTila tila) {
+			String postitoimipaikka, String kotisivu, AsiakkaanTila tila, String yTunnus) {
 		this.nimi = nimi;
 		this.puhelin = puhelin;
 		this.sahkoposti = sahkoposti;
@@ -56,6 +56,7 @@ public class Asiakas {
 		this.postitoimipaikka = postitoimipaikka;
 		this.kotisivu = kotisivu;
 		this.tila = tila != null ? tila : AsiakkaanTila.PROSPEKTI;
+		this.yTunnus = yTunnus;
 	}
 
 	// Getterit ja Setterit
@@ -139,11 +140,11 @@ public class Asiakas {
 		this.kayttaja = kayttaja;
 	}
 
-	public String getYTunnus() {
+	public String getyTunnus() {
 		return this.yTunnus;
 	}
 
-	public void setYTunnus(String yTunnus) {
+	public void setyTunnus(String yTunnus) {
 		this.yTunnus = yTunnus;
 	}
 }

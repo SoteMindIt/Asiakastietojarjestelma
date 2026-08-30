@@ -59,7 +59,6 @@ body {
 			<div class="navbar-nav me-auto">
 				<!-- 1. Etusivu -->
 				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a>
-
 				<!-- 2. Asiakkaat (Vie omalle sivulleen) -->
 				<a class="nav-link"
 					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a

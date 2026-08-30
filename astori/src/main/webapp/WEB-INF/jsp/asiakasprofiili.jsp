@@ -78,9 +78,14 @@ body {
 						<strong>Puhelin:</strong> ${not empty asiakas.puhelin ? asiakas.puhelin : '<span class="text-muted italic small">Ei määritelty</span>'}
 					</p>
 					<p class="mb-1">
-						<strong>Osoite:</strong> ${not empty asiakas.katuosoite ? asiakas.katuosoite : ''}
+						<strong>Osoite:</strong> ${not empty asiakas.katuosoite ? asiakas.katuosoite : '<span class="text-muted italic small">Ei määritelty</span>'}
 						${asiakas.postinumero} ${asiakas.postitoimipaikka}
 					</p>
+					
+					<p class="mb-1">
+						<strong>Y-tunnus:</strong> ${not empty asiakas.yTunnus ? asiakas.yTunnus : '<span class="text-muted italic small">Ei määritelty</span>'}
+					</p>
+					
 					<p class="mb-1">
 						<strong>Kotisivu:</strong>
 						<c:if test="${not empty asiakas.kotisivu}">
@@ -153,14 +158,6 @@ body {
 						<div class="mb-2">
 							<input type="email" class="form-control form-control-sm"
 								name="sahkoposti" placeholder="Sähköposti">
-						</div>
-						<div class="mb-3">
-							<label for="yTunnus"
-								class="form-label fw-semibold text-secondary">Y-tunnus</label>
-							<!-- value-attribuutti hakee valmiiksi tallennetun Y-tunnuksen kenttään -->
-							<input type="text" class="form-control" id="yTunnus"
-								name="yTunnus" placeholder="esim. 1234567-8" maxlength="9"
-								value="${asiakas.YTunnus}">
 						</div>
 						<div class="mb-2">
 							<input type="text" class="form-control form-control-sm"
@@ -354,7 +351,7 @@ body {
 							<!-- value-attribuutti hakee valmiiksi tallennetun Y-tunnuksen kenttään -->
 							<input type="text" class="form-control" id="yTunnus"
 								name="yTunnus" placeholder="esim. 1234567-8" maxlength="9"
-								value="${asiakas.YTunnus}">
+								value="${asiakas.yTunnus}">
 						</div>
 						<div class="row g-3 mb-3">
 							<div class="col-md-4">

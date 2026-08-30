@@ -39,6 +39,7 @@ body {
 			<a class="navbar-brand fw-bold"
 				href="${pageContext.request.contextPath}/">Astori</a>
 			<div class="navbar-nav me-auto">
+				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a>
 				<a class="nav-link"
 					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a
 					class="nav-link"

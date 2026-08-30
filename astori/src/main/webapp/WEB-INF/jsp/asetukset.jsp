@@ -31,6 +31,7 @@ body {
 			<a class="navbar-brand fw-bold"
 				href="${pageContext.request.contextPath}/">Astori</a>
 			<div class="navbar-nav me-auto">
+				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a>
 				<a class="nav-link" href="${pageContext.request.contextPath}/">Asiakkaat</a>
 				<a class="nav-link active fw-bold"
 					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
@@ -94,13 +95,15 @@ body {
 					aria-label="Close"></button>
 			</div>
 		</c:if>
-				<c:if test="${param.success == 'product_updated'}">
-			<div class="alert alert-success alert-dismissible fade show fw-bold" role="alert">
+		<c:if test="${param.success == 'product_updated'}">
+			<div class="alert alert-success alert-dismissible fade show fw-bold"
+				role="alert">
 				✓ Tuotteen tiedot päivitetty onnistuneesti!
-				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+				<button type="button" class="btn-close" data-bs-dismiss="alert"
+					aria-label="Close"></button>
 			</div>
 		</c:if>
-		
+
 
 		<div class="row g-4">
 			<!-- TUOTEHALLINTA -->
