@@ -148,10 +148,12 @@ public class AsiakasController {
 	@PostMapping("/lisaa-asiakas")
 	public String lisaaAsiakas(jakarta.servlet.http.HttpSession session, @RequestParam String nimi,
 			@RequestParam(value = "yTunnus", required = false) String yTunnus,
+			@RequestParam(required = false) String kuvaus, // 💡 LISÄTTY PYYNTÖÖN
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
 			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,
-			@RequestParam(required = false) String kotisivu) {
+			@RequestParam(required = false) String kotisivu,
+			@RequestParam(required = false) String hyvinvointialue) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
@@ -160,17 +162,15 @@ public class AsiakasController {
 		fi.sotemindit.astori.model.Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
 				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
 
-		// Luodaan uusi asiakas kaikilla tiedoilla
+		// Luodaan uusi asiakas päivitettyyn 10-muuttujaiseen konstruktoriin
 		Asiakas uusiAsiakas = new Asiakas(nimi, puhelin, sahkoposti, katuosoite, postinumero, postitoimipaikka,
-				kotisivu, tila, yTunnus);
+				kotisivu, tila, yTunnus, kuvaus, hyvinvointialue);
 
-		// Kytketään asiakas kirjautuneeseen käyttäjään
 		uusiAsiakas.setKayttaja(nykyinenKayttaja);
-
 		asiakasRepository.save(uusiAsiakas);
-
 		return "redirect:/asiakkaat";
 	}
+
 
 	// 3. ASIAKASPROFIILI: Näyttää yhden asiakkaan tarkemmat tiedot, yhteyshenkilöt,
 	// kirjaukset ja tarjoukset
@@ -277,37 +277,48 @@ public class AsiakasController {
 
 	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot, tilan, osoitteet,
 	// kotisivun ja Y-TUNNUKSEN
+	// 💡 KORJATTU: Mukana nyt dynaaminen kuvaus-parametrin vastaanotto ja tallennus muokkauksessa
 	@PostMapping("/asiakas/{id}/muokkaa")
-	public String muokkaaAsiakasta(@PathVariable Long id, @RequestParam String nimi,
-			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
-			@RequestParam(required = false) String yTunnus, @RequestParam fi.sotemindit.astori.model.AsiakkaanTila tila,
-			@RequestParam(required = false) String katuosoite, @RequestParam(required = false) String postinumero,
-			@RequestParam(required = false) String postitoimipaikka, @RequestParam(required = false) String kotisivu,
+	public String muokkaaAsiakasta(@PathVariable Long id,
+			@RequestParam String nimi,
+			@RequestParam(value = "yTunnus", required = false) String yTunnus,
+			@RequestParam(required = false) String kuvaus, // 💡 LISÄTTY: Vastaanotetaan laaja kuvausteksti lomakkeelta
+			@RequestParam(required = false) String sahkoposti,
+			@RequestParam(required = false) String puhelin,
+			@RequestParam AsiakkaanTila tila,
+			@RequestParam(required = false) String katuosoite,
+			@RequestParam(required = false) String postinumero,
+			@RequestParam(required = false) String postitoimipaikka,
+			@RequestParam(required = false) String kotisivu,
+			@RequestParam(required = false) String hyvinvointialue,
 			jakarta.servlet.http.HttpSession session) {
+		
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
 		Asiakas asiakas = asiakasRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + id));
+				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löydy ID:llä: " + id));
 
-		// Päivitetään muuttuneet tiedot tietokantaolioon
+		// Päivitetään kaikki arvot standardinmukaisesti, mukana nyt laaja kuvaus
 		asiakas.setNimi(nimi);
+		asiakas.setyTunnus(yTunnus);
+		asiakas.setKuvaus(kuvaus); // 💡 LISÄTTY: Asetetaan uusi teksti oliolle
 		asiakas.setSahkoposti(sahkoposti);
 		asiakas.setPuhelin(puhelin);
-		asiakas.setyTunnus(yTunnus); // 👈 TÄMÄ TALLENTAA MUUTETUN Y-TUNNUKSEN
 		asiakas.setTila(tila);
 		asiakas.setKatuosoite(katuosoite);
 		asiakas.setPostinumero(postinumero);
 		asiakas.setPostitoimipaikka(postitoimipaikka);
 		asiakas.setKotisivu(kotisivu);
+		asiakas.setHyvinvointialue(hyvinvointialue);
 
 		asiakasRepository.save(asiakas);
-
+		
 		return "redirect:/asiakas/" + id;
 	}
+
 
 	// 7b. ASIAKKAAN POISTO: Poistaa asiakkaan ja kaikki siihen liittyvät tiedot
 	// (Cascade)
@@ -376,6 +387,41 @@ public class AsiakasController {
 		}
 
 		return html.toString();
+	}
+	
+	//Yhteyshenkilön muokkaaminen
+	@PostMapping("/yhteyshenkilo/muokkaa/{id}")
+	public String muokkaaYhteyshenkilo(@PathVariable Long id,
+	                                   @RequestParam String nimi,
+	                                   @RequestParam String rooli,
+	                                   @RequestParam String sahkoposti,
+	                                   @RequestParam String puhelin,
+	                                   @RequestParam Long asiakasId,
+	                                   jakarta.servlet.http.HttpSession session) {
+	    
+	    String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+	    if (istuntoTunnus == null) {
+	        return "redirect:/login";
+	    }
+
+	    // Haetaan olemassa oleva yhteyshenkilö
+	    Yhteyshenkilo yh = yhteyshenkiloRepository.findById(id)
+	            .orElseThrow(() -> new IllegalArgumentException("Yhteyshenkilöä ei löytynyt ID-numerolla: " + id));
+
+	    // Päivitetään uudet tiedot
+	    yh.setNimi(nimi);
+	    yh.setRooli(rooli);
+	    yh.setSahkoposti(sahkoposti);
+	    yh.setPuhelin(puhelin);
+
+	    yhteyshenkiloRepository.save(yh);
+
+	    // Kirjataan muokkaus järjestelmälokiin
+	    lokiRepository.save(new Loki(istuntoTunnus, "MUOKKAUS", 
+	            "Muokattu yhteyshenkilön tietoja: " + nimi + " (ID: " + id + ") asiakkaalle ID: " + asiakasId));
+
+	    // Ohjataan takaisin asiakasprofiiliin
+	    return "redirect:/asiakas/" + asiakasId;
 	}
 
 }

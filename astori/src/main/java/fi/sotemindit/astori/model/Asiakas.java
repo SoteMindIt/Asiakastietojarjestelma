@@ -26,6 +26,7 @@ public class Asiakas {
 	private String postinumero;
 	private String postitoimipaikka;
 	private String kotisivu;
+	private String hyvinvointialue;
 
 	// UUSI: Asiakkaan tila tallennetaan tietokantaan tekstimuodossa (esim.
 	// 'PROSPEKTI')
@@ -41,13 +42,17 @@ public class Asiakas {
 	@Column(name = "y_tunnus", length = 9) // Suomalainen Y-tunnus on aina 9 merkkiä (esim. 1234567-8)
 	private String yTunnus;
 
+	@jakarta.persistence.Column(columnDefinition = "TEXT") // 💡 LISÄTTY: Sallii rajattoman määrän tekstiä tietokantaan
+	private String kuvaus;
+
 	// Tyhjä konstruktori JPA:ta varten
 	public Asiakas() {
 	}
 
 	// Konstruktori helpottamaan olioiden luontia kehityksessä
 	public Asiakas(String nimi, String puhelin, String sahkoposti, String katuosoite, String postinumero,
-			String postitoimipaikka, String kotisivu, AsiakkaanTila tila, String yTunnus) {
+			String postitoimipaikka, String kotisivu, AsiakkaanTila tila, String yTunnus, String kuvaus,
+			String hyvinvointialue) {
 		this.nimi = nimi;
 		this.puhelin = puhelin;
 		this.sahkoposti = sahkoposti;
@@ -57,6 +62,8 @@ public class Asiakas {
 		this.kotisivu = kotisivu;
 		this.tila = tila != null ? tila : AsiakkaanTila.PROSPEKTI;
 		this.yTunnus = yTunnus;
+		this.kuvaus = kuvaus;
+		this.hyvinvointialue = hyvinvointialue;
 	}
 
 	// Getterit ja Setterit
@@ -147,4 +154,20 @@ public class Asiakas {
 	public void setyTunnus(String yTunnus) {
 		this.yTunnus = yTunnus;
 	}
+		   
+    public String getKuvaus() {
+        return this.kuvaus;
+    }
+
+    public void setKuvaus(String kuvaus) {
+        this.kuvaus = kuvaus;
+    }
+    
+    public String getHyvinvointialue() {
+        return hyvinvointialue;
+    }
+
+    public void setHyvinvointialue(String hyvinvointialue) {
+        this.hyvinvointialue = hyvinvointialue;
+    }
 }

@@ -13,12 +13,15 @@ public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 	// Haetaan käyttäjän asiakkaat sivutettuna
 	Page<Asiakas> findByKayttajaKayttajatunnus(String kayttajatunnus, Pageable pageable);
 
+	
+	
 	// Hakutoiminto neljälle kentälle
 	@Query("SELECT a FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus AND " +
-	       "(LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-	       " LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-	       " LOWER(a.puhelin) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-	       " LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')))")
+		       "(LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.puhelin) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.hyvinvointialue) LIKE LOWER(CONCAT('%', :haku, '%')))")
 	Page<Asiakas> findByKayttajaKayttajatunnusAndHaku(
 			@Param("tunnus") String tunnus, 
 			@Param("haku") String haku, 

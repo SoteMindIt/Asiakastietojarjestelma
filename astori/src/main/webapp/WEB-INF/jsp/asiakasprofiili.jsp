@@ -41,7 +41,7 @@ body {
 				href="${pageContext.request.contextPath}/">Astori</a>
 			<div class="navbar-nav me-auto">
 				<a class="nav-link active fw-bold"
-					href="${pageContext.request.contextPath}/">Asiakkaat</a> <a
+					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a
 					class="nav-link"
 					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
 					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
@@ -60,8 +60,8 @@ body {
 		<!-- TAKAISIN-LINKKI -->
 		<div class="mb-3">
 			<a class="btn btn-link p-0 text-decoration-none"
-				href="${pageContext.request.contextPath}/">&larr; Takaisin
-				asiakaslistaukseen</a>
+				href="${pageContext.request.contextPath}/asiakkaat">&larr;
+				Takaisin asiakaslistaukseen</a>
 		</div>
 
 		<!-- ASIAKKAAN PERUSTIEDOT JA TOIMINTOPAINIKKEET -->
@@ -70,6 +70,10 @@ body {
 				<div class="col-md-7">
 					<span class="text-muted small">Asiakasnumero #${asiakas.id}</span>
 					<h1 class="text-dark fw-bold mb-3">${asiakas.nimi}</h1>
+
+					<p class="text-muted border-bottom pb-2 mb-3">
+						<span class="fw-bold text-secondary">Toimiala:</span> ${not empty asiakas.kuvaus ? asiakas.kuvaus : '<span class="text-muted italic small">Ei kuvausta</span>'}
+					</p>
 
 					<p class="mb-1">
 						<strong>Sähköposti:</strong> ${not empty asiakas.sahkoposti ? asiakas.sahkoposti : '<span class="text-muted italic small">Ei määritelty</span>'}
@@ -81,11 +85,11 @@ body {
 						<strong>Osoite:</strong> ${not empty asiakas.katuosoite ? asiakas.katuosoite : '<span class="text-muted italic small">Ei määritelty</span>'}
 						${asiakas.postinumero} ${asiakas.postitoimipaikka}
 					</p>
-					
+
 					<p class="mb-1">
 						<strong>Y-tunnus:</strong> ${not empty asiakas.yTunnus ? asiakas.yTunnus : '<span class="text-muted italic small">Ei määritelty</span>'}
 					</p>
-					
+
 					<p class="mb-1">
 						<strong>Kotisivu:</strong>
 						<c:if test="${not empty asiakas.kotisivu}">
@@ -97,11 +101,36 @@ body {
 					</p>
 				</div>
 				<div class="col-md-5 text-end">
+					<!-- 💡 KORJAUS: Värikoodattu dynaaminen tila-badge yhtenäisen tyylin varmistamiseksi -->
 					<div class="mb-3">
-						<span class="badge bg-primary p-2 fs-6">Tila:
-							${asiakas.tila}</span>
+						<span class="me-2 fw-bold text-secondary">Tila:</span>
+						<c:choose>
+							<c:when test="${asiakas.tila == 'PROSPEKTI'}">
+								<span
+									class="badge bg-warning text-dark fw-bold text-uppercase p-2 shadow-sm">Prospekti</span>
+							</c:when>
+							<c:when test="${asiakas.tila == 'KONTAKTOITU'}">
+								<span
+									class="badge bg-info text-dark fw-bold text-uppercase p-2 shadow-sm">Kontaktoitu</span>
+							</c:when>
+							<c:when test="${asiakas.tila == 'TARJOUS_JATETTY'}">
+								<span
+									class="badge bg-primary fw-bold text-uppercase p-2 shadow-sm">Tarjous
+									jätetty</span>
+							</c:when>
+							<c:when test="${asiakas.tila == 'AKTIIVINEN'}">
+								<span
+									class="badge bg-success fw-bold text-uppercase p-2 shadow-sm">Aktiivinen</span>
+							</c:when>
+							<c:when test="${asiakas.tila == 'PAATTYNYT'}">
+								<span
+									class="badge bg-secondary fw-bold text-uppercase p-2 shadow-sm">Päättynyt</span>
+							</c:when>
+							<c:otherwise>
+								<span class="badge bg-light text-dark border p-2">${asiakas.tila}</span>
+							</c:otherwise>
+						</c:choose>
 					</div>
-					<!-- KORJATTU: btn-group korvattu d-flex gap-2 -luokalla, jotta painikkeiden väliin tulee rako -->
 					<div class="d-flex gap-2 justify-content-end">
 						<a
 							href="${pageContext.request.contextPath}/asiakas/${asiakas.id}/tarjoukset"
@@ -131,11 +160,20 @@ body {
 					<h3 class="fw-bold h5 text-secondary mb-3">Yhteyshenkilöt</h3>
 					<ul class="list-group list-group-flush mb-4">
 						<c:forEach var="h" items="${yhteyshenkilot}">
-							<li class="list-group-item px-0 py-2"><strong
-								class="text-dark">${h.nimi}</strong> <span
-								class="text-muted small">(${h.rooli})</span><br> <small
-								class="text-secondary">Puh: ${h.puhelin} | E-mail:
-									${h.sahkoposti}</small></li>
+							<div class="card mb-2 p-2">
+								<div class="d-flex justify-content-between align-items-center">
+									<div>
+										<strong>${h.nimi}</strong> (${h.rooli})<br> <small
+											class="text-muted">${h.sahkoposti} | ${h.puhelin}</small>
+									</div>
+									<!-- Muokkauspainike dynaamisilla data-attribuuteilla -->
+									<button type="button"
+										class="btn btn-sm btn-outline-primary muokkaa-yh-btn"
+										data-id="${h.id}" data-nimi="${h.nimi}"
+										data-rooli="${h.rooli}" data-email="${h.sahkoposti}"
+										data-puh="${h.puhelin}">Muokkaa</button>
+								</div>
+							</div>
 						</c:forEach>
 						<c:if test="${empty yhteyshenkilot}">
 							<li class="list-group-item px-0 py-3 text-muted italic">Ei
@@ -167,7 +205,6 @@ body {
 					</form>
 				</div>
 			</div>
-
 			<!-- 2. SARAKE: KIRJAUKSET / LOKI -->
 			<div class="col-md-4">
 				<div class="col-card">
@@ -328,6 +365,41 @@ body {
 							</label> <input type="text" class="form-control" name="nimi"
 								value="${asiakas.nimi}" required>
 						</div>
+
+						<h1 class="text-dark fw-bold mb-2">${asiakas.nimi}</h1>
+
+						<!-- 💡 PÄIVITETTY: Laajan kuvauksen siisti esitysmuoto omassa laatikossaan -->
+						<div class="p-3 bg-light rounded border mb-3">
+							<h6 class="fw-bold text-secondary mb-1"
+								style="font-size: 0.85em; text-transform: uppercase;">Yrityksen
+								toiminta ja taustat</h6>
+							<p class="mb-0 text-dark small" style="white-space: pre-line;">
+								<c:choose>
+									<c:when test="${not empty asiakas.kuvaus}">
+										<c:out value="${asiakas.kuvaus}" />
+									</c:when>
+									<c:otherwise>
+										<span class="text-muted italic">Ei määriteltyä
+											toiminnan kuvausta.</span>
+									</c:otherwise>
+								</c:choose>
+							</p>
+						</div>
+
+						<div class="mb-3">
+							<label for="muokkaaHyvinvointialue" class="form-label">Hyvinvointialue</label>
+							<select class="form-select" id="muokkaaHyvinvointialue"
+								name="hyvinvointialue">
+								<option value="">-- Valitse hyvinvointialue --</option>
+								<c:forEach var="alue" items="${hyvinvointialueet}">
+									<option value="${alue}"
+										<c:if test="${asiakas.hyvinvointialue == alue}">selected</c:if>>
+										${alue}</option>
+								</c:forEach>
+							</select>
+						</div>
+
+
 						<div class="row g-3 mb-3">
 							<div class="col-md-6">
 								<label class="form-label fw-bold">Puhelinnumero</label> <input
@@ -380,6 +452,12 @@ body {
 								</c:forEach>
 							</select>
 						</div>
+						<div class="mb-3">
+							<label class="form-label fw-bold">Toiminnan kuvaus /
+								Toimiala</label> <input type="text" class="form-control" name="kuvaus"
+								value="${asiakas.kuvaus}">
+						</div>
+
 					</div>
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary fw-bold"
@@ -395,5 +473,74 @@ body {
 	<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+
+	<div class="modal fade" id="muokkaaYhModal" tabindex="-1"
+		aria-labelledby="muokkaaYhModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="muokkaaYhForm" method="post" action="">
+					<!-- Piilokenttä asiakasId:lle, jotta kontrolleri osaa ohjata takaisin oikeaan profiiliin -->
+					<input type="hidden" name="asiakasId" value="${asiakas.id}">
+
+					<div class="modal-header">
+						<h5 class="modal-title" id="muokkaaYhModalLabel">Muokkaa
+							yhteyshenkilöä</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"
+							aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<div class="mb-3">
+							<label for="yhNimi" class="form-label">Nimi</label> <input
+								type="text" class="form-control" id="yhNimi" name="nimi"
+								required>
+						</div>
+						<div class="mb-3">
+							<label for="yhRooli" class="form-label">Rooli / Nimike</label> <input
+								type="text" class="form-control" id="yhRooli" name="rooli">
+						</div>
+						<div class="mb-3">
+							<label for="yhSahkoposti" class="form-label">Sähköposti</label> <input
+								type="email" class="form-control" id="yhSahkoposti"
+								name="sahkoposti">
+						</div>
+						<div class="mb-3">
+							<label for="yhPuhelin" class="form-label">Puhelin</label> <input
+								type="text" class="form-control" id="yhPuhelin" name="puhelin">
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-primary">Tallenna
+							muutokset</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+   <script>
+        document.querySelectorAll('.muokkaa-yh-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id')
+                const nimi = this.getAttribute('data-nimi')
+                const rooli = this.getAttribute('data-rooli')
+                const email = this.getAttribute('data-email')
+                const puh = this.getAttribute('data-puh')
+                
+                const form = document.getElementById('muokkaaYhForm')
+                form.action = '${pageContext.request.contextPath}/yhteyshenkilo/muokkaa/' + id
+                
+                document.getElementById('yhNimi').value = nimi
+                document.getElementById('yhRooli').value = rooli
+                document.getElementById('yhSahkoposti').value = email
+                document.getElementById('yhPuhelin').value = puh
+                
+                const muokkaaModal = new bootstrap.Modal(document.getElementById('muokkaaYhModal'))
+                muokkaaModal.show()
+            })
+        })
+    </script>
+
 </body>
 </html>

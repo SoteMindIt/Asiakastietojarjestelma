@@ -89,7 +89,33 @@ body {
 									<td>${a.yTunnus}</td>
 									<td>${a.puhelin}</td>
 									<td>${a.sahkoposti}</td>
-									<td><span class="badge bg-primary">${a.tila}</span></td>
+									<td><c:choose>
+											<c:when test="${a.tila == 'PROSPEKTI'}">
+												<span
+													class="badge bg-warning text-dark fw-bold text-uppercase p-2 shadow-sm">Prospekti</span>
+											</c:when>
+											<c:when test="${a.tila == 'KONTAKTOITU'}">
+												<span
+													class="badge bg-info text-dark fw-bold text-uppercase p-2 shadow-sm">Kontaktoitu</span>
+											</c:when>
+											<c:when test="${a.tila == 'TARJOUS_JATETTY'}">
+												<span
+													class="badge bg-primary fw-bold text-uppercase p-2 shadow-sm">Tarjous
+													jätetty</span>
+											</c:when>
+											<c:when test="${a.tila == 'AKTIIVINEN'}">
+												<span
+													class="badge bg-success fw-bold text-uppercase p-2 shadow-sm">Aktiivinen</span>
+											</c:when>
+											<c:when test="${a.tila == 'PAATTYNYT'}">
+												<span
+													class="badge bg-secondary fw-bold text-uppercase p-2 shadow-sm">Päättynyt</span>
+											</c:when>
+											<c:otherwise>
+												<span class="badge bg-light text-dark border p-2">${a.tila}</span>
+											</c:otherwise>
+										</c:choose></td>
+
 									<td class="text-end"><a
 										href="${pageContext.request.contextPath}/asiakas/${a.id}"
 										class="btn btn-sm btn-outline-primary fw-bold">Avaa
@@ -165,6 +191,17 @@ body {
 						</div>
 
 						<div class="mb-3">
+							<label for="hyvinvointialue" class="form-label">Hyvinvointialue</label>
+							<select class="form-select" id="hyvinvointialue"
+								name="hyvinvointialue">
+								<option value="">-- Valitse hyvinvointialue --</option>
+								<c:forEach var="alue" items="${hyvinvointialueet}">
+									<option value="${alue}">${alue}</option>
+								</c:forEach>
+							</select>
+						</div>
+
+						<div class="mb-3">
 							<label for="sahkoposti"
 								class="form-label fw-semibold text-secondary">Sähköposti</label>
 							<input type="email" class="form-control" id="sahkoposti"
@@ -216,6 +253,16 @@ body {
 								(URL)</label> <input type="url" class="form-control" id="kotisivu"
 								name="kotisivu" placeholder="https://yritys.fi">
 						</div>
+
+						<div class="mb-3">
+							<label for="kuvaus" class="form-label fw-semibold text-secondary">Toiminnan
+								kuvaus / Taustatiedot</label>
+							<!-- 💡 PÄIVITETTY: Vaihdettu textarea laajaa kuvausta varten -->
+							<textarea class="form-control" id="kuvaus" name="kuvaus" rows="4"
+								placeholder="Kirjoita vapaamuotoinen kuvaus yrityksen toiminnasta, historiasta ja tarpeista..."></textarea>
+						</div>
+
+
 					</div>
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary"
@@ -231,8 +278,8 @@ body {
 	<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
-		
-			<script>
+
+	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			var hakukentta = document.getElementById('reaaliaikainenHaku')
 			var taulukkoRunko = document.getElementById('asiakasTaulukkoRunko')
@@ -274,7 +321,7 @@ body {
 			}
 		})
 	</script>
-		
+
 
 </body>
 </html>

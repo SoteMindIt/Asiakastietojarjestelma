@@ -23,11 +23,11 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 ## 🏛️ 2. Tietomallit (Entities / Models)
 
 ### Asiakas.java
-- Kentät: `Long id` (Identity), `String nimi` (nullable=false), `String puhelin`, `String sahkoposti`, `String katuosoite`, `String postinumero`, `String postitoimipaikka`, `String kotisivu`, `String yTunnus` (length=9).
-- Tila: `@Enumerated(EnumType.STRING) AsiakkaanTila tila` (Oletus: `PROSPEKTI`).
-- Relaatiot: `@ManyToOne`, `@JoinColumn(name = "kayttaja_id") Kayttaja kayttaja`.
-- Metodit: JavaBean-standardin mukaiset `getyTunnus()` ja `setyTunnus(String yTunnus)` (y pienellä, T isolla).
-- Konstruktori: `public Asiakas(String nimi, String puhelin, String sahkoposti, String katuosoite, String postinumero, String postitoimipaikka, String kotisivu, AsiakkaanTila tila, String yTunnus)` -> 9 argumentin standardikonstruktori, jossa Y-tunnus asetetaan suoraan olion pystytyksessä.
+- Kentät: Long id (Identity), String nimi (nullable=false), String puhelin, String sahkoposti, String katuosoite, String postinumero, String postitoimipaikka, String kotisivu, String yTunnus (length=9), String hyvinvointialue.
+- Tila: @Enumerated(EnumType.STRING) AsiakkaanTila tila (Oletus: PROSPEKTI).
+- Relaatiot: @ManyToOne, @JoinColumn(name = "kayttaja_id") Kayttaja kayttaja.
+- Metodit: JavaBean-standardin mukaiset getyTunnus() ja setyTunnus(String yTunnus).
+- Konstruktori: public Asiakas(String nimi, String puhelin, String sahkoposti, String katuosoite, String postinumero, String postitoimipaikka, String kotisivu, AsiakkaanTila tila, String yTunnus, String hyvinvointialue) -> 10 argumentin standardikonstruktori, jossa Hyvinvointialue ja Y-tunnus asetetaan suoraan olion pystytyksessä.
 
 ### AsiakkaanTila.java (Enum)
 - Arvot: `PROSPEKTI` ("Prospekti (Potentiaalinen)"), `KONTAKTOITU` ("Kontaktoitu / Keskustelussa"), `TARJOUS_JATETTY` ("Tarjous jätetty"), `AKTIIVINEN` ("Aktiivinen asiakas"), `PAATTYNYT` ("Yhteistyö päättynyt").
@@ -58,7 +58,7 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 - Kentät: `Long id` (Kiinteä `1L`), `String nimi`, `String yTunnus`, `String sahkoposti`, `String puhelin`, `String osoite`, `String iban`, `String bic`. Käytetään globaalina tarjouspohjan asetuksena.
 
 ### Kalenteritapahtumat ja Aputaulut
-- `Tapahtuma.java`: `Long id`, `String otsikko` (nullable=false), `String kuvaus`, `LocalDateTime ajankohta` (nullable=false), `@Enumerated(EnumType.STRING) TapahtumaTyyppi tyyppi`. `@ManyToOne` kytkennät `Asiakas`- ja `Kayttaja`-malleihin.
+- Tapahtuma.java: Long id, String otsikko (nullable=false), String kuvaus, LocalDateTime ajankohta (nullable=false), @Enumerated(EnumType.STRING) TapahtumaTyyppi tyyppi. @ManyToOne kytkentä Asiakas-malliin (nullable = true, sallii yleiset tapahtumat ilman asiakaslinkkiä) ja @ManyToOne kytkentä Kayttaja-malliin.
 - `TapahtumaTyyppi.java` (Enum): `PUHELU` ("Puhelu"), `TAPAAMINEN` ("Tapaaminen"), `ETAKOKOUS` ("Etäkokous"), `MUU` ("Muu tehtävä"). `getNayttorivi()`.
 - `Yhteyshenkilo.java`: Asiakkaan yhteyshenkilöt. `Long id`, `String nimi`, `String rooli`, `String sahkoposti`, `String puhelin`. `@ManyToOne @JoinColumn(name = "asiakas_id", nullable = false)` kytkös `Asiakas`-malliin.
 - `Kirjaus.java`: Asiakkaan lokimerkinnät. `Long id`, `String teksti`, `LocalDateTime luontiaika`. `@ManyToOne` kytkös `Asiakas`-malliin.
@@ -67,8 +67,8 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 ## 🔌 3. Repository-rajapinnat (Repositories)
 
 ### AsiakasRepository.java
-- `Page<Asiakas> findByKayttajaKayttajatunnus(String kayttajatunnus, Pageable pageable)`
-- `Page<Asiakas> findByKayttajaKayttajatunnusAndHaku(@Param("tunnus") String tunnus, @Param("haku") String haku, Pageable pageable)` -> JPQL-haku (`LOWER`) nimestä, sähköpostista, puhelimesta ja Y-tunnuksesta.
+- Page<Asiakas> findByKayttajaKayttajatunnus(String kayttajatunnus, Pageable pageable)
+- Page<Asiakas> findByKayttajaKayttajatunnusAndHaku(@Param("tunnus") String tunnus, @Param("haku") String haku, Pageable pageable) -> JPQL-haku (LOWER) nimestä, sähköpostista, puhelimesta, Y-tunnuksesta ja hyvinvointialueesta.
 - `long countByKayttajaKayttajatunnus(@Param("tunnus") String tunnus)` -> `COUNT(a)` dashboardille.
 
 ### AsiakasTuoteRepository.java

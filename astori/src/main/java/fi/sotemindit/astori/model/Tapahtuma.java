@@ -24,7 +24,7 @@ public class Tapahtuma {
 	private TapahtumaTyyppi tyyppi = TapahtumaTyyppi.TAPAAMINEN;
 
 	@ManyToOne
-	@JoinColumn(name = "asiakas_id", nullable = false)
+	@JoinColumn(name = "asiakas_id", nullable = true)
 	private Asiakas asiakas;
 
 	@ManyToOne
