@@ -90,6 +90,7 @@ body {
 							<option value="TUNTI">tunti</option>
 							<option value="KK">kk</option>
 							<option value="PV">päivä</option>
+							<option value="KM">km</option> 
 						</select>
 					</div>
 				</div>

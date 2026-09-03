@@ -26,7 +26,9 @@ public class Asiakas {
 	private String postinumero;
 	private String postitoimipaikka;
 	private String kotisivu;
-	private String hyvinvointialue;
+
+	@Enumerated(EnumType.STRING)
+	private Hyvinvointialue hyvinvointialue;
 
 	// UUSI: Asiakkaan tila tallennetaan tietokantaan tekstimuodossa (esim.
 	// 'PROSPEKTI')
@@ -52,7 +54,7 @@ public class Asiakas {
 	// Konstruktori helpottamaan olioiden luontia kehityksessä
 	public Asiakas(String nimi, String puhelin, String sahkoposti, String katuosoite, String postinumero,
 			String postitoimipaikka, String kotisivu, AsiakkaanTila tila, String yTunnus, String kuvaus,
-			String hyvinvointialue) {
+			Hyvinvointialue hyvinvointialue) {
 		this.nimi = nimi;
 		this.puhelin = puhelin;
 		this.sahkoposti = sahkoposti;
@@ -154,20 +156,21 @@ public class Asiakas {
 	public void setyTunnus(String yTunnus) {
 		this.yTunnus = yTunnus;
 	}
-		   
-    public String getKuvaus() {
-        return this.kuvaus;
-    }
 
-    public void setKuvaus(String kuvaus) {
-        this.kuvaus = kuvaus;
-    }
-    
-    public String getHyvinvointialue() {
-        return hyvinvointialue;
-    }
+	public String getKuvaus() {
+		return this.kuvaus;
+	}
 
-    public void setHyvinvointialue(String hyvinvointialue) {
-        this.hyvinvointialue = hyvinvointialue;
-    }
+	public void setKuvaus(String kuvaus) {
+		this.kuvaus = kuvaus;
+	}
+
+	public Hyvinvointialue getHyvinvointialue() {
+		return hyvinvointialue;
+	}
+
+	public void setHyvinvointialue(Hyvinvointialue hyvinvointialue) {
+		// Jos lomakkeelta tulisi tyhjä arvo, se asettuu turvallisesti nulliksi
+		this.hyvinvointialue = hyvinvointialue;
+	}
 }

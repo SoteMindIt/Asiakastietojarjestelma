@@ -1,10 +1,11 @@
 package fi.sotemindit.astori.model;
 
 public enum TuoteYksikko {
-    KPL("kpl"),
-    TUNTI("tunti"),
-    KK("kk"),
-    PV("päivä");
+    KPL("kpl"), 
+    TUNTI("tunti"), 
+    KK("kk"), 
+    PV("päivä"),
+    KM("kilometriä"); 
 
     private final String lyhenne;
 

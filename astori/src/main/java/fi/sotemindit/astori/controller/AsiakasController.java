@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import fi.sotemindit.astori.model.Asiakas;
 import fi.sotemindit.astori.model.AsiakasTuote;
 import fi.sotemindit.astori.model.AsiakkaanTila;
+import fi.sotemindit.astori.model.Hyvinvointialue;
 import fi.sotemindit.astori.model.Kirjaus;
 import fi.sotemindit.astori.model.Liitetiedosto;
 import fi.sotemindit.astori.model.Loki;
@@ -99,7 +100,6 @@ public class AsiakasController {
 		model.addAttribute("asiakkaatLaskuri", asiakkaatYhteensa);
 		model.addAttribute("tarjouksetLaskuri", tarjouksetYhteensa);
 		model.addAttribute("tehtavatLaskuri", tehtavatTanaan);
-
 		model.addAttribute("asiakkaatLaskuri", asiakkaatYhteensa);
 		model.addAttribute("tarjouksetLaskuri", tarjouksetYhteensa);
 		model.addAttribute("tehtavatLaskuri", tehtavatTanaan);
@@ -201,7 +201,7 @@ public class AsiakasController {
 		model.addAttribute("kaikkiTuotteet", tuoteLista);
 		model.addAttribute("tarjoukset", tarjoukset);
 		model.addAttribute("tarjouksetMaara", tarjoukset != null ? tarjoukset.size() : 0);
-
+		model.addAttribute("hyvinvointialueet", Hyvinvointialue.values());
 		// Viedään myyntiputken tilat profiilisivulle muokkausta varten
 		model.addAttribute("tilat", AsiakkaanTila.values());
 

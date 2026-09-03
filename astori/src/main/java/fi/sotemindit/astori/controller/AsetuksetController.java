@@ -56,6 +56,9 @@ public class AsetuksetController {
 		
 		Yritystiedot yritys = yritystiedotRepository.findById(1L).orElse(null);
 		model.addAttribute("yritys", yritys);
+		
+		//Tuotteiden yksiköt. Esim. Km, kpl, tuntia jne
+		model.addAttribute("yksikot", fi.sotemindit.astori.model.TuoteYksikko.values());
 
 		return "asetukset"; // Avaa asetukset.jsp
 	}

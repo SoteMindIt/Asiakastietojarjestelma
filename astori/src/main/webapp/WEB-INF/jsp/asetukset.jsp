@@ -176,19 +176,18 @@ body {
 																	class="form-control" name="hinta"
 																	value="${tuote.hinta}" required>
 															</div>
+
 															<div class="col-md-6 mb-3">
 																<label class="form-label small fw-bold text-secondary">Yksikkö</label>
 																<select class="form-select" name="yksikko" required>
-																	<option value="KPL"
-																		${tuote.yksikko == 'KPL' ? 'selected' : ''}>kpl</option>
-																	<option value="TUNTI"
-																		${tuote.yksikko == 'TUNTI' ? 'selected' : ''}>tunti</option>
-																	<option value="KK"
-																		${tuote.yksikko == 'KK' ? 'selected' : ''}>kk</option>
-																	<option value="PV"
-																		${tuote.yksikko == 'PV' ? 'selected' : ''}>päivä</option>
+																	<c:forEach var="y" items="${yksikot}">
+																		<option value="${y.name()}"
+																			${tuote.yksikko == y ? 'selected' : ''}>
+																			${y.lyhenne}</option>
+																	</c:forEach>
 																</select>
 															</div>
+
 														</div>
 													</div>
 													<div class="modal-footer bg-light">
