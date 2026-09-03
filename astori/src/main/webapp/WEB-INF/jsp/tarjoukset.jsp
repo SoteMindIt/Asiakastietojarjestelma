@@ -183,8 +183,8 @@ body {
 										<!-- 💡 KORJAUS: kaikkiTuotteet muutettu muotoon tuoteLista kontrollerin mukaiseksi -->
 										<c:forEach var="tuote" items="${tuoteLista}">
 											<option
-												value="${tuote.name != null ? tuote.name : tuote.nimi}"
-												data-hinta="${tuote.hinta}">${tuote.name != null ? tuote.name : tuote.nimi}
+												value="${tuote.nimi != null ? tuote.nimi : tuote.nimi}"
+												data-hinta="${tuote.hinta}">${tuote.nimi != null ? tuote.nimi : tuote.nimi}
 												(${tuote.hinta} €)</option>
 										</c:forEach>
 								</select></td>

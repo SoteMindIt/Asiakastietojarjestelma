@@ -16,9 +16,11 @@ import fi.sotemindit.astori.model.Asiakas;
 import fi.sotemindit.astori.model.Tarjous;
 import fi.sotemindit.astori.model.TarjousRivi;
 import fi.sotemindit.astori.model.Tuote;
+import fi.sotemindit.astori.model.Yritystiedot;
 import fi.sotemindit.astori.repository.AsiakasRepository;
 import fi.sotemindit.astori.repository.TarjousRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
+import fi.sotemindit.astori.repository.YritystiedotRepository;
 
 @Controller
 public class TarjousController {
@@ -31,6 +33,9 @@ public class TarjousController {
 
 	@Autowired
 	private TuoteRepository tuoteRepository;
+
+	@Autowired
+	private YritystiedotRepository yritystiedotRepository;
 
 	// 1. Avaa tarjoushallinnan ja -laskennan sivun (tarjoukset.jsp)
 	@Transactional
@@ -51,8 +56,12 @@ public class TarjousController {
 		model.addAttribute("asiakas", asiakas);
 		model.addAttribute("tarjoukset", tarjoukset);
 		
-		// 💡 KORJAUS: Muutettu kaikkiTuotteet -> tuoteLista, jotta se täsmää dynaamisen tarjoukset.jsp -pudotusvalikon kanssa
+		/* 💡 JAAKON KORJAUS: Lisätään tuotteet molemmilla nimillä varmistamaan dynaamisen tarjoukset.jsp:n toiminta */
 		model.addAttribute("tuoteLista", tuoteLista);
+		model.addAttribute("kaikkiTuotteet", tuoteLista);
+		
+		/* Lisätään tilat-vaihtoehdot malliin, jotta sivu tai yläpalkit eivät kaadu null-virheeseen */
+		model.addAttribute("tilat", fi.sotemindit.astori.model.AsiakkaanTila.values());
 
 		return "tarjoukset";
 	}
@@ -99,10 +108,7 @@ public class TarjousController {
 			java.math.BigDecimal bdHinta = hinnat.get(i) != null ? hinnat.get(i) : java.math.BigDecimal.ZERO;
 			java.math.BigDecimal bdAlvProsentti = alvProsentit.get(i) != null ? alvProsentit.get(i) : java.math.BigDecimal.ZERO;
 
-			// Rivin veroton hinta = määrä * hinta
 			java.math.BigDecimal riviVeroton = bdMaara.multiply(bdHinta);
-			
-			// Rivin ALV = riviVeroton * (alvProsentti / 100)
 			java.math.BigDecimal riviAlv = riviVeroton.multiply(bdAlvProsentti)
 					.divide(java.math.BigDecimal.valueOf(100.0), 2, java.math.RoundingMode.HALF_UP);
 
@@ -207,12 +213,12 @@ public class TarjousController {
 			pLisatiedot.setSpacingAfter(20);
 			document.add(pLisatiedot);
 		}
+
 		// 4. TARJOUSRIVIT TAULUKKONA
 		document.add(new com.lowagie.text.Paragraph("Tarjouksen sisältö:", alaOtsikkoFontti));
 		com.lowagie.text.Paragraph vali = new com.lowagie.text.Paragraph(" ");
 		vali.setSpacingAfter(5);
 		document.add(vali);
-
 		com.lowagie.text.pdf.PdfPTable riviTaulu = new com.lowagie.text.pdf.PdfPTable(5);
 		riviTaulu.setWidthPercentage(100);
 		riviTaulu.setSpacingAfter(20);
@@ -311,6 +317,19 @@ public class TarjousController {
 		summaTaulu.addCell(sll);
 
 		document.add(summaTaulu);
+
+		/* 💡 JAAKON KORJAUS: Haetaan globaalit yritystiedot (ID 1L) ja upotetaan tarjouksen alalaitaan maksutiedoiksi */
+		Yritystiedot yritys = yritystiedotRepository.findById(1L).orElse(null);
+		if (yritys != null) {
+			document.add(new com.lowagie.text.Paragraph("\nMaksutiedot / Myyjä:", alaOtsikkoFontti));
+			com.lowagie.text.Paragraph pYritys = new com.lowagie.text.Paragraph(
+					yritys.getNimi() + " (Y-tunnus: " + yritys.getyTunnus() + ")\n" +
+					"Osoite: " + yritys.getOsoite() + "\n" +
+					"Tili (IBAN): " + yritys.getIban() + "  |  BIC: " + yritys.getBic(),
+					tekstiFontti
+				);
+			document.add(pYritys);
+		}
 		
 		document.close();
 	}
