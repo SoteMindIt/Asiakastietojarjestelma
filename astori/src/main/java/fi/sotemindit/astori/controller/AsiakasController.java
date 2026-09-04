@@ -34,6 +34,7 @@ import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.repository.YhteyshenkiloRepository;
 import fi.sotemindit.astori.repository.LokiRepository;
 import fi.sotemindit.astori.repository.TapahtumaRepository;
+import fi.sotemindit.astori.repository.PalveluyksikkoRepository;
 
 @Controller
 public class AsiakasController {
@@ -67,6 +68,10 @@ public class AsiakasController {
 
 	@Autowired
 	private TapahtumaRepository tapahtumaRepository;
+	
+	@Autowired
+	private fi.sotemindit.astori.repository.PalveluyksikkoRepository palveluyksikkoRepository;
+
 
 	// 1a. PÄIVITETTY ETUSIVU: Lasketaan reaaliaikaiset tiedot tietolaatikoihin
 	// (Dashboard)
@@ -150,7 +155,7 @@ public class AsiakasController {
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
 			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,
-			@RequestParam(required = false) String kotisivu, @RequestParam(required = false) String hyvinvointialue) {
+			@RequestParam(required = false) String kotisivu, @RequestParam(required = false) Hyvinvointialue hyvinvointialue) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
@@ -242,6 +247,46 @@ public class AsiakasController {
 
 		return "redirect:/asiakas/" + asiakasId;
 	}
+	
+	// 🔌 UUSI REITTI: Tallentaa uuden palveluyksikön sidottuna tiettyyn pääasiakkaaseen
+	@PostMapping("/asiakas/{asiakasId}/lisaa-palveluyksikko")
+	public String lisaaPalveluyksikko(
+			@PathVariable Long asiakasId,
+			@RequestParam String nimi,
+			@RequestParam(required = false) String katuosoite,
+			@RequestParam(required = false) String postinumero,
+			@RequestParam(required = false) String postitoimipaikka,
+			@RequestParam(required = false) String puhelin,
+			@RequestParam(required = false) String sahkoposti,
+			@RequestParam(required = false) String kuvaus,
+			@RequestParam(required = false) fi.sotemindit.astori.model.Hyvinvointialue hyvinvointialue,
+			jakarta.servlet.http.HttpSession session) {
+		
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		// 1. Haetaan pääasiakas (Toimintayksikkö) tietokannasta ja varmistetaan olemassaolo
+		Asiakas asiakas = asiakasRepository.findById(asiakasId)
+				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + asiakasId));
+
+		// 2. Luodaan uusi palveluyksikköolio annetuilla tiedoilla
+		fi.sotemindit.astori.model.Palveluyksikko uusiYksikko = new fi.sotemindit.astori.model.Palveluyksikko(
+				nimi, katuosoite, postinumero, postitoimipaikka, puhelin, sahkoposti, kuvaus, hyvinvointialue, asiakas
+		);
+
+		// 3. Tallennetaan palveluyksikkö PostgreSQL-tietokantaan
+		palveluyksikkoRepository.save(uusiYksikko);
+
+		// 4. Kirjataan lisäys järjestelmälokiin (Audit Trail)
+		String lokiKuvaus = "Lisätty uusi palveluyksikkö '" + nimi + "' asiakkaalle '" + asiakas.getNimi() + "' (ID: " + asiakasId + ").";
+		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS", lokiKuvaus));
+
+		// 5. Ohjataan käyttäjä siististi takaisin kyseisen asiakkaan profiiliin
+		return "redirect:/asiakas/" + asiakasId;
+	}
+
 
 	// 6. TUOTEMYYNNIN KIRJAUS
 	@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
@@ -282,7 +327,7 @@ public class AsiakasController {
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
 			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,
-			@RequestParam(required = false) String kotisivu, @RequestParam(required = false) String hyvinvointialue,
+			@RequestParam(required = false) String kotisivu, @RequestParam(required = false) Hyvinvointialue hyvinvointialue,
 			jakarta.servlet.http.HttpSession session) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");

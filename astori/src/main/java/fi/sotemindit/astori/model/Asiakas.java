@@ -8,6 +8,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 
 @Entity
 @Table(name = "asiakkaat")
@@ -46,6 +48,9 @@ public class Asiakas {
 
 	@jakarta.persistence.Column(columnDefinition = "TEXT") // 💡 LISÄTTY: Sallii rajattoman määrän tekstiä tietokantaan
 	private String kuvaus;
+
+	@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<Palveluyksikko> palveluyksikot = new java.util.ArrayList<>();
 
 	// Tyhjä konstruktori JPA:ta varten
 	public Asiakas() {
@@ -173,4 +178,13 @@ public class Asiakas {
 		// Jos lomakkeelta tulisi tyhjä arvo, se asettuu turvallisesti nulliksi
 		this.hyvinvointialue = hyvinvointialue;
 	}
+
+	public java.util.List<Palveluyksikko> getPalveluyksikot() {
+		return palveluyksikot;
+	}
+
+	public void setPalveluyksikot(java.util.List<Palveluyksikko> palveluyksikot) {
+		this.palveluyksikot = palveluyksikot;
+	}
+
 }

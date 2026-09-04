@@ -133,7 +133,7 @@ body {
 								<strong>📍 Osoite:</strong> ${not empty asiakas.katuosoite ? asiakas.katuosoite : '<span class="text-muted italic">Ei määritelty</span>'}
 								${asiakas.postinumero} ${asiakas.postitoimipaikka}
 							</p>
-							
+
 							<p class="mb-1">
 								<strong>🏢 Hyvinvointialue:</strong>
 								<c:choose>
@@ -196,6 +196,11 @@ body {
 					<!-- LISÄYSPAINIKKEET -->
 					<div
 						class="d-flex gap-2 justify-content-end flex-wrap pt-2 border-top mb-3">
+						<button type="button"
+							class="btn btn-xs btn-outline-dark fw-bold py-1 px-2 small"
+							style="font-size: 0.85em;" data-bs-toggle="modal"
+							data-bs-target="#lisaaPalveluyksikkoModal">+
+							Palveluyksikkö</button>
 						<button type="button"
 							class="btn btn-xs btn-outline-success fw-bold py-1 px-2 small"
 							style="font-size: 0.85em;" data-bs-toggle="modal"
@@ -356,6 +361,70 @@ body {
 		<!-- TÄYSLEVEÄT KORTIT ALLEKKAIN (Korjaa tyhjät aukot sivuilla) -->
 		<div class="row g-4 mb-4">
 
+			<!-- UUSI KORTTI: PALVELUYKSIKÖT (Täysleveys) -->
+			<div class="col-12">
+				<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
+					<h3 class="fw-bold h6 text-secondary text-uppercase mb-3"
+						style="letter-spacing: 0.5px;">🏢 Palveluyksiköt ja
+						toimipisteet</h3>
+
+					<c:choose>
+						<c:when test="${not empty asiakas.palveluyksikot}">
+							<!-- Näytetään yksiköt joustavana ja tasapainoisena rivinä -->
+							<div class="d-flex flex-wrap gap-3">
+								<c:forEach var="yksikko" items="${asiakas.palveluyksikot}">
+									<div
+										class="card p-3 shadow-sm border bg-light d-flex flex-column justify-content-between"
+										style="min-width: 300px; flex: 1 1 30%;">
+										<div>
+											<div
+												class="d-flex justify-content-between align-items-start mb-2">
+												<strong class="text-dark h6 mb-0">${yksikko.nimi}</strong>
+												<c:if test="${not empty yksikko.hyvinvointialue}">
+													<span
+														class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small"
+														style="font-size: 0.75em;">
+														${yksikko.hyvinvointialue.nimi} </span>
+												</c:if>
+											</div>
+
+											<!-- Osoite- ja yhteystiedot pienellä ja siistillä tekstillä -->
+											<div class="text-muted small mt-2">
+												<c:if test="${not empty yksikko.katuosoite}">
+													<div class="mb-1">📍 ${yksikko.katuosoite},
+														${yksikko.postinumero} ${yksikko.postitoimipaikka}</div>
+												</c:if>
+												<c:if test="${not empty yksikko.puhelin}">
+													<div class="mb-1">📞 ${yksikko.puhelin}</div>
+												</c:if>
+												<c:if test="${not empty yksikko.sahkoposti}">
+													<div class="mb-1">✉️ ${yksikko.sahkoposti}</div>
+												</c:if>
+											</div>
+
+											<!-- Lyhyt kuvausteksti, jos määritelty -->
+											<c:if test="${not empty yksikko.kuvaus}">
+												<div
+													class="mt-2 p-2 bg-white rounded border small text-secondary"
+													style="font-size: 0.85em; white-space: pre-line;">
+													${yksikko.kuvaus}</div>
+											</c:if>
+										</div>
+									</div>
+								</c:forEach>
+							</div>
+						</c:when>
+						<c:otherwise>
+							<div
+								class="p-3 bg-light rounded text-center text-muted small italic">
+								Asiakkaalle ei ole vielä luotu erillisiä palveluyksiköitä. Voit
+								lisätä ensimmäisen yksikön yläpuolelta.</div>
+						</c:otherwise>
+					</c:choose>
+				</div>
+			</div>
+
+
 			<!-- 1. KORTTI: YHTEYSHENKILÖT -->
 			<div class="col-12">
 				<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
@@ -395,6 +464,7 @@ body {
 					</c:choose>
 				</div>
 			</div>
+
 			<!-- 2. KORTTI: MYYDYT PALVELUT (Muutettu leveäksi taulukoksi) -->
 			<div class="col-12">
 				<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
@@ -506,6 +576,99 @@ body {
 	</div>
 	<!-- /container -->
 	<!-- ==================== MODAL-IKKUNAT ==================== -->
+
+	<!-- MODAL UUDEN PALVELUYKSIKÖN LISÄÄMISEEN -->
+	<div class="modal fade" id="lisaaPalveluyksikkoModal" tabindex="-1"
+		aria-labelledby="lisaaPalveluyksikkoModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content border-0 shadow-lg">
+				<form
+					action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-palveluyksikko"
+					method="post">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold" id="lisaaPalveluyksikkoModalLabel">Lisää
+							uusi palveluyksikkö</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body p-4 text-start">
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Palveluyksikön
+								/ Toimipisteen nimi *</label> <input type="text" class="form-control"
+								name="nimi"
+								placeholder="esim. Hoivakoti Hopeatähti tai Osasto B" required>
+						</div>
+
+						<div class="row g-3">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Hyvinvointialue</label>
+								<select class="form-select" name="hyvinvointialue">
+									<option value="">-- Valitse hyvinvointialue (jos eri)
+										--</option>
+									<c:forEach var="alue" items="${hyvinvointialueet}">
+										<option value="${alue}">${alue.nimi}</option>
+									</c:forEach>
+								</select>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Katuosoite</label>
+								<input type="text" class="form-control" name="katuosoite"
+									placeholder="esim. Puistotie 4">
+							</div>
+						</div>
+
+						<div class="row g-3">
+							<div class="col-md-4 mb-3">
+								<label class="form-label fw-bold text-secondary small">Postinumero</label>
+								<input type="text" class="form-control" name="postinumero"
+									placeholder="00100" maxlength="10">
+							</div>
+							<div class="col-md-8 mb-3">
+								<label class="form-label fw-bold text-secondary small">Postitoimipaikka</label>
+								<input type="text" class="form-control" name="postitoimipaikka"
+									placeholder="Helsinki">
+							</div>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Yksikön
+								yhteyshenkilö / Vastuuhenkilö</label> <input type="text"
+								class="form-control" name="yhteyshenkiloNimi"
+								placeholder="esim. Matti Meikäläinen, Yksikönjohtaja">
+						</div>
+
+
+						<div class="row g-3">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Yksikön
+									puhelinnumero</label> <input type="tel" class="form-control"
+									name="puhelin" placeholder="esim. 040 123 4567">
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Yksikön
+									sähköposti</label> <input type="email" class="form-control"
+									name="sahkoposti" placeholder="yksikko@yritys.fi">
+							</div>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Lisätiedot
+								/ Yksikön kuvaus</label>
+							<textarea class="form-control" name="kuvaus" rows="3"
+								placeholder="Kirjoita tähän vapaamuotoisia huomioita yksikön toiminnasta tai erityispiirteistä..."></textarea>
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-success fw-bold px-4">Tallenna
+							yksikkö</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
 
 	<!-- MODAL UUDEN HANKINNAN / PALVELUN KIRJAAMISEEN -->
 	<div class="modal fade" id="lisaaHankintaModal" tabindex="-1"
