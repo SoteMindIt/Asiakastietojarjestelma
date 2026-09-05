@@ -388,6 +388,44 @@ body {
 												</c:if>
 											</div>
 
+											<!-- 💡 UUSI MUOKKAUSPAINIKE DIGITAALISILLA DATAMUUTTUJILLA -->
+											<button type="button"
+												class="btn btn-sm btn-outline-primary py-0 px-2 muokkaa-py-btn"
+												style="font-size: 0.8em;" data-id="${yksikko.id}"
+												data-nimi="${yksikko.nimi}"
+												data-alue="${yksikko.hyvinvointialue}"
+												data-katu="${yksikko.katuosoite}"
+												data-pno="${yksikko.postinumero}"
+												data-ptp="${yksikko.postitoimipaikka}"
+												data-puh="${yksikko.puhelin}"
+												data-email="${yksikko.sahkoposti}"
+												data-kuvaus="<c:out value='${yksikko.kuvaus}'/>">
+												Muokkaa</button>
+											<div class="mt-3 pt-2 border-top">
+												<h6 class="fw-bold text-uppercase text-secondary mb-2"
+													style="font-size: 0.7em; letter-spacing: 0.5px;">Yksikön
+													vastuuhenkilöt</h6>
+												<c:forEach var="yh" items="${yksikko.yhteyshenkilot}">
+													<div
+														class="p-2 bg-white rounded border shadow-sm mb-1 text-dark small">
+														<div
+															class="d-flex justify-content-between align-items-center">
+															<strong>👤 ${yh.nimi}</strong> <span class="text-muted"
+																style="font-size: 0.85em;">${yh.rooli}</span>
+														</div>
+														<div class="text-muted"
+															style="font-size: 0.85em; margin-left: 18px;">
+															<span class="me-2">✉️ ${yh.sahkoposti}</span> <span>📞
+																${yh.puhelin}</span>
+														</div>
+													</div>
+												</c:forEach>
+												<c:if test="${empty yksikko.yhteyshenkilot}">
+													<div class="text-muted italic small text-center py-1">Ei
+														nimettyjä omia vastuuhenkilöitä.</div>
+												</c:if>
+											</div>
+
 											<!-- Osoite- ja yhteystiedot pienellä ja siistillä tekstillä -->
 											<div class="text-muted small mt-2">
 												<c:if test="${not empty yksikko.katuosoite}">
@@ -450,7 +488,8 @@ body {
 											class="btn btn-sm btn-outline-primary py-1 px-2 muokkaa-yh-btn"
 											data-id="${h.id}" data-nimi="${h.nimi}"
 											data-rooli="${h.rooli}" data-email="${h.sahkoposti}"
-											data-puh="${h.puhelin}" style="font-size: 0.8em;">Muokkaa</button>
+											data-puh="${h.puhelin}" style="font-size: 0.8em;">
+											Muokkaa</button>
 									</div>
 								</c:forEach>
 							</div>
@@ -577,7 +616,7 @@ body {
 	<!-- /container -->
 	<!-- ==================== MODAL-IKKUNAT ==================== -->
 
-	<!-- MODAL UUDEN PALVELUYKSIKÖN LISÄÄMISEEN -->
+	<!-- 1. MODAL UUDEN PALVELUYKSIKÖN LISÄÄMISEEN (Palautettu oikea ID) -->
 	<div class="modal fade" id="lisaaPalveluyksikkoModal" tabindex="-1"
 		aria-labelledby="lisaaPalveluyksikkoModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered modal-lg">
@@ -630,14 +669,6 @@ body {
 							</div>
 						</div>
 
-						<div class="mb-3">
-							<label class="form-label fw-bold text-secondary small">Yksikön
-								yhteyshenkilö / Vastuuhenkilö</label> <input type="text"
-								class="form-control" name="yhteyshenkiloNimi"
-								placeholder="esim. Matti Meikäläinen, Yksikönjohtaja">
-						</div>
-
-
 						<div class="row g-3">
 							<div class="col-md-6 mb-3">
 								<label class="form-label fw-bold text-secondary small">Yksikön
@@ -651,11 +682,45 @@ body {
 							</div>
 						</div>
 
+						<!-- 💡 UUSI OSIO: Yksikön ensimmäisen yhteyshenkilön tiedot (Vapaaehtoinen) -->
+						<div class="p-3 bg-light rounded-3 border mb-3 mt-2">
+							<h6
+								class="fw-bold text-uppercase text-secondary mb-3 shadow-sm-none"
+								style="font-size: 0.75em; letter-spacing: 0.5px;">👤
+								Yksikön yhteyshenkilö / Vastuuhenkilö</h6>
+
+							<div class="mb-3">
+								<label class="form-label text-dark small fw-normal mb-1">Yhteyshenkilön
+									nimi</label> <input type="text" class="form-control bg-white"
+									name="yhNimi" placeholder="esim. Johanna Jokinen">
+							</div>
+
+							<div class="mb-3">
+								<label class="form-label text-dark small fw-normal mb-1">Rooli
+									/ Nimike</label> <input type="text" class="form-control bg-white"
+									name="yhRooli"
+									placeholder="esim. Yksikönjohtaja tai Vastaava hoitaja">
+							</div>
+
+							<div class="row g-3">
+								<div class="col-md-6 mb-2">
+									<label class="form-label text-dark small fw-normal mb-1">Suora
+										puhelinnumero</label> <input type="tel" class="form-control bg-white"
+										name="yhPuhelin" placeholder="040 123 4567">
+								</div>
+								<div class="col-md-6 mb-2">
+									<label class="form-label text-dark small fw-normal mb-1">Suora
+										sähköposti</label> <input type="email" class="form-control bg-white"
+										name="yhSahkoposti" placeholder="johanna.jokinen@yritys.fi">
+								</div>
+							</div>
+						</div>
+
 						<div class="mb-3">
 							<label class="form-label fw-bold text-secondary small">Lisätiedot
 								/ Yksikön kuvaus</label>
 							<textarea class="form-control" name="kuvaus" rows="3"
-								placeholder="Kirjoita tähän vapaamuotoisia huomioita yksikön toiminnasta tai erityispiirteistä..."></textarea>
+								placeholder="Kirjoita tähän vapaamuotoisia huomioita..."></textarea>
 						</div>
 					</div>
 					<div class="modal-footer bg-light">
@@ -668,6 +733,126 @@ body {
 			</div>
 		</div>
 	</div>
+
+	<!-- 2. UUSI MODAL PALVELUYKSIKÖN MUOKKAUKSEEN (Sisältää JavaScriptin vaatimat ID-tunnisteet) -->
+	<div class="modal fade" id="muokkaaPyModal" tabindex="-1"
+		aria-labelledby="muokkaaPyModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content border-0 shadow-lg">
+				<form id="muokkaaPyForm" method="post" action="">
+					<input type="hidden" name="asiakasId" value="${asiakas.id}">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold" id="muokkaaPyModalLabel">Muokkaa
+							palveluyksikköä</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body p-4 text-start">
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Palveluyksikön
+								/ Toimipisteen nimi *</label> <input type="text" class="form-control"
+								id="pyNimi" name="nimi" required>
+						</div>
+
+						<div class="row g-3">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Hyvinvointialue</label>
+								<select class="form-select" id="pyHyvinvointialue"
+									name="hyvinvointialue">
+									<option value="">-- Valitse hyvinvointialue --</option>
+									<c:forEach var="alue" items="${hyvinvointialueet}">
+										<option value="${alue}">${alue.nimi}</option>
+									</c:forEach>
+								</select>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Katuosoite</label>
+								<input type="text" class="form-control" id="pyKatuosoite"
+									name="katuosoite">
+							</div>
+						</div>
+
+						<div class="row g-3">
+							<div class="col-md-4 mb-3">
+								<label class="form-label fw-bold text-secondary small">Postinumero</label>
+								<input type="text" class="form-control" id="pyPostinumero"
+									name="postinumero" maxlength="10">
+							</div>
+							<div class="col-md-8 mb-3">
+								<label class="form-label fw-bold text-secondary small">Postitoimipaikka</label>
+								<input type="text" class="form-control" id="pyPostitoimipaikka"
+									name="postitoimipaikka">
+							</div>
+						</div>
+
+						<div class="row g-3">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Yksikön
+									puhelinnumero</label> <input type="tel" class="form-control"
+									id="pyPuhelin" name="puhelin">
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Yksikön
+									sähköposti</label> <input type="email" class="form-control"
+									id="pySahkoposti" name="sahkoposti">
+							</div>
+						</div>
+						<!-- piilotettu kenttä yhteyshenkilön ID-tunnukselle -->
+						<input type="hidden" id="pyYhId" name="yhId">
+
+						<!-- 💡 UUSI OSIO: Yksikön yhteyshenkilön tiedot muokattavissa -->
+						<div class="p-3 bg-light rounded-3 border mb-3 mt-2">
+							<h6
+								class="fw-bold text-uppercase text-secondary mb-3 shadow-sm-none"
+								style="font-size: 0.75em; letter-spacing: 0.5px;">👤
+								Yksikön yhteyshenkilö / Vastuuhenkilö</h6>
+
+							<div class="mb-3">
+								<label class="form-label text-dark small fw-normal mb-1">Yhteyshenkilön
+									nimi</label> <input type="text" class="form-control bg-white"
+									id="pyYhNimi" name="yhNimi" placeholder="Johanna Jokinen">
+							</div>
+
+							<div class="mb-3">
+								<label class="form-label text-dark small fw-normal mb-1">Rooli
+									/ Nimike</label> <input type="text" class="form-control bg-white"
+									id="pyYhRooli" name="yhRooli" placeholder="Yksikönjohtaja">
+							</div>
+
+							<div class="row g-3">
+								<div class="col-md-6 mb-2">
+									<label class="form-label text-dark small fw-normal mb-1">Suora
+										puhelinnumero</label> <input type="tel" class="form-control bg-white"
+										id="pyYhPuhelin" name="yhPuhelin" placeholder="040 123 4567">
+								</div>
+								<div class="col-md-6 mb-2">
+									<label class="form-label text-dark small fw-normal mb-1">Suora
+										sähköposti</label> <input type="email" class="form-control bg-white"
+										id="pyYhSahkoposti" name="yhSahkoposti"
+										placeholder="johanna.jokinen@yritys.fi">
+								</div>
+							</div>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Lisätiedot
+								/ Yksikön kuvaus</label>
+							<textarea class="form-control" id="pyKuvaus" name="kuvaus"
+								rows="3"></textarea>
+						</div>
+
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-primary fw-bold px-4">Tallenna
+							muutokset</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
 
 
 	<!-- MODAL UUDEN HANKINNAN / PALVELUN KIRJAAMISEEN -->
@@ -784,6 +969,22 @@ body {
 								type="text" class="form-control" name="puhelin"
 								placeholder="Puhelinnumero">
 						</div>
+
+						<!-- DYNAAMINEN PUDOTUSVALIKKO PALVELUYKSIKÖN VALINTAAN -->
+						<div class="mb-3 pt-2 border-top">
+							<label class="form-label fw-bold text-secondary small">Kohdistetaanko
+								tiettyyn palveluyksikköön?</label> <select class="form-select"
+								name="palveluyksikkoId">
+								<option value="">-- Yleinen organisaatiotason kontakti
+									--</option>
+								<c:forEach var="yksikko" items="${asiakas.palveluyksikot}">
+									<option value="${yksikko.id}">${yksikko.nimi}</option>
+								</c:forEach>
+							</select>
+							<div class="form-text text-muted" style="font-size: 0.8em;">
+								Jos jätät tämän tyhjäksi, henkilö näkyy yrityksen yleisissä
+								yhteystiedoissa.</div>
+						</div>
 					</div>
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary"
@@ -795,6 +996,7 @@ body {
 			</div>
 		</div>
 	</div>
+
 	<!-- MODAL YHTEYSHENKILÖN MUOKKAUKSEEN -->
 	<div class="modal fade" id="muokkaaYhModal" tabindex="-1"
 		aria-labelledby="muokkaaYhModalLabel" aria-hidden="true">
@@ -808,7 +1010,7 @@ body {
 						<button type="button" class="btn-close btn-close-white"
 							data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
-					<div class="modal-body">
+					<div class="modal-body p-4">
 						<div class="mb-3">
 							<label for="yhNimi" class="form-label fw-bold">Nimi</label> <input
 								type="text" class="form-control" id="yhNimi" name="nimi"
@@ -828,38 +1030,6 @@ body {
 							<label for="yhPuhelin" class="form-label fw-bold">Puhelin</label>
 							<input type="text" class="form-control" id="yhPuhelin"
 								name="puhelin">
-						</div>
-					</div>
-					<div class="modal-footer bg-light">
-						<button type="button" class="btn btn-secondary"
-							data-bs-dismiss="modal">Peruuta</button>
-						<button type="submit" class="btn btn-primary fw-bold">Tallenna
-							muutokset</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
-
-	<!-- MODAL LOKIMERKINNÄN MUOKKAUKSEEN -->
-	<div class="modal fade" id="muokkaaLokiModal" tabindex="-1"
-		aria-labelledby="muokkaaLokiModalLabel" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-centered">
-			<div class="modal-content border-0 shadow-lg">
-				<form id="muokkaaLokiForm" method="post" action="">
-					<input type="hidden" name="asiakasId" value="${asiakas.id}">
-					<div class="modal-header bg-dark text-white">
-						<h5 class="modal-title fw-bold" id="muokkaaLokiModalLabel">Muokkaa
-							lokimerkintää</h5>
-						<button type="button" class="btn-close btn-close-white"
-							data-bs-dismiss="modal" aria-label="Close"></button>
-					</div>
-					<div class="modal-body p-4">
-						<div class="mb-3">
-							<label class="form-label fw-bold text-secondary">Muistiinpanot
-								/ Tapahtumatiedot *</label>
-							<textarea class="form-control" id="lokiTeksti" name="teksti"
-								rows="5" required></textarea>
 						</div>
 					</div>
 					<div class="modal-footer bg-light">
@@ -919,6 +1089,98 @@ body {
 		</div>
 	</div>
 
+	<!-- MODAL PALVELUYKSIKÖN MUOKKAUKSEEN -->
+	<div class="modal fade" id="muokkaaPyModal" tabindex="-1"
+		aria-labelledby="muokkaaPyModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content border-0 shadow-lg">
+				<form id="muokkaaPyForm" method="post" action="">
+					<input type="hidden" name="asiakasId" value="${asiakas.id}">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold" id="muokkaaPyModalLabel">Muokkaa
+							palveluyksikköä</h5>
+						<button type="button"
+							class="btn btn-sm btn-outline-primary py-0 px-2 muokkaa-py-btn"
+							style="font-size: 0.8em;" data-id="${yksikko.id}"
+							data-nimi="${yksikko.nimi}"
+							data-alue="${yksikko.hyvinvointialue}"
+							data-katu="${yksikko.katuosoite}"
+							data-pno="${yksikko.postinumero}"
+							data-ptp="${yksikko.postitoimipaikka}"
+							data-puh="${yksikko.puhelin}" data-email="${yksikko.sahkoposti}"
+							data-kuvaus="<c:out value='${yksikko.kuvaus}'/>">
+							Muokkaa</button>
+					</div>
+					<div class="modal-body p-4 text-start">
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Palveluyksikön
+								/ Toimipisteen nimi *</label> <input type="text" class="form-control"
+								id="pyNimi" name="nimi" required>
+						</div>
+
+						<div class="row g-3">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Hyvinvointialue</label>
+								<select class="form-select" id="pyHyvinvointialue"
+									name="hyvinvointialue">
+									<option value="">-- Valitse hyvinvointialue --</option>
+									<c:forEach var="alue" items="${hyvinvointialueet}">
+										<option value="${alue}">${alue.nimi}</option>
+									</c:forEach>
+								</select>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Katuosoite</label>
+								<input type="text" class="form-control" id="pyKatuosoite"
+									name="katuosoite">
+							</div>
+						</div>
+
+						<div class="row g-3">
+							<div class="col-md-4 mb-3">
+								<label class="form-label fw-bold text-secondary small">Postinumero</label>
+								<input type="text" class="form-control" id="pyPostinumero"
+									name="postinumero" maxlength="10">
+							</div>
+							<div class="col-md-8 mb-3">
+								<label class="form-label fw-bold text-secondary small">Postitoimipaikka</label>
+								<input type="text" class="form-control" id="pyPostitoimipaikka"
+									name="postitoimipaikka">
+							</div>
+						</div>
+
+						<div class="row g-3">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Yksikön
+									puhelinnumero</label> <input type="tel" class="form-control"
+									id="pyPuhelin" name="puhelin">
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Yksikön
+									sähköposti</label> <input type="email" class="form-control"
+									id="pySahkoposti" name="sahkoposti">
+							</div>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Lisätiedot
+								/ Yksikön kuvaus</label>
+							<textarea class="form-control" id="pyKuvaus" name="kuvaus"
+								rows="3"></textarea>
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-primary fw-bold px-4">Tallenna
+							muutokset</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+
 	<!-- ==================== JAVASCRIPT-TOIMINNOT ==================== -->
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
@@ -933,11 +1195,17 @@ body {
 			document.getElementById('asiakas-katselu').classList.remove('d-none')
 		}
 
-		// ALUSTETAAN GLOBAALIT MODAL-OLIOT (Estää taustan jumiutumisen)
-		const yhModalOlio = new bootstrap.Modal(document.getElementById('muokkaaYhModal'));
-		const lokiModalOlio = new bootstrap.Modal(document.getElementById('muokkaaLokiModal'));
-		const palveluModalOlio = new bootstrap.Modal(document.getElementById('muokkaaPalveluModal'));
+		
+		const yhElement = document.getElementById('muokkaaYhModal');
+		const yhModalOlio = yhElement ? new bootstrap.Modal(yhElement) : null;
 
+		const lokiElement = document.getElementById('muokkaaLokiModal');
+		const lokiModalOlio = lokiElement ? new bootstrap.Modal(lokiElement) : null;
+
+		const palveluElement = document.getElementById('muokkaaPalveluModal');
+		const palveluModalOlio = palveluElement ? new bootstrap.Modal(palveluElement) : null;
+
+		
 		/* 1. Yhteyshenkilön muokkaustoiminto */
 		document.querySelectorAll('.muokkaa-yh-btn').forEach(btn => {
 			btn.addEventListener('click', function() {
@@ -948,14 +1216,14 @@ body {
 				const puh = this.getAttribute('data-puh')
 				
 				const form = document.getElementById('muokkaaYhForm')
-				form.action = '${pageContext.request.contextPath}/yhteyshenkilo/muokkaa/' + id
+				if (form) form.action = '${pageContext.request.contextPath}/yhteyshenkilo/muokkaa/' + id
 				
-				document.getElementById('yhNimi').value = nimi
-				document.getElementById('yhRooli').value = rooli
-				document.getElementById('yhSahkoposti').value = email
-				document.getElementById('yhPuhelin').value = puh
+				if (document.getElementById('yhNimi')) document.getElementById('yhNimi').value = nimi
+				if (document.getElementById('yhRooli')) document.getElementById('yhRooli').value = rooli
+				if (document.getElementById('yhSahkoposti')) document.getElementById('yhSahkoposti').value = email
+				if (document.getElementById('yhPuhelin')) document.getElementById('yhPuhelin').value = puh
 				
-				yhModalOlio.show()
+				if (yhModalOlio) yhModalOlio.show()
 			})
 		})
 		
@@ -966,11 +1234,11 @@ body {
 				const teksti = this.getAttribute('data-teksti')
 				
 				const form = document.getElementById('muokkaaLokiForm')
-				form.action = '${pageContext.request.contextPath}/kirjaus/muokkaa/' + id
+				if (form) form.action = '${pageContext.request.contextPath}/kirjaus/muokkaa/' + id
 				
-				document.getElementById('lokiTeksti').value = teksti
+				if (document.getElementById('lokiTeksti')) document.getElementById('lokiTeksti').value = teksti
 				
-				lokiModalOlio.show()
+				if (lokiModalOlio) lokiModalOlio.show()
 			})
 		})
 		
@@ -986,16 +1254,54 @@ body {
 				const pvm = this.getAttribute('data-pvm')
 				
 				const form = document.getElementById('muokkaaPalveluForm')
-				form.action = '${pageContext.request.contextPath}/palvelu/muokkaa/' + id
+				if (form) form.action = '${pageContext.request.contextPath}/palvelu/muokkaa/' + id
 				
-				document.getElementById('muokkaaPalveluNimi').value = tuoteNimi
-				document.getElementById('muokkaaPalveluMaara').value = maara
-				document.getElementById('muokkaaPalveluHinta').value = hinta
-				document.getElementById('muokkaaPalveluPvm').value = pvm
+				if (document.getElementById('muokkaaPalveluNimi')) document.getElementById('muokkaaPalveluNimi').value = tuoteNimi
+				if (document.getElementById('muokkaaPalveluMaara')) document.getElementById('muokkaaPalveluMaara').value = maara
+				if (document.getElementById('muokkaaPalveluHinta')) document.getElementById('muokkaaPalveluHinta').value = hinta
+				if (document.getElementById('muokkaaPalveluPvm')) document.getElementById('muokkaaPalveluPvm').value = pvm
 				
-				palveluModalOlio.show()
+				if (palveluModalOlio) palveluModalOlio.show()
 			})
 		})
+
+				/* 4. Palveluyksikön muokkaustoiminto */
+		document.querySelectorAll('.muokkaa-py-btn').forEach(btn => {
+			btn.addEventListener('click', function() {
+				const id = this.getAttribute('data-id')
+				const nimi = this.getAttribute('data-nimi')
+				const alue = this.getAttribute('data-alue')
+				const katu = this.getAttribute('data-katu')
+				const pno = this.getAttribute('data-pno')
+				const ptp = this.getAttribute('data-ptp')
+				const puh = this.getAttribute('data-puh')
+				const email = this.getAttribute('data-email')
+				const kuvaus = this.getAttribute('data-kuvaus')
+				
+				const form = document.getElementById('muokkaaPyForm')
+				form.action = '${pageContext.request.contextPath}/palveluyksikko/muokkaa/' + id
+				
+				document.getElementById('pyNimi').value = nimi
+				document.getElementById('pyHyvinvointialue').value = alue
+				document.getElementById('pyKatuosoite').value = katu
+				document.getElementById('pyPostinumero').value = pno
+				document.getElementById('pyPostitoimipaikka').value = ptp
+				document.getElementById('pyPuhelin').value = puh
+				document.getElementById('pySahkoposti').value = email
+				document.getElementById('pyKuvaus').value = kuvaus
+				
+				// Alustetaan ja näytetään modal suoralla, puhtaalla komennolla ilman kytkentöjä
+				const modalElement = document.getElementById('muokkaaPyModal');
+				if (modalElement) {
+					const uusiModal = new bootstrap.Modal(modalElement);
+					uusiModal.show();
+				}
+			})
+		})
+
+
+
+		
 	</script>
 </body>
 </html>

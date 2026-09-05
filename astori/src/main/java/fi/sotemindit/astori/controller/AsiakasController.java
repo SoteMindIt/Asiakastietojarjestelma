@@ -68,10 +68,9 @@ public class AsiakasController {
 
 	@Autowired
 	private TapahtumaRepository tapahtumaRepository;
-	
+
 	@Autowired
 	private fi.sotemindit.astori.repository.PalveluyksikkoRepository palveluyksikkoRepository;
-
 
 	// 1a. PÄIVITETTY ETUSIVU: Lasketaan reaaliaikaiset tiedot tietolaatikoihin
 	// (Dashboard)
@@ -155,7 +154,8 @@ public class AsiakasController {
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
 			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,
-			@RequestParam(required = false) String kotisivu, @RequestParam(required = false) Hyvinvointialue hyvinvointialue) {
+			@RequestParam(required = false) String kotisivu,
+			@RequestParam(required = false) Hyvinvointialue hyvinvointialue) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
@@ -217,7 +217,10 @@ public class AsiakasController {
 	@PostMapping("/asiakas/{asiakasId}/lisaa-yhteyshenkilo")
 	public String lisaaYhteyshenkilo(jakarta.servlet.http.HttpSession session, @PathVariable Long asiakasId,
 			@RequestParam String nimi, @RequestParam String rooli, @RequestParam String sahkoposti,
-			@RequestParam String puhelin) {
+			@RequestParam String puhelin,
+			@RequestParam(value = "palveluyksikkoId", required = false) Long palveluyksikkoId) { // 💡 UUSI PARAMETRI
+																									// LOMAKKEELTA
+
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
@@ -225,30 +228,29 @@ public class AsiakasController {
 		Asiakas asiakas = asiakasRepository.findById(asiakasId)
 				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
 
-		Yhteyshenkilo uusiHenkilo = new Yhteyshenkilo(nimi, rooli, sahkoposti, puhelin, asiakas);
+		Yhteyshenkilo uusiHenkilo;
+
+		// 💡 TARKISTETAAN: Kytketäänkö henkilö tiettyyn palveluyksikköön vai onko hän
+		// yleinen kontakti
+		if (palveluyksikkoId != null) {
+			fi.sotemindit.astori.model.Palveluyksikko py = palveluyksikkoRepository.findById(palveluyksikkoId)
+					.orElseThrow(() -> new IllegalArgumentException(
+							"Palveluyksikköä ei löytynyt ID:llä: " + palveluyksikkoId));
+
+			// Käytetään uutta laajennettua konstruktoria
+			uusiHenkilo = new Yhteyshenkilo(nimi, rooli, sahkoposti, puhelin, asiakas, py);
+		} else {
+			// Käytetään vanhaa tuttua konstruktoria yleiselle kontaktille
+			uusiHenkilo = new Yhteyshenkilo(nimi, rooli, sahkoposti, puhelin, asiakas);
+		}
+
 		yhteyshenkiloRepository.save(uusiHenkilo);
 
 		return "redirect:/asiakas/" + asiakasId;
 	}
 
-	// 5. KIRJAUKSEN LISÄYS: Tallentaa uuden lokimerkinnän asiakkaalle
-	@PostMapping("/asiakas/{asiakasId}/lisaa-kirjaus")
-	public String lisaaKirjaus(jakarta.servlet.http.HttpSession session, @PathVariable Long asiakasId,
-			@RequestParam String teksti) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-		Asiakas asiakas = asiakasRepository.findById(asiakasId)
-				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
-
-		Kirjaus uusiKirjaus = new Kirjaus(teksti, asiakas);
-		kirjausRepository.save(uusiKirjaus);
-
-		return "redirect:/asiakas/" + asiakasId;
-	}
-	
-	// 🔌 UUSI REITTI: Tallentaa uuden palveluyksikön sidottuna tiettyyn pääasiakkaaseen
+	// 🔌 UUSI REITTI: Tallentaa uuden palveluyksikön sidottuna tiettyyn
+	// pääasiakkaaseen
 	@PostMapping("/asiakas/{asiakasId}/lisaa-palveluyksikko")
 	public String lisaaPalveluyksikko(
 			@PathVariable Long asiakasId,
@@ -260,6 +262,11 @@ public class AsiakasController {
 			@RequestParam(required = false) String sahkoposti,
 			@RequestParam(required = false) String kuvaus,
 			@RequestParam(required = false) fi.sotemindit.astori.model.Hyvinvointialue hyvinvointialue,
+			// 💡 UUDET PARAMETRIT: Otetaan vastaan yksikön ensimmäisen yhteyshenkilön tiedot
+			@RequestParam(required = false) String yhNimi,
+			@RequestParam(required = false) String yhRooli,
+			@RequestParam(required = false) String yhSahkoposti,
+			@RequestParam(required = false) String yhPuhelin,
 			jakarta.servlet.http.HttpSession session) {
 		
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -267,23 +274,32 @@ public class AsiakasController {
 			return "redirect:/login";
 		}
 
-		// 1. Haetaan pääasiakas (Toimintayksikkö) tietokannasta ja varmistetaan olemassaolo
 		Asiakas asiakas = asiakasRepository.findById(asiakasId)
 				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + asiakasId));
 
-		// 2. Luodaan uusi palveluyksikköolio annetuilla tiedoilla
+		// 1. Luodaan ja tallennetaan uusi palveluyksikkö kantaan ensin
 		fi.sotemindit.astori.model.Palveluyksikko uusiYksikko = new fi.sotemindit.astori.model.Palveluyksikko(
 				nimi, katuosoite, postinumero, postitoimipaikka, puhelin, sahkoposti, kuvaus, hyvinvointialue, asiakas
 		);
-
-		// 3. Tallennetaan palveluyksikkö PostgreSQL-tietokantaan
 		palveluyksikkoRepository.save(uusiYksikko);
 
-		// 4. Kirjataan lisäys järjestelmälokiin (Audit Trail)
-		String lokiKuvaus = "Lisätty uusi palveluyksikkö '" + nimi + "' asiakkaalle '" + asiakas.getNimi() + "' (ID: " + asiakasId + ").";
+		// 2. 💡 JOS LOMAKKEELLA ANNETTIIN YHTEYSHENKILÖ, LUODAAN JA LIITETÄÄN SE TÄHÄN YKSIKKÖÖN
+		if (yhNimi != null && !yhNimi.trim().isEmpty()) {
+			Yhteyshenkilo vastuuhenkilo = new Yhteyshenkilo(
+					yhNimi.trim(), 
+					yhRooli != null ? yhRooli.trim() : "", 
+					yhSahkoposti != null ? yhSahkoposti.trim() : "", 
+					yhPuhelin != null ? yhPuhelin.trim() : "", 
+					asiakas, 
+					uusiYksikko // Kytketään lennosta juuri luotuun palveluyksikköön
+			);
+			yhteyshenkiloRepository.save(vastuuhenkilo);
+		}
+
+		// 3. Kirjataan lisäys järjestelmälokiin
+		String lokiKuvaus = "Lisätty uusi palveluyksikkö '" + nimi + "' asiakkaalle '" + asiakas.getNimi() + "'.";
 		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS", lokiKuvaus));
 
-		// 5. Ohjataan käyttäjä siististi takaisin kyseisen asiakkaan profiiliin
 		return "redirect:/asiakas/" + asiakasId;
 	}
 
@@ -327,8 +343,8 @@ public class AsiakasController {
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
 			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,
-			@RequestParam(required = false) String kotisivu, @RequestParam(required = false) Hyvinvointialue hyvinvointialue,
-			jakarta.servlet.http.HttpSession session) {
+			@RequestParam(required = false) String kotisivu,
+			@RequestParam(required = false) Hyvinvointialue hyvinvointialue, jakarta.servlet.http.HttpSession session) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
@@ -506,5 +522,74 @@ public class AsiakasController {
 		// Palataan siististi takaisin asiakkaan profiiliin
 		return "redirect:/asiakas/" + asiakasId;
 	}
+
+	// 🔌 UUSI REITTI: Muokkaa olemassa olevan palveluyksikön tietoja
+	// 🔌 PÄIVITETTY REITTI: Muokkaa palveluyksikköä ja sen ensisijaista yhteyshenkilöä
+	@PostMapping("/palveluyksikko/muokkaa/{id}")
+	public String muokkaaPalveluyksikkaa(
+			@PathVariable Long id,
+			@RequestParam String nimi,
+			@RequestParam(required = false) String katuosoite,
+			@RequestParam(required = false) String postinumero,
+			@RequestParam(required = false) String postitoimipaikka,
+			@RequestParam(required = false) String puhelin,
+			@RequestParam(required = false) String sahkoposti,
+			@RequestParam(required = false) String kuvaus,
+			@RequestParam(required = false) fi.sotemindit.astori.model.Hyvinvointialue hyvinvointialue,
+			// 💡 UUDET PARAMETRIT: Yksikön yhteyshenkilön muokkaus
+			@RequestParam(required = false) Long yhId,
+			@RequestParam(required = false) String yhNimi,
+			@RequestParam(required = false) String yhRooli,
+			@RequestParam(required = false) String yhSahkoposti,
+			@RequestParam(required = false) String yhPuhelin,
+			@RequestParam Long asiakasId,
+			jakarta.servlet.http.HttpSession session) {
+		
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		// 1. Päivitetään palveluyksikön omat tiedot
+		fi.sotemindit.astori.model.Palveluyksikko py = palveluyksikkoRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Palveluyksikköä ei löytynyt ID:llä: " + id));
+
+		py.setNimi(nimi);
+		py.setKatuosoite(katuosoite);
+		py.setPostinumero(postinumero);
+		py.setPostitoimipaikka(postitoimipaikka);
+		py.setPuhelin(puhelin);
+		py.setSahkoposti(sahkoposti);
+		py.setKuvaus(kuvaus);
+		py.setHyvinvointialue(hyvinvointialue);
+		palveluyksikkoRepository.save(py);
+
+		// 2. 💡 PÄIVITETÄÄN TAI LUODAAN YHTEYSHENKILÖ
+		Asiakas asiakas = asiakasRepository.findById(asiakasId).orElse(null);
+		
+		if (yhNimi != null && !yhNimi.trim().isEmpty()) {
+			Yhteyshenkilo yh;
+			if (yhId != null) {
+				// Päivitetään olemassa oleva yhteyshenkilö
+				yh = yhteyshenkiloRepository.findById(yhId).orElse(new Yhteyshenkilo());
+			} else {
+				// Luodaan uusi, jos yksikölle lisätään vasta nyt yhteyshenkilö
+				yh = new Yhteyshenkilo();
+				yh.setAsiakas(asiakas);
+				yh.setPalveluyksikko(py);
+			}
+			yh.setNimi(yhNimi.trim());
+			yh.setRooli(yhRooli != null ? yhRooli.trim() : "");
+			yh.setSahkoposti(yhSahkoposti != null ? yhSahkoposti.trim() : "");
+			yh.setPuhelin(yhPuhelin != null ? yhPuhelin.trim() : "");
+			yhteyshenkiloRepository.save(yh);
+		}
+
+		String lokiKuvaus = "Muokattu palveluyksikön '" + nimi + "' (ID: " + id + ") tietoja asiakkaalle ID: " + asiakasId;
+		lokiRepository.save(new Loki(istuntoTunnus, "MUOKKAUS", lokiKuvaus));
+
+		return "redirect:/asiakas/" + asiakasId;
+	}
+
 
 }
