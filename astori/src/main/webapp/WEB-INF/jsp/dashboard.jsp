@@ -148,8 +148,8 @@ body {
 							</div>
 
 
-							<!-- ajankohta muutettu Suomalaiseen muotoon -->
-							<c:if test="${not empty tap.asiakas}">
+							<!-- 💡 KORJATTU: Päivämäärä näytetään aina, kun ajankohta on olemassa (vaikka asiakasta ei olisi kytketty) -->
+							<c:if test="${not empty tap.ajankohta}">
 								<small class="text-muted fw-semibold"> <c:set
 										var="ajankohtaTeksti"
 										value="${tap.ajankohta.toString().substring(0, 16)}" /> <fmt:parseDate

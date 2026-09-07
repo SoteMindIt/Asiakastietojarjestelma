@@ -6,8 +6,25 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import fi.sotemindit.astori.model.Tapahtuma;
+import fi.sotemindit.astori.model.TapahtumaTyyppi;
 
 public interface TapahtumaRepository extends JpaRepository<Tapahtuma, Long> {
+	
+	 // 💡 UUSI DYNAAMINEN HAKUMETODI KALENTERILLE
+    @Query("SELECT t FROM Tapahtuma t WHERE " +
+           "(:kayttajatunnus IS NULL OR t.kayttaja.kayttajatunnus = :kayttajatunnus) AND " +
+           "(:asiakasId IS NULL OR t.asiakas.id = :asiakasId) AND " +
+           "(:tyyppi IS NULL OR t.tyyppi = :tyyppi) AND " +
+           "(:alkuPvm IS NULL OR t.ajankohta >= :alkuPvm) AND " +
+           "(:loppuPvm IS NULL OR t.ajankohta <= :loppuPvm) " +
+           "ORDER BY t.ajankohta ASC")
+    List<Tapahtuma> haeKalenteriSuodattimilla(
+        @Param("kayttajatunnus") String kayttajatunnus,
+        @Param("asiakasId") Long  asiakasId,
+        @Param("tyyppi") TapahtumaTyyppi tyyppi,
+        @Param("alkuPvm") LocalDateTime alkuPvm,
+        @Param("loppuPvm") LocalDateTime loppuPvm
+    );
 
 	// 🔍 1. Haetaan tulevat tapahtumat aikajärjestyksessä etusivun koosteeseen (KORJATTU PÄIVITETYLLÄ KYSELYLLÄ)
 	@Query("SELECT t FROM Tapahtuma t WHERE t.kayttaja.kayttajatunnus = :tunnus AND t.ajankohta > :nyt ORDER BY t.ajankohta ASC")

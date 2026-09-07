@@ -13,8 +13,17 @@
 <style>
 body {
 	background-color: #f8f9fa;
+	.
+	rotate-180
+	{
+	transform
+	:
+	rotate(
+	180deg
+	);
 }
 
+}
 .profile-card {
 	background: white;
 	border-radius: 8px;
@@ -63,198 +72,240 @@ body {
 				href="${pageContext.request.contextPath}/asiakkaat">&larr;
 				Takaisin asiakaslistaukseen</a>
 		</div>
+
 		<!-- ASIAKKAAN PROFIILIKORTTI (KATSELU TAI MUOKKAUS) -->
 		<div class="profile-card border mb-4 bg-white shadow-sm p-4 rounded-3">
 
-			<!-- 1. KATSELUTILA (Optimoitu tilankäyttö) -->
-			<div id="asiakas-katselu" class="row g-4 align-items-start">
-				<div class="col-lg-8">
-					<div class="d-flex align-items-center gap-2 mb-2">
-						<span class="badge bg-light text-secondary border px-2 py-1 small">Asiakasnumero
-							#${asiakas.id}</span>
-						<c:choose>
-							<c:when test="${asiakas.tila == 'PROSPEKTI'}">
+			<!-- ==================== 1. KATSELUTILA (Oletusnäkymä) ==================== -->
+
+			<!-- ==================== 1. KATSELUTILA (Oletusnäkymä) ==================== -->
+			<div id="asiakas-katselu">
+
+				<!-- YLÄRIVI: Nimi vasemmalla, KAIKKI painikkeet oikealla rinnakkain -->
+				<div
+					class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+					<div>
+						<h2 class="fw-bold h4 text-dark mb-1">${asiakas.nimi}</h2>
+						<div class="d-flex gap-2 align-items-center flex-wrap">
+							<span class="badge bg-secondary">ID #${asiakas.id}</span>
+							<c:if test="${not empty Myyntiputki_tila}">
 								<span
-									class="badge bg-warning text-dark fw-bold text-uppercase px-3 py-1.5 rounded-pill shadow-sm"
-									style="font-size: 0.75em;">Prospekti</span>
-							</c:when>
-							<c:when test="${asiakas.tila == 'KONTAKTOITU'}">
+									class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-2 fw-semibold">
+									${Myyntiputki_tila.nayttorivi} </span>
+							</c:if>
+							<c:if test="${not empty asiakas.yTunnus}">
 								<span
-									class="badge bg-info text-dark fw-bold text-uppercase px-3 py-1.5 rounded-pill shadow-sm"
-									style="font-size: 0.75em;">Kontaktoitu</span>
-							</c:when>
-							<c:when test="${asiakas.tila == 'TARJOUS_JATETTY'}">
-								<span
-									class="badge bg-primary text-white fw-bold text-uppercase px-3 py-1.5 rounded-pill shadow-sm"
-									style="font-size: 0.75em;">Tarjous jätetty</span>
-							</c:when>
-							<c:when test="${asiakas.tila == 'AKTIIVINEN'}">
-								<span
-									class="badge bg-success text-white fw-bold text-uppercase px-3 py-1.5 rounded-pill shadow-sm"
-									style="font-size: 0.75em;">Aktiivinen</span>
-							</c:when>
-							<c:when test="${asiakas.tila == 'PAATTYNYT'}">
-								<span
-									class="badge bg-secondary text-white fw-bold text-uppercase px-3 py-1.5 rounded-pill shadow-sm"
-									style="font-size: 0.75em;">Päättynyt</span>
-							</c:when>
-							<c:otherwise>
-								<span
-									class="badge bg-light text-dark border px-3 py-1.5 rounded-pill">${asiakas.tila}</span>
-							</c:otherwise>
-						</c:choose>
+									class="badge bg-light text-secondary border px-2.5 py-1 rounded-2">
+									Y-tunnus: ${asiakas.yTunnus} </span>
+							</c:if>
+						</div>
 					</div>
 
-					<h1 class="text-dark fw-extrabold display-6 mb-3">${asiakas.nimi}</h1>
+					<!-- 💡 LISÄTYT PAINIKKEET: Kaikki toimintapainikkeet siististi nimen oikealla puolelle -->
+					<div class="d-flex gap-2 align-items-center flex-wrap">
+						<button type="button"
+							class="btn btn-sm btn-outline-dark fw-bold py-1.5 px-2.5 small rounded-pill"
+							style="font-size: 0.85em;" data-bs-toggle="modal"
+							data-bs-target="#lisaaPalveluyksikkoModal">+
+							Palveluyksikkö</button>
+						<button type="button"
+							class="btn btn-sm btn-outline-success fw-bold py-1.5 px-2.5 small rounded-pill"
+							style="font-size: 0.85em;" data-bs-toggle="modal"
+							data-bs-target="#lisaaHankintaModal">+ Tuote/Palvelu</button>
+						<button type="button"
+							class="btn btn-sm btn-outline-primary py-1.5 px-2.5 small rounded-pill"
+							style="font-size: 0.85em;" data-bs-toggle="modal"
+							data-bs-target="#lisaaKirjausModal">+ Lokimerkintä</button>
+						<button type="button"
+							class="btn btn-sm btn-outline-secondary py-1.5 px-2.5 small rounded-pill"
+							style="font-size: 0.85em;" data-bs-toggle="modal"
+							data-bs-target="#lisaaYhModal">+ Yhteyshenkilö</button>
 
-					<!-- Yrityksen toiminta ja taustat -->
-					<div class="p-3 bg-light rounded-3 border mb-4">
-						<h6 class="fw-bold text-uppercase text-muted mb-2"
-							style="font-size: 0.75em; letter-spacing: 0.5px;">Yrityksen
-							toiminta ja taustat</h6>
-						<p class="mb-0 text-dark small lh-base"
-							style="white-space: pre-line;">
-							<c:choose>
-								<c:when test="${not empty asiakas.kuvaus}">
-									<c:out value="${asiakas.kuvaus}" />
-								</c:when>
-								<c:otherwise>
-									<span class="text-muted italic">Ei määriteltyä toiminnan
-										kuvausta.</span>
-								</c:otherwise>
-							</c:choose>
-						</p>
+						<!-- Alkuperäinen muokkauspainike pienenä erottimena -->
+						<button
+							class="btn btn-sm btn-primary fw-bold py-1.5 px-3 shadow-sm rounded-pill ms-md-2"
+							style="font-size: 0.85em;" onclick="avaaMuokkaus()">✏️
+							Muokkaa</button>
 					</div>
+				</div>
 
-					<!-- Perustiedot ruudukossa -->
-					<div class="row g-2 text-dark small">
-						<div class="col-sm-6">
-							<p class="mb-1">
-								<strong>📍 Osoite:</strong> ${not empty asiakas.katuosoite ? asiakas.katuosoite : '<span class="text-muted italic">Ei määritelty</span>'}
-								${asiakas.postinumero} ${asiakas.postitoimipaikka}
+				<!-- PERUSTIEDOT KAKSISARAKKEISENA -->
+				<div class="row g-4 mb-4">
+
+					<!-- Vasen sarake: Yrityksen omat perustiedot -->
+					<div class="col-md-6">
+						<div class="pe-md-3">
+							<p class="mb-2">
+								<strong>📞 Puhelinnumero:</strong> ${not empty asiakas.puhelin ? asiakas.puhelin : '<span class="text-muted italic">Ei määritelty</span>'}
 							</p>
-
-							<p class="mb-1">
-								<strong>🏢 Hyvinvointialue:</strong>
+							<p class="mb-2">
+								<strong>✉️ Sähköposti:</strong> ${not empty asiakas.sahkoposti ? asiakas.sahkoposti : '<span class="text-muted italic">Ei määritelty</span>'}
+							</p>
+							<p class="mb-2">
+								<strong>🌐 Kotisivu:</strong>
 								<c:choose>
-									<c:when test="${not empty asiakas.hyvinvointialue}">
-            ${asiakas.hyvinvointialue.nimi}
-        </c:when>
+									<c:when test="${not empty asiakas.kotisivu}">
+										<a href="${asiakas.kotisivu}" target="_blank"
+											class="text-primary text-decoration-none fw-bold">${asiakas.kotisivu}</a>
+									</c:when>
 									<c:otherwise>
 										<span class="text-muted italic">Ei määritelty</span>
 									</c:otherwise>
 								</c:choose>
 							</p>
-
-
-							<p class="mb-1">
-								<strong>🆔 Y-tunnus:</strong> ${not empty asiakas.yTunnus ? asiakas.yTunnus : '<span class="text-muted italic">Ei määritelty</span>'}
+							<p class="mb-2">
+								<strong>📍 Katuosoite:</strong> ${not empty asiakas.katuosoite ? asiakas.katuosoite : '<span class="text-muted italic">Ei määritelty</span>'}
 							</p>
-						</div>
-						<div class="col-sm-6">
-							<p class="mb-1">
-								<strong>📞 Puhelin:</strong> ${not empty asiakas.puhelin ? asiakas.puhelin : '<span class="text-muted italic">Ei määritelty</span>'}
+							<p class="mb-2">
+								<strong>📮 Postitoimipaikka:</strong> ${not empty asiakas.postitoimipaikka ? asiakas.postinumero += ' ' += asiakas.postitoimipaikka : '<span class="text-muted italic">Ei määritelty</span>'}
 							</p>
-							<p class="mb-1">
-								<strong>✉️ Sähköposti:</strong> ${not empty asiakas.sahkoposti ? asiakas.sahkoposti : '<span class="text-muted italic">Ei määritelty</span>'}
-							</p>
-							<p class="mb-1">
-								<strong>🌐 Kotisivu:</strong>
-								<c:if test="${not empty asiakas.kotisivu}">
-									<a href="${asiakas.kotisivu}" target="_blank"
-										class="text-decoration-none">${asiakas.kotisivu}</a>
-								</c:if>
-								<c:if test="${empty asiakas.kotisivu}">
-									<span class="text-muted italic">Ei määritelty</span>
-								</c:if>
+							<p class="mb-0">
+								<strong>🏢 Hyvinvointialue:</strong>
+								<c:choose>
+									<c:when test="${not empty asiakas.hyvinvointialue}">
+										${asiakas.hyvinvointialue.nimi}
+									</c:when>
+									<c:otherwise>
+										<span class="text-muted italic">Ei määritelty</span>
+									</c:otherwise>
+								</c:choose>
 							</p>
 						</div>
 					</div>
+
+					<!-- Oikea sarake: Asiakkaan yleinen pääyhteyshenkilö -->
+					<div class="col-md-6">
+						<div
+							class="p-3 bg-light rounded-3 border h-100 d-flex flex-column justify-content-center">
+							<h6 class="fw-bold text-uppercase text-secondary mb-2"
+								style="font-size: 0.75em; letter-spacing: 0.5px;">👥
+								Organisaation pääyhteyshenkilö</h6>
+
+							<c:set var="paayhteyshenkiloLoytyi" value="false" />
+							<c:forEach var="h" items="${yhteyshenkilot}">
+								<c:if
+									test="${empty h.palveluyksikko && !paayhteyshenkiloLoytyi}">
+									<div class="text-dark">
+										<div class="fw-bold h6 mb-0">${h.nimi}</div>
+										<div class="text-muted small mb-2">${h.rooli}</div>
+										<div class="small">
+											<div class="mb-1">✉️ ${h.sahkoposti}</div>
+											<div>📞 ${h.puhelin}</div>
+										</div>
+									</div>
+									<c:set var="paayhteyshenkiloLoytyi" value="true" />
+								</c:if>
+							</c:forEach>
+
+							<c:if test="${!paayhteyshenkiloLoytyi}">
+								<div class="text-muted italic small text-center py-2">
+									Ei määriteltyä yleistä pääyhteyshenkilöä.<br> Voit lisätä
+									sellaisen yläpuolelta.
+								</div>
+							</c:if>
+						</div>
+					</div>
+
 				</div>
 
-				<!-- Oikea reuna: Painikkeet ja loki -->
-				<div
-					class="col-lg-4 text-end d-flex flex-column h-100 justify-content-between">
+				<!-- 💡 HUOM: Erillinen painikerivi on nyt poistettu kokonaan, sillä ne ovat ylhäällä! -->
 
-					<!-- PÄÄTOIMINNOT -->
-					<div class="d-flex gap-2 justify-content-end mb-3">
-						<a
-							href="${pageContext.request.contextPath}/asiakas/${asiakas.id}/tarjoukset"
-							class="btn btn-success btn-sm fw-bold rounded-2 shadow-sm px-3">€
-							Tarjouslaskenta</a>
-						<button type="button"
-							class="btn btn-dark btn-sm fw-bold rounded-2 shadow-sm px-3"
-							onclick="avaaMuokkaus()">Muokkaa</button>
-						<button type="button"
-							class="btn btn-outline-danger btn-sm fw-bold rounded-2 px-2"
-							onclick="if(confirm('Haluatko varmasti poistaa tämän asiakkaan ja kaikki siihen liittyvät tiedot?')) { document.getElementById('poistoForm').submit(); }">Poista</button>
-					</div>
-					<form id="poistoForm"
-						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/poista"
-						method="post" style="display: none;"></form>
+			</div>
+			<!-- /asiakas-katselu -->
 
-					<!-- LISÄYSPAINIKKEET -->
-					<div
-						class="d-flex gap-2 justify-content-end flex-wrap pt-2 border-top mb-3">
-						<button type="button"
-							class="btn btn-xs btn-outline-dark fw-bold py-1 px-2 small"
-							style="font-size: 0.85em;" data-bs-toggle="modal"
-							data-bs-target="#lisaaPalveluyksikkoModal">+
-							Palveluyksikkö</button>
-						<button type="button"
-							class="btn btn-xs btn-outline-success fw-bold py-1 px-2 small"
-							style="font-size: 0.85em;" data-bs-toggle="modal"
-							data-bs-target="#lisaaHankintaModal">+ Tuote/Palvelu</button>
-						<button type="button"
-							class="btn btn-xs btn-outline-primary fw-bold py-1 px-2 small"
-							style="font-size: 0.85em;" data-bs-toggle="modal"
-							data-bs-target="#lisaaKirjausModal">+ Lokimerkintä</button>
-						<button type="button"
-							class="btn btn-xs btn-outline-secondary fw-bold py-1 px-2 small"
-							style="font-size: 0.85em;" data-bs-toggle="modal"
-							data-bs-target="#lisaaYhModal">+ Yhteyshenkilö</button>
+
+			<c:if test="${not empty asiakas.kuvaus}">
+				<div class="mb-4 p-3 bg-white rounded-3 border">
+					<h6 class="fw-bold text-uppercase text-secondary mb-2"
+						style="font-size: 0.75em; letter-spacing: 0.5px;">📝
+						Asiakkaan kuvaus ja sisäiset huomiot</h6>
+					<div class="text-dark small"
+						style="white-space: pre-line; line-height: 1.5;">
+						${asiakas.kuvaus}</div>
+				</div>
+			</c:if>
+
+
+			<!-- 💡 LOKI JA MUISTIINPANOT (Kokoontaitettava versio nuoli-indikaattorilla) -->
+			<div class="mb-4">
+				<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
+
+					<!-- Klikattava otsikkorivi, joka toimii haitarin kytkimenä -->
+					<div class="d-flex justify-content-between align-items-center"
+						style="cursor: pointer;" data-bs-toggle="collapse"
+						data-bs-target="#lokiKirjauksetCollapse" aria-expanded="false"
+						aria-controls="lokiKirjauksetCollapse"
+						onclick="this.querySelector('.accordion-nuoli-loki').classList.toggle('rotate-180')">
+
+						<h6 class="fw-bold text-uppercase text-secondary mb-0"
+							style="letter-spacing: 0.5px; font-size: 0.75em;">📋
+							Asiakkaan loki ja muistiinpanot (${kirjaukset.size()})</h6>
+
+						<!-- Dynaaminen nuolikuvake, joka kääntyy (oma luokka erottamaan muista haitareista) -->
+						<span class="accordion-nuoli-loki text-muted fw-bold"
+							style="transition: transform 0.2s ease; display: inline-block;">
+							▼ </span>
 					</div>
 
-					<!-- ASIAKKAAN LOKI -->
-					<div class="text-start mt-2 p-3 bg-light rounded-3 border">
-						<h6 class="fw-bold text-uppercase text-muted mb-2"
-							style="font-size: 0.75em; letter-spacing: 0.5px;">Asiakkaan
-							loki</h6>
-						<div style="max-height: 200px; overflow-y: auto;" class="pe-1">
-							<ul class="list-group list-group-flush bg-transparent">
-								<c:forEach var="k" items="${kirjaukset}">
-									<li
-										class="list-group-item px-0 py-2 border-bottom-0 bg-transparent">
-										<div
-											class="p-2 rounded bg-white border-start border-primary border-3 shadow-sm mb-1">
-											<div class="d-flex justify-content-between align-items-start">
-												<p class="mb-1 text-dark small fw-normal flex-grow-1 mb-0"
-													style="white-space: pre-line; font-size: 0.9em;">${k.teksti}</p>
-												<button type="button"
-													class="btn btn-sm btn-link p-0 ms-2 text-primary text-decoration-none small muokkaa-loki-btn"
-													style="font-size: 0.8em;" data-id="${k.id}"
-													data-teksti="<c:out value='${k.teksti}'/>">Muokkaa</button>
-											</div>
-											<small class="text-muted d-block mt-1"
-												style="font-size: 0.75em;"> <fmt:parseDate
-													value="${k.luontiaika}" pattern="yyyy-MM-dd'T'HH:mm"
-													var="parsedAika" type="both" /> <fmt:formatDate
-													value="${parsedAika}" pattern="dd.MM.yyyy 'klo' HH:mm" />
-											</small>
+					<!-- TÄMÄ LOKISISÄLTÖ ON OLETUSARVOISESTI PIILOSSA (Aukeaa klikkaamalla otsikkoa) -->
+					<div class="collapse mt-3" id="lokiKirjauksetCollapse">
+						<div class="bg-light rounded-3 border p-3"
+							style="max-height: 300px; overflow-y: auto;">
+
+							<c:forEach var="k" items="${kirjaukset}">
+								<div
+									class="p-2 border-bottom mb-2 text-dark small position-relative bg-white rounded shadow-sm">
+									<div
+										class="d-flex justify-content-between align-items-center mb-1">
+										<!-- Luontiaika suomalaisessa muodossa -->
+										<small class="text-muted fw-semibold"> <c:set
+												var="lokiAika"
+												value="${k.luontiaika.toString().substring(0, 16)}" /> <fmt:parseDate
+												value="${lokiAika}" pattern="yyyy-MM-dd'T'HH:mm"
+												var="parsituLoki" type="both" /> <fmt:formatDate
+												value="${parsituLoki}" pattern="dd.MM.yyyy 'klo' HH:mm" />
+										</small>
+
+										<!-- Painikkeet: Muokkaa ja arkistoiva Poista rinnakkain -->
+										<div class="d-flex gap-2">
+											<button type="button"
+												class="btn btn-sm btn-link text-primary py-0 px-1 text-decoration-none muokkaa-loki-btn"
+												style="font-size: 0.85em;" data-id="${k.id}"
+												data-teksti="<c:out value='${k.teksti}'/>">Muokkaa</button>
+
+											<form
+												action="${pageContext.request.contextPath}/kirjaus/poista/${k.id}"
+												method="post" class="d-inline"
+												onsubmit="return confirm('Haluatko varmasti poistaa tämän lokimerkinnän? Merkintä arkistoidaan järjestelmälokiin.')">
+												<input type="hidden" name="asiakasId" value="${asiakas.id}">
+												<button type="submit"
+													class="btn btn-sm btn-link text-danger py-0 px-1 text-decoration-none"
+													style="font-size: 0.85em; font-weight: 500;">
+													Poista</button>
+											</form>
 										</div>
-									</li>
-								</c:forEach>
-								<c:if test="${empty kirjaukset}">
-									<li
-										class="list-group-item px-0 py-2 text-muted italic bg-transparent small">Ei
-										aiempia lokimerkintöjä.</li>
-								</c:if>
-							</ul>
+									</div>
+									<div style="white-space: pre-line; line-height: 1.4;">${k.teksti}</div>
+								</div>
+							</c:forEach>
+
+							<!-- Jos kirjauksia ei ole ollenkaan -->
+							<c:if test="${empty kirjaukset}">
+								<div class="text-center py-4 text-muted italic small">
+									Asiakkaalle ei ole vielä tehty lokimerkintöjä. Voit lisätä
+									ensimmäisen yläpuolelta.</div>
+							</c:if>
+
 						</div>
 					</div>
+					<!-- /collapse -->
 
 				</div>
 			</div>
+
+
+			<!-- /asiakas-katselu -->
+
 			<!-- 2. MUOKKAUSTILA (Piilotettu oletuksena) -->
 			<div id="asiakas-muokkaus" class="d-none">
 				<div
@@ -361,126 +412,174 @@ body {
 		<!-- TÄYSLEVEÄT KORTIT ALLEKKAIN (Korjaa tyhjät aukot sivuilla) -->
 		<div class="row g-4 mb-4">
 
-			<!-- UUSI KORTTI: PALVELUYKSIKÖT (Täysleveys) -->
+			<!-- UUSI KORTTI: PALVELUYKSIKÖT (Kokoontaitettava versio nuoli-indikaattorilla) -->
 			<div class="col-12">
 				<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
-					<h3 class="fw-bold h6 text-secondary text-uppercase mb-3"
-						style="letter-spacing: 0.5px;">🏢 Palveluyksiköt ja
-						toimipisteet</h3>
 
-					<c:choose>
-						<c:when test="${not empty asiakas.palveluyksikot}">
-							<!-- Näytetään yksiköt joustavana ja tasapainoisena rivinä -->
-							<div class="d-flex flex-wrap gap-3">
-								<c:forEach var="yksikko" items="${asiakas.palveluyksikot}">
-									<div
-										class="card p-3 shadow-sm border bg-light d-flex flex-column justify-content-between"
-										style="min-width: 300px; flex: 1 1 30%;">
-										<div>
-											<div
-												class="d-flex justify-content-between align-items-start mb-2">
-												<strong class="text-dark h6 mb-0">${yksikko.nimi}</strong>
-												<c:if test="${not empty yksikko.hyvinvointialue}">
-													<span
-														class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small"
-														style="font-size: 0.75em;">
-														${yksikko.hyvinvointialue.nimi} </span>
-												</c:if>
-											</div>
+					<!-- Klikattava otsikkorivi, joka toimii kytkimenä -->
+					<div class="d-flex justify-content-between align-items-center"
+						style="cursor: pointer;" data-bs-toggle="collapse"
+						data-bs-target="#palveluyksikotCollapse" aria-expanded="false"
+						aria-controls="palveluyksikotCollapse"
+						onclick="this.querySelector('.accordion-nuoli').classList.toggle('rotate-180')">
 
-											<!-- 💡 UUSI MUOKKAUSPAINIKE DIGITAALISILLA DATAMUUTTUJILLA -->
-											<button type="button"
-												class="btn btn-sm btn-outline-primary py-0 px-2 muokkaa-py-btn"
-												style="font-size: 0.8em;" data-id="${yksikko.id}"
-												data-nimi="${yksikko.nimi}"
-												data-alue="${yksikko.hyvinvointialue}"
-												data-katu="${yksikko.katuosoite}"
-												data-pno="${yksikko.postinumero}"
-												data-ptp="${yksikko.postitoimipaikka}"
-												data-puh="${yksikko.puhelin}"
-												data-email="${yksikko.sahkoposti}"
-												data-kuvaus="<c:out value='${yksikko.kuvaus}'/>">
-												Muokkaa</button>
-											<div class="mt-3 pt-2 border-top">
-												<h6 class="fw-bold text-uppercase text-secondary mb-2"
-													style="font-size: 0.7em; letter-spacing: 0.5px;">Yksikön
-													vastuuhenkilöt</h6>
-												<c:forEach var="yh" items="${yksikko.yhteyshenkilot}">
-													<div
-														class="p-2 bg-white rounded border shadow-sm mb-1 text-dark small">
-														<div
-															class="d-flex justify-content-between align-items-center">
-															<strong>👤 ${yh.nimi}</strong> <span class="text-muted"
-																style="font-size: 0.85em;">${yh.rooli}</span>
-														</div>
-														<div class="text-muted"
-															style="font-size: 0.85em; margin-left: 18px;">
-															<span class="me-2">✉️ ${yh.sahkoposti}</span> <span>📞
-																${yh.puhelin}</span>
-														</div>
-													</div>
-												</c:forEach>
-												<c:if test="${empty yksikko.yhteyshenkilot}">
-													<div class="text-muted italic small text-center py-1">Ei
-														nimettyjä omia vastuuhenkilöitä.</div>
-												</c:if>
-											</div>
+						<h3 class="fw-bold h6 text-secondary text-uppercase mb-0"
+							style="letter-spacing: 0.5px;">🏢 Palveluyksiköt ja
+							toimipisteet (${asiakas.palveluyksikot.size()})</h3>
 
-											<!-- Osoite- ja yhteystiedot pienellä ja siistillä tekstillä -->
-											<div class="text-muted small mt-2">
-												<c:if test="${not empty yksikko.katuosoite}">
-													<div class="mb-1">📍 ${yksikko.katuosoite},
-														${yksikko.postinumero} ${yksikko.postitoimipaikka}</div>
-												</c:if>
-												<c:if test="${not empty yksikko.puhelin}">
-													<div class="mb-1">📞 ${yksikko.puhelin}</div>
-												</c:if>
-												<c:if test="${not empty yksikko.sahkoposti}">
-													<div class="mb-1">✉️ ${yksikko.sahkoposti}</div>
-												</c:if>
-											</div>
+						<!-- Dynaaminen nuolikuvake, joka kääntyy -->
+						<span class="accordion-nuoli text-muted fw-bold"
+							style="transition: transform 0.2s ease; display: inline-block;">
+							▼ </span>
+					</div>
 
-											<!-- Lyhyt kuvausteksti, jos määritelty -->
-											<c:if test="${not empty yksikko.kuvaus}">
+					<!-- TÄMÄ OSIO ON OLETUSARVOISESTI PIILOSSA (Ota 'show' pois class-listasta jos haluat piiloon heti latauksessa) -->
+					<div class="collapse mt-3" id="palveluyksikotCollapse">
+						<c:choose>
+							<c:when test="${not empty asiakas.palveluyksikot}">
+								<div class="d-flex flex-wrap gap-3">
+									<c:forEach var="yksikko" items="${asiakas.palveluyksikot}">
+										<div
+											class="card p-3 shadow-sm border bg-light d-flex flex-column justify-content-between"
+											style="min-width: 300px; flex: 1 1 30%;">
+											<div>
 												<div
-													class="mt-2 p-2 bg-white rounded border small text-secondary"
-													style="font-size: 0.85em; white-space: pre-line;">
-													${yksikko.kuvaus}</div>
-											</c:if>
+													class="d-flex justify-content-between align-items-start mb-2">
+													<div>
+														<strong class="text-dark h6 mb-0 d-block">${yksikko.nimi}</strong>
+														<c:if test="${not empty yksikko.hyvinvointialue}">
+															<span
+																class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill mt-1"
+																style="font-size: 0.75em;">
+																${yksikko.hyvinvointialue.nimi} </span>
+														</c:if>
+													</div>
+													<button type="button"
+														class="btn btn-sm btn-outline-primary py-0 px-2 muokkaa-py-btn"
+														style="font-size: 0.8em;" data-id="${yksikko.id}"
+														data-nimi="${yksikko.nimi}"
+														data-alue="${yksikko.hyvinvointialue}"
+														data-katu="${yksikko.katuosoite}"
+														data-pno="${yksikko.postinumero}"
+														data-ptp="${yksikko.postitoimipaikka}"
+														data-puh="${yksikko.puhelin}"
+														data-email="${yksikko.sahkoposti}"
+														data-kuvaus="<c:out value='${yksikko.kuvaus}'/>">
+														Muokkaa</button>
+												</div>
+
+												<!-- Osoite- ja yhteystiedot -->
+												<div class="text-muted small mt-2">
+													<c:if test="${not empty yksikko.katuosoite}">
+														<div class="mb-1">📍 ${yksikko.katuosoite},
+															${yksikko.postinumero} ${yksikko.postitoimipaikka}</div>
+													</c:if>
+													<c:if test="${not empty yksikko.puhelin}">
+														<div class="mb-1">📞 ${yksikko.puhelin}</div>
+													</c:if>
+													<c:if test="${not empty yksikko.sahkoposti}">
+														<div class="mb-1">✉️ ${yksikko.sahkoposti}</div>
+													</c:if>
+												</div>
+
+												<!-- Yksikön omat yhteyshenkilöt -->
+												<div class="mt-3 pt-2 border-top">
+													<h6 class="fw-bold text-uppercase text-secondary mb-2"
+														style="font-size: 0.7em; letter-spacing: 0.5px;">Yksikön
+														vastuuhenkilöt</h6>
+													<c:forEach var="yh" items="${yksikko.yhteyshenkilot}">
+														<div
+															class="p-2 bg-white rounded border shadow-sm mb-1 text-dark small">
+															<div
+																class="d-flex justify-content-between align-items-center">
+																<strong>👤 ${yh.nimi}</strong> <span class="text-muted"
+																	style="font-size: 0.85em;">${yh.rooli}</span>
+															</div>
+															<div class="text-muted"
+																style="font-size: 0.85em; margin-left: 18px;">
+																<span class="me-2">✉️ ${yh.sahkoposti}</span> <span>📞
+																	${yh.puhelin}</span>
+															</div>
+														</div>
+													</c:forEach>
+													<c:if test="${empty yksikko.yhteyshenkilot}">
+														<div class="text-muted italic small text-center py-1">Ei
+															nimettyjä omia vastuuhenkilöitä.</div>
+													</c:if>
+												</div>
+
+												<!-- Lyhyt kuvausteksti -->
+												<c:if test="${not empty yksikko.kuvaus}">
+													<div
+														class="mt-2 p-2 bg-white rounded border small text-secondary"
+														style="font-size: 0.85em; white-space: pre-line;">
+														${yksikko.kuvaus}</div>
+												</c:if>
+											</div>
 										</div>
-									</div>
-								</c:forEach>
-							</div>
-						</c:when>
-						<c:otherwise>
-							<div
-								class="p-3 bg-light rounded text-center text-muted small italic">
-								Asiakkaalle ei ole vielä luotu erillisiä palveluyksiköitä. Voit
-								lisätä ensimmäisen yksikön yläpuolelta.</div>
-						</c:otherwise>
-					</c:choose>
+									</c:forEach>
+								</div>
+							</c:when>
+							<c:otherwise>
+								<div
+									class="p-3 bg-light rounded text-center text-muted small italic">
+									Asiakkaalle ei ole vielä luotu erillisiä palveluyksiköitä. Voit
+									lisätä ensimmäisen yksikön yläpuolelta.</div>
+							</c:otherwise>
+						</c:choose>
+					</div>
+
 				</div>
 			</div>
 
+		</div>
 
-			<!-- 1. KORTTI: YHTEYSHENKILÖT -->
-			<div class="col-12">
-				<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
-					<h3 class="fw-bold h6 text-secondary text-uppercase mb-3"
-						style="letter-spacing: 0.5px;">👥 Yhteyshenkilöt</h3>
 
+		<!-- KORTTI: YHTEYSHENKILÖT (Kokoontaitettava versio nuoli-indikaattorilla) -->
+		<div class="col-12">
+			<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
+
+				<!-- Klikattava otsikkorivi, joka toimii kytkimenä -->
+				<div class="d-flex justify-content-between align-items-center"
+					style="cursor: pointer;" data-bs-toggle="collapse"
+					data-bs-target="#yhteyshenkilotCollapse" aria-expanded="false"
+					aria-controls="yhteyshenkilotCollapse"
+					onclick="this.querySelector('.accordion-nuoli-yh').classList.toggle('rotate-180')">
+
+					<h3 class="fw-bold h6 text-secondary text-uppercase mb-0"
+						style="letter-spacing: 0.5px;">👥 Järjestelmän kaikki
+						yhteyshenkilöt (${yhteyshenkilot.size()})</h3>
+
+					<!-- Dynaaminen nuolikuvake, joka kääntyy (oma luokka erottamaan palveluyksiköistä) -->
+					<span class="accordion-nuoli-yh text-muted fw-bold"
+						style="transition: transform 0.2s ease; display: inline-block;">
+						▼ </span>
+				</div>
+
+				<!-- TÄMÄ OSIO ON OLETUSARVOISESTI PIILOSSA (Aukeaa klikkaamalla) -->
+				<div class="collapse mt-3" id="yhteyshenkilotCollapse">
 					<c:choose>
 						<c:when test="${not empty yhteyshenkilot}">
 							<div class="d-flex flex-wrap gap-3">
 								<c:forEach var="h" items="${yhteyshenkilot}">
 									<div
-										class="card p-2 shadow-sm border bg-light d-flex flex-row justify-content-between align-items-center"
+										class="card p-3 shadow-sm border bg-light d-flex flex-row justify-content-between align-items-center"
 										style="min-width: 280px; flex: 1 1 30%;">
 										<div>
-											<strong class="text-dark small d-block">${h.nimi}</strong> <span
-												class="text-muted" style="font-size: 0.8em;">${h.rooli}</span>
-											<div class="text-muted mt-1" style="font-size: 0.75em;">
-												<div>✉️ ${h.sahkoposti}</div>
+											<div class="d-flex align-items-center gap-2 flex-wrap">
+												<strong class="text-dark small d-block">${h.nimi}</strong>
+
+												<!-- Jos henkilö kuuluu tiettyyn palveluyksikköön, näytetään siitä siisti badge -->
+												<c:if test="${not empty h.palveluyksikko}">
+													<span
+														class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill"
+														style="font-size: 0.7em;"> 🏢
+														${h.palveluyksikko.nimi} </span>
+												</c:if>
+											</div>
+											<span class="text-muted d-block" style="font-size: 0.8em;">${h.rooli}</span>
+											<div class="text-muted mt-2" style="font-size: 0.75em;">
+												<div class="mb-1">✉️ ${h.sahkoposti}</div>
 												<div>📞 ${h.puhelin}</div>
 											</div>
 										</div>
@@ -497,120 +596,121 @@ body {
 						<c:otherwise>
 							<div
 								class="p-3 bg-light rounded text-center text-muted small italic">
-								Ei määriteltyjä yhteyshenkilöitä. Voit lisätä uuden henkilön
-								yläpuolelta.</div>
+								Asiakkaalle ei ole vielä luotu yhteyshenkilöitä. Voit lisätä
+								ensimmäisen yläpuolelta.</div>
 						</c:otherwise>
 					</c:choose>
 				</div>
+
 			</div>
+		</div>
 
-			<!-- 2. KORTTI: MYYDYT PALVELUT (Muutettu leveäksi taulukoksi) -->
-			<div class="col-12">
-				<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
-					<div class="d-flex justify-content-between align-items-center mb-3">
-						<h3 class="fw-bold h6 text-secondary text-uppercase mb-0"
-							style="letter-spacing: 0.5px;">🛒 Ostetut tuotteet ja
-							palvelut</h3>
-						<c:if test="${not empty ostetutTuotteet}">
-							<span
-								class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-3 py-1.5 rounded-2">
-								Asiakkuuden kokonaisarvo: <!-- Alustetaan summa ennen silmukkaa dynaamisesti -->
-								<c:set var="yhteissumma" value="0" /> <c:forEach var="ot"
-									items="${ostetutTuotteet}">
-									<c:set var="yhteissumma"
-										value="${yhteissumma + ot.kokonaishinta}" />
-								</c:forEach> ${yhteissumma} €
-							</span>
-						</c:if>
-					</div>
 
-					<c:choose>
-						<c:when test="${not empty ostetutTuotteet}">
-							<div class="table-responsive">
-								<table
-									class="table table-sm table-hover mb-0 align-middle small">
-									<thead class="table-light text-secondary">
+		<!-- 2. KORTTI: MYYDYT PALVELUT (Muutettu leveäksi taulukoksi) -->
+		<div class="col-12">
+			<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
+				<div class="d-flex justify-content-between align-items-center mb-3">
+					<h3 class="fw-bold h6 text-secondary text-uppercase mb-0"
+						style="letter-spacing: 0.5px;">🛒 Ostetut tuotteet ja
+						palvelut</h3>
+					<c:if test="${not empty ostetutTuotteet}">
+						<span
+							class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-3 py-1.5 rounded-2">
+							Asiakkuuden kokonaisarvo: <!-- Alustetaan summa ennen silmukkaa dynaamisesti -->
+							<c:set var="yhteissumma" value="0" /> <c:forEach var="ot"
+								items="${ostetutTuotteet}">
+								<c:set var="yhteissumma"
+									value="${yhteissumma + ot.kokonaishinta}" />
+							</c:forEach> ${yhteissumma} €
+						</span>
+					</c:if>
+				</div>
+
+				<c:choose>
+					<c:when test="${not empty ostetutTuotteet}">
+						<div class="table-responsive">
+							<table class="table table-sm table-hover mb-0 align-middle small">
+								<thead class="table-light text-secondary">
+									<tr>
+										<th>Tuote / Palvelu</th>
+										<th>Määrä</th>
+										<th>Yksikköhinta</th>
+										<th>Ostopäivä</th>
+										<th class="text-end">Yhteensä</th>
+									</tr>
+								</thead>
+								<tbody>
+									<c:forEach var="ot" items="${ostetutTuotteet}">
 										<tr>
-											<th>Tuote / Palvelu</th>
-											<th>Määrä</th>
-											<th>Yksikköhinta</th>
-											<th>Ostopäivä</th>
-											<th class="text-end">Yhteensä</th>
+											<td><a href="#"
+												class="text-primary fw-bold text-decoration-none muokkaa-palvelu-linkki"
+												data-bs-toggle="modal" data-bs-target="#muokkaaPalveluModal"
+												data-id="${ot.id}" data-tuote="${ot.tuote.nimi}"
+												data-maara="${ot.maara}" data-hinta="${ot.myyntihinta}"
+												data-pvm="${ot.ostopaivamaara}"> ✏️ ${ot.tuote.nimi} </a></td>
+											<td>${ot.maara}${ot.tuote.yksikko.lyhenne}</td>
+											<td>${ot.myyntihinta}€</td>
+											<td><fmt:parseDate value="${ot.ostopaivamaara}"
+													pattern="yyyy-MM-dd" var="parsedOstoPvm" type="date" /> <fmt:formatDate
+													value="${parsedOstoPvm}" pattern="dd.MM.yyyy" /></td>
+											<td class="text-end fw-bold text-dark">${ot.kokonaishinta}
+												€</td>
 										</tr>
-									</thead>
-									<tbody>
-										<c:forEach var="ot" items="${ostetutTuotteet}">
-											<tr>
-												<td><a href="#"
-													class="text-primary fw-bold text-decoration-none muokkaa-palvelu-linkki"
-													data-bs-toggle="modal"
-													data-bs-target="#muokkaaPalveluModal" data-id="${ot.id}"
-													data-tuote="${ot.tuote.nimi}" data-maara="${ot.maara}"
-													data-hinta="${ot.myyntihinta}"
-													data-pvm="${ot.ostopaivamaara}"> ✏️ ${ot.tuote.nimi} </a></td>
-												<td>${ot.maara}${ot.tuote.yksikko.lyhenne}</td>
-												<td>${ot.myyntihinta}€</td>
-												<td><fmt:parseDate value="${ot.ostopaivamaara}"
-														pattern="yyyy-MM-dd" var="parsedOstoPvm" type="date" /> <fmt:formatDate
-														value="${parsedOstoPvm}" pattern="dd.MM.yyyy" /></td>
-												<td class="text-end fw-bold text-dark">${ot.kokonaishinta}
-													€</td>
-											</tr>
-										</c:forEach>
-									</tbody>
-								</table>
-							</div>
-						</c:when>
-						<c:otherwise>
-							<div
-								class="p-3 bg-light rounded text-center text-muted small italic">
-								Ei kirjattuja hankintoja. Voit kirjata uuden hankinnan
-								yläpuolelta.</div>
-						</c:otherwise>
-					</c:choose>
-				</div>
+									</c:forEach>
+								</tbody>
+							</table>
+						</div>
+					</c:when>
+					<c:otherwise>
+						<div
+							class="p-3 bg-light rounded text-center text-muted small italic">
+							Ei kirjattuja hankintoja. Voit kirjata uuden hankinnan
+							yläpuolelta.</div>
+					</c:otherwise>
+				</c:choose>
 			</div>
-
 		</div>
 
-		<!-- LISTAUS ASIAKKAAN AIEMMISTA TARJOUKSISTA -->
-		<div class="profile-card border mt-4">
-			<h3 class="fw-bold h5 text-dark mb-3">Tallennetut tarjoukset
-				(${tarjouksetMaara})</h3>
-			<div class="table-responsive">
-				<table class="table table-sm table-hover mb-0 align-middle">
-					<thead class="table-light">
+	</div>
+
+	<!-- LISTAUS ASIAKKAAN AIEMMISTA TARJOUKSISTA -->
+	<div class="profile-card border mt-4">
+		<h3 class="fw-bold h5 text-dark mb-3">Tallennetut tarjoukset
+			(${tarjouksetMaara})</h3>
+		<div class="table-responsive">
+			<table class="table table-sm table-hover mb-0 align-middle">
+				<thead class="table-light">
+					<tr>
+						<th>Tarjousnumero</th>
+						<th>Päivämäärä</th>
+						<th>Voimassaolo</th>
+						<th class="text-end">Summa (Verollinen)</th>
+						<th class="text-end">Toiminnot</th>
+					</tr>
+				</thead>
+				<tbody>
+					<c:forEach var="t" items="${tarjoukset}">
 						<tr>
-							<th>Tarjousnumero</th>
-							<th>Päivämäärä</th>
-							<th>Voimassaolo</th>
-							<th class="text-end">Summa (Verollinen)</th>
-							<th class="text-end">Toiminnot</th>
+							<td><strong>${t.tarjousNumero}</strong></td>
+							<td>${t.pvm}</td>
+							<td>${t.voimassaoloPvm}</td>
+							<td class="text-end fw-bold text-success">${t.verollinenYhteensa}
+								€</td>
+							<td class="text-end"><a
+								href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf"
+								class="btn btn-sm btn-outline-secondary px-2">Lataa PDF</a></td>
 						</tr>
-					</thead>
-					<tbody>
-						<c:forEach var="t" items="${tarjoukset}">
-							<tr>
-								<td><strong>${t.tarjousNumero}</strong></td>
-								<td>${t.pvm}</td>
-								<td>${t.voimassaoloPvm}</td>
-								<td class="text-end fw-bold text-success">${t.verollinenYhteensa}
-									€</td>
-								<td class="text-end"><a
-									href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf"
-									class="btn btn-sm btn-outline-secondary px-2">Lataa PDF</a></td>
-							</tr>
-						</c:forEach>
-						<c:if test="${empty tarjoukset}">
-							<tr>
-								<td colspan="5" class="text-center text-muted py-3">Ei
-									tallennettuja tarjouksia.</td>
-							</tr>
-						</c:if>
-					</tbody>
-				</table>
-			</div>
+					</c:forEach>
+					<c:if test="${empty tarjoukset}">
+						<tr>
+							<td colspan="5" class="text-center text-muted py-3">Ei
+								tallennettuja tarjouksia.</td>
+						</tr>
+					</c:if>
+				</tbody>
+			</table>
 		</div>
+	</div>
 
 	</div>
 	<!-- /container -->
@@ -797,42 +897,6 @@ body {
 									id="pySahkoposti" name="sahkoposti">
 							</div>
 						</div>
-						<!-- piilotettu kenttä yhteyshenkilön ID-tunnukselle -->
-						<input type="hidden" id="pyYhId" name="yhId">
-
-						<!-- 💡 UUSI OSIO: Yksikön yhteyshenkilön tiedot muokattavissa -->
-						<div class="p-3 bg-light rounded-3 border mb-3 mt-2">
-							<h6
-								class="fw-bold text-uppercase text-secondary mb-3 shadow-sm-none"
-								style="font-size: 0.75em; letter-spacing: 0.5px;">👤
-								Yksikön yhteyshenkilö / Vastuuhenkilö</h6>
-
-							<div class="mb-3">
-								<label class="form-label text-dark small fw-normal mb-1">Yhteyshenkilön
-									nimi</label> <input type="text" class="form-control bg-white"
-									id="pyYhNimi" name="yhNimi" placeholder="Johanna Jokinen">
-							</div>
-
-							<div class="mb-3">
-								<label class="form-label text-dark small fw-normal mb-1">Rooli
-									/ Nimike</label> <input type="text" class="form-control bg-white"
-									id="pyYhRooli" name="yhRooli" placeholder="Yksikönjohtaja">
-							</div>
-
-							<div class="row g-3">
-								<div class="col-md-6 mb-2">
-									<label class="form-label text-dark small fw-normal mb-1">Suora
-										puhelinnumero</label> <input type="tel" class="form-control bg-white"
-										id="pyYhPuhelin" name="yhPuhelin" placeholder="040 123 4567">
-								</div>
-								<div class="col-md-6 mb-2">
-									<label class="form-label text-dark small fw-normal mb-1">Suora
-										sähköposti</label> <input type="email" class="form-control bg-white"
-										id="pyYhSahkoposti" name="yhSahkoposti"
-										placeholder="johanna.jokinen@yritys.fi">
-								</div>
-							</div>
-						</div>
 
 						<div class="mb-3">
 							<label class="form-label fw-bold text-secondary small">Lisätiedot
@@ -840,7 +904,6 @@ body {
 							<textarea class="form-control" id="pyKuvaus" name="kuvaus"
 								rows="3"></textarea>
 						</div>
-
 					</div>
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary"
@@ -929,6 +992,40 @@ body {
 							data-bs-dismiss="modal">Peruuta</button>
 						<button type="submit" class="btn btn-primary fw-bold">Tallenna
 							kirjaus</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<!-- 💡 PALAUTETTU: MODAL LOKIMERKINNÄN MUOKKAUKSEEN -->
+	<div class="modal fade" id="muokkaaLokiModal" tabindex="-1"
+		aria-labelledby="muokkaaLokiModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<!-- JavaScript tunnistaa tämän lomakkeen id:n perusteella -->
+				<form id="muokkaaLokiForm" method="post" action="">
+					<input type="hidden" name="asiakasId" value="${asiakas.id}">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold" id="muokkaaLokiModalLabel">Muokkaa
+							lokimerkintää</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body p-4">
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary">Muistiinpanot
+								/ Tapahtumatiedot *</label>
+							<!-- JavaScript syöttää muokattavan tekstin tähän id-kenttään -->
+							<textarea class="form-control" id="lokiTeksti" name="teksti"
+								rows="5" required></textarea>
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-primary fw-bold">Tallenna
+							muutokset</button>
 					</div>
 				</form>
 			</div>
