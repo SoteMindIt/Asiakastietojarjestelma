@@ -58,8 +58,10 @@ body {
 				href="${pageContext.request.contextPath}/">Astori</a>
 
 			<div class="navbar-nav me-auto">
+
 				<!-- 1. Etusivu -->
 				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a>
+
 				<!-- 2. Asiakkaat (Vie omalle sivulleen) -->
 				<a class="nav-link"
 					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a
@@ -231,15 +233,20 @@ body {
 		</div>
 	</div>
 
-		<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+	<script
+		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 
 	<!-- 💡 TURVALLINEN HTML-SÄILÖ: Tulostetaan kuvaukset HTML-elementteihin, joissa rivinvaihdot ovat täysin sallittuja -->
 	<div style="display: none;">
 		<c:forEach var="tap" items="${tapahtumat}">
-			<div id="tap-kuvaus-${tap.id}"><c:out value="${tap.kuvaus}"/></div>
+			<div id="tap-kuvaus-${tap.id}">
+				<c:out value="${tap.kuvaus}" />
+			</div>
 		</c:forEach>
 	</div>
 
+
+	<!-- ==================== JAVASCRIPT-TOIMINNOT ==================== -->
 	<script>
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar')
@@ -249,18 +256,22 @@ body {
             /* 1. Rakennetaan tapahtumalista turvallisesti lukemalla kuvaukset HTML-puusta */
             var valmiitTapahtumat = []
             <c:forEach var="tap" items="${tapahtumat}">
+                <c:set var="ktunnus" value="" />
+                <c:if test="${not empty tap.kayttaja}">
+                    <c:set var="ktunnus" value=" [${tap.kayttaja.kayttajatunnus}]" />
+                </c:if>
+
                 valmiitTapahtumat.push({
                     id: '${tap.id}',
-                    title: '<c:out value="${tap.otsikko}"/> [${tap.kayttaja.etunimi} ${not empty tap.kayttaja.sukunimi ? tap.kayttaja.sukunimi.substring(0,1) : ''}.]',
+                    title: `<c:out value="${tap.otsikko}"/><c:out value="${ktunnus}"/>`,
                     start: '${tap.ajankohta.toString()}',
                     extendedProps: {
-                        /* Haetaan teksti muistin kautta elementistä, jolloin rivinvaihdot tai heittomerkit eivät riko JavaScriptiä */
-                        description: (function() {
-                            let el = document.getElementById('tap-kuvaus-${tap.id}')
-                            return el ? (el.innerText || el.textContent) : ''
+                        description: (() => {
+                            let el = document.getElementById('tap-kuvaus-${tap.id}');
+                            return el ? (el.innerText || el.textContent) : '';
                         })(),
                         asiakasId: '${not empty tap.asiakas ? tap.asiakas.id : ""}',
-                        asiakasNimi: '<c:out value="${not empty tap.asiakas ? tap.asiakas.nimi : ''}"/>',
+                        asiakasNimi: `<c:out value="${not empty tap.asiakas ? tap.asiakas.nimi : ''}"/>`,
                         tyyppiNimi: '${tap.tyyppi}'
                     },
                     <c:choose>
@@ -277,7 +288,7 @@ body {
                             backgroundColor: '#0d6efd', borderColor: '#0d6efd', textColor: '#ffffff'
                         </c:otherwise>
                     </c:choose>
-                })
+                }); 
             </c:forEach>
 
             /* 2. Alustetaan kalenteri ja syötetään valmis lista suoraan events-asetukseen */
@@ -330,13 +341,27 @@ body {
                     if(form) {
                         form.action = "${pageContext.request.contextPath}/kalenteri/paivita/" + info.event.id
                     }
-                    var poistoNappi = document.getElementById('poistaTapahtumaPainike')
-                    if(poistoNappi) {
-                        poistoNappi.setAttribute('formaction', "${pageContext.request.contextPath}/kalenteri/poista-suoraan/" + info.event.id)
+                    
+                    // Poistopainikkeen suora ja toimiva JavaScript-ohjaus oikeaan reittiin
+                    var poistoNappi = document.getElementById('poistaTapahtumaPainike');
+                    if (poistoNappi) {
+                        var uusiPoistoNappi = poistoNappi.cloneNode(true);
+                        poistoNappi.parentNode.replaceChild(uusiPoistoNappi, poistoNappi);
+                        
+                        uusiPoistoNappi.addEventListener('click', function() {
+                            if (confirm('Haluatko varmasti poistaa tämän tapahtuman?')) {
+                                let poistoForm = document.createElement('form');
+                                poistoForm.method = 'POST';
+                                poistoForm.action = "${pageContext.request.contextPath}/kalenteri/poista-suoraan/" + info.event.id;
+                                document.body.appendChild(poistoForm);
+                                poistoForm.submit();
+                            }
+                        });
                     }
+                    
                     var editModal = new bootstrap.Modal(document.getElementById('muokkaaTapahtumaModal'))
                     editModal.show()
-                },
+                }, // 💡 KORJATTU: Tämä sulkeva välimerkki oli aiemmin kadoksissa ja aiheutti SyntaxErrorin!
                 
                 dateClick: function(info) {
                     var currentTime = new Date().getTime()
@@ -380,3 +405,4 @@ body {
     </script>
 </body>
 </html>
+

@@ -53,11 +53,11 @@ public class AsetuksetController {
 		// Viedään tuoterekisterin tiedot
 		List<Tuote> kaikkiTuotteet = tuoteRepository.findAll();
 		model.addAttribute("tuotteet", kaikkiTuotteet);
-		
+
 		Yritystiedot yritys = yritystiedotRepository.findById(1L).orElse(null);
 		model.addAttribute("yritys", yritys);
-		
-		//Tuotteiden yksiköt. Esim. Km, kpl, tuntia jne
+
+		// Tuotteiden yksiköt. Esim. Km, kpl, tuntia jne
 		model.addAttribute("yksikot", fi.sotemindit.astori.model.TuoteYksikko.values());
 
 		return "asetukset"; // Avaa asetukset.jsp
@@ -232,4 +232,62 @@ public class AsetuksetController {
 		return "redirect:/asetukset?success=company_updated";
 	}
 
+	// 7. REITTI: Luo ja lataa tietokannan reaaliaikaisen varmuuskopion (.sql)
+	@GetMapping("/asetukset/varmuuskopio")
+	public void otaVarmuuskopio(HttpSession session, jakarta.servlet.http.HttpServletResponse response) {
+		// Varmistetaan, että käyttäjä on kirjautunut sisään
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+			return;
+		}
+
+		try {
+			// Haetaan yhteystiedot AI_CONTEXT.md:n mukaisista oletuksista
+			String dbName = "asiakastiedot";
+			String dbUser = "postgres";
+			String dbPassword = "admin"; // Huom: Tuotannossa siirrä nämä application.propertiesiin
+
+			// Rakennetaan PostgreSQL pg_dump -komento
+			ProcessBuilder pb = new ProcessBuilder("E:\\Program Files\\PostgreSQL\\18\\bin\\pg_dump.exe", "-U", dbUser,
+					"-h", "localhost", "-p", "5432", "-F", "p", // Tallennetaan
+					// selkokielisenä
+					// SQL-skriptinä
+					dbName);
+
+			// Syötetään salasana ympäristömuuttujana, jotta prosessi ei jää jumiin
+			// odottamaan syötettä
+			pb.environment().put("PGPASSWORD", dbPassword);
+
+			Process prosessi = pb.start();
+
+			// Valmistellaan HTTP-otsikkotiedot tiedoston latausta varten
+			String tiedostonimi = "astori_varmuuskopio_" + System.currentTimeMillis() + ".sql";
+			response.setContentType("application/sql");
+			response.setCharacterEncoding("UTF-8");
+			response.setHeader("Content-Disposition", "attachment; filename=\"" + tiedostonimi + "\"");
+
+			// Streamataan pg_dumpin tuottama data suoraan selaimelle ladattavaksi
+			try (java.io.InputStream in = prosessi.getInputStream();
+					java.io.OutputStream out = response.getOutputStream()) {
+
+				byte[] puskuri = new byte[8192];
+				int luetutTavut;
+				while ((luetutTavut = in.read(puskuri)) != -1) {
+					out.write(puskuri, 0, luetutTavut);
+				}
+				out.flush();
+			}
+
+			// Odotetaan prosessin päättymistä
+			int exitCode = prosessi.waitFor();
+			if (exitCode != 0) {
+				System.err.println("pg_dump päättyi virhekoodiin: " + exitCode);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		}
+	}
 }

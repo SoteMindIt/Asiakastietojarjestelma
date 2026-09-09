@@ -31,37 +31,62 @@ public class KalenteriController {
 	private AsiakasRepository asiakasRepository;
 
 	@Autowired
-	private KayttajaRepository kayttajaRepository;
+	private KayttajaRepository kayttajaRepository; 
 
 	@Autowired
 	private LokiRepository lokiRepository;
 
-	// 1. REITTI: Näyttää kalenterin
+	
+	//Näyttää kalenterin ja suorittaa dynaamisen haun suodattimilla
 	@GetMapping("/kalenteri")
-	public String naytaKalenteri(HttpSession session, Model model) {
+	public String naytaKalenteri(
+			@RequestParam(required = false) Long asiakasId,
+			@RequestParam(required = false) String tyyppiStr,
+			@RequestParam(required = false) String alkuStr,
+			@RequestParam(required = false) String loppuStr,
+			jakarta.servlet.http.HttpSession session, 
+			org.springframework.ui.Model model) {
+		
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
-				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löytynyt"));
-
-		model.addAttribute("asiakkaat", asiakasRepository.findAll());
-		model.addAttribute("tyypit", TapahtumaTyyppi.values());
-
-		List<Tapahtuma> tapahtumat;
-
-		if ("ADMIN".equals(nykyinenKayttaja.getRooli())) {
-			tapahtumat = tapahtumaRepository.findAll();
-			lokiRepository.save(
-					new Loki(istuntoTunnus, "KATSELU", "Pääkäyttäjä avasi kaikkien työntekijöiden kalenterinäkymän."));
-		} else {
-			tapahtumat = tapahtumaRepository.findByKayttajatunnus(istuntoTunnus);
+		// 1. Muunnetaan lomakkeen merkkijonot Javan tyypeiksi turvallisesti
+		fi.sotemindit.astori.model.TapahtumaTyyppi tyyppi = null;
+		if (tyyppiStr != null && !tyyppiStr.trim().isEmpty()) {
+			try {
+				tyyppi = fi.sotemindit.astori.model.TapahtumaTyyppi.valueOf(tyyppiStr);
+			} catch (IllegalArgumentException e) { /* Ohitetaan virheellinen tyyppi */ }
 		}
 
+		java.time.LocalDateTime alkuPvm = null;
+		if (alkuStr != null && !alkuStr.trim().isEmpty()) {
+			alkuPvm = java.time.LocalDate.parse(alkuStr).atStartOfDay(); // Hakupäivän alusta klo 00:00
+		}
+
+		java.time.LocalDateTime loppuPvm = null;
+		if (loppuStr != null && !loppuStr.trim().isEmpty()) {
+			loppuPvm = java.time.LocalDate.parse(loppuStr).atTime(23, 59, 59); // Hakupäivän loppuun klo 23:59
+		}
+
+		// 2. Haetaan suodatetut tapahtumat suoraan tietokannasta dynaamisella kyselyllä
+		List<fi.sotemindit.astori.model.Tapahtuma> tapahtumat = tapahtumaRepository.haeKalenteriSuodattimilla(
+				istuntoTunnus, asiakasId, tyyppi, alkuPvm, loppuPvm
+		);
 		model.addAttribute("tapahtumat", tapahtumat);
-		return "kalenteri";
+
+		// 3. Viedään myös kaikki dynaamiset asiakkaat ja tyypit hakulomakkeen pudotusvalikoita varten
+		model.addAttribute("kaikkiAsiakkaat", asiakasRepository.findAll()); // Tarvitaan valikkoon
+		model.addAttribute("tapahtumaTyypit", fi.sotemindit.astori.model.TapahtumaTyyppi.values());
+
+		// 4. Laitetaan tehdyt valinnat takaisin modeliin, jotta ne jäävät lomakkeeseen näkyviin haun jälkeen!
+		model.addAttribute("valittuAsiakasId", asiakasId);
+		model.addAttribute("valittuTyyppi", tyyppiStr);
+		model.addAttribute("valittuAlku", alkuStr);
+		model.addAttribute("valittuLoppu", loppuStr);
+
+		return "kalenteri"; // Avaa kalenteri.jsp
 	}
 
 	// 📅 2. REITTI: Avaa kalenteritapahtuman muokkaussivun

@@ -547,7 +547,7 @@ body {
 					onclick="this.querySelector('.accordion-nuoli-yh').classList.toggle('rotate-180')">
 
 					<h3 class="fw-bold h6 text-secondary text-uppercase mb-0"
-						style="letter-spacing: 0.5px;">👥 Järjestelmän kaikki
+						style="letter-spacing: 0.5px;">👥 Kaikki
 						yhteyshenkilöt (${yhteyshenkilot.size()})</h3>
 
 					<!-- Dynaaminen nuolikuvake, joka kääntyy (oma luokka erottamaan palveluyksiköistä) -->
