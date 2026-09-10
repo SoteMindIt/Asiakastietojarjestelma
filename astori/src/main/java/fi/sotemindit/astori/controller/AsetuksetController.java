@@ -1,22 +1,20 @@
 package fi.sotemindit.astori.controller;
 
-import java.util.List;
+import fi.sotemindit.astori.model.Kayttaja;
+import fi.sotemindit.astori.model.Tuote;
+import fi.sotemindit.astori.model.TuoteYksikko;
+import fi.sotemindit.astori.model.AlvKanta; // UUSI TUONTI
+import fi.sotemindit.astori.model.Yritystiedot;
+import fi.sotemindit.astori.repository.KayttajaRepository;
+import fi.sotemindit.astori.repository.TuoteRepository;
 import jakarta.servlet.http.HttpSession;
-
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
-import fi.sotemindit.astori.model.Kayttaja;
-import fi.sotemindit.astori.model.Tuote;
-import fi.sotemindit.astori.model.Yritystiedot;
-import fi.sotemindit.astori.repository.KayttajaRepository;
-import fi.sotemindit.astori.repository.TuoteRepository;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 public class AsetuksetController {
@@ -33,8 +31,7 @@ public class AsetuksetController {
 	@Autowired
 	private fi.sotemindit.astori.repository.YritystiedotRepository yritystiedotRepository;
 
-	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat
-	// tiedot
+	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat tiedot
 	@GetMapping("/asetukset")
 	public String naytaAsetukset(HttpSession session, Model model) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -58,7 +55,10 @@ public class AsetuksetController {
 		model.addAttribute("yritys", yritys);
 
 		// Tuotteiden yksiköt. Esim. Km, kpl, tuntia jne
-		model.addAttribute("yksikot", fi.sotemindit.astori.model.TuoteYksikko.values());
+		model.addAttribute("yksikot", TuoteYksikko.values());
+
+		// UUSI: Viedään kaikki ALV-kannat JSP-sivua varten
+		model.addAttribute("alvKannat", AlvKanta.values());
 
 		return "asetukset"; // Avaa asetukset.jsp
 	}
@@ -130,78 +130,87 @@ public class AsetuksetController {
 		kayttajaRepository.save(muokattava);
 		return "redirect:/asetukset?success=user_updated";
 	}
-
 	// 4. REITTI: Näyttää uuden tuotteen lisäyslomakkeen (lisaa-tuote.jsp)
 	@GetMapping("/asetukset/lisaa-tuote")
-	public String naytaUusiTuoteLomake(HttpSession session) {
+	public String naytaUusiTuoteLomake(HttpSession session, Model model) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		// Palauttaa sinun "lisaa-tuote.jsp" -tiedostosi
+		// Viedään ALV-kannat myös erilliselle lisäyssivulle varmuuden vuoksi
+		model.addAttribute("alvKannat", AlvKanta.values());
+		model.addAttribute("yksikot", TuoteYksikko.values());
+
 		return "lisaa-tuote";
 	}
 
-	// 5. REITTI: Ottaa vastaan sinun lomakkeesi tiedot sisältäen yksikön
+	// 5. REITTI: Ottaa vastaan lomakkeen tiedot sisältäen yksikön ja ALV-kannan
 	@PostMapping("/asetukset/lisaa-tuote")
 	public String tallennaUusiTuote(HttpSession session, @RequestParam String nimi, @RequestParam String kuvaus,
-			@RequestParam java.math.BigDecimal hinta, @RequestParam String yksikko) {
+			@RequestParam java.math.BigDecimal hinta, @RequestParam String yksikko, @RequestParam String alvKanta) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		// Luodaan uusi tuoteolio ja asetetaan lomakkeeltasi tulleet arvot
 		Tuote uusiTuote = new Tuote();
 		uusiTuote.setNimi(nimi);
 		uusiTuote.setKuvaus(kuvaus);
 		uusiTuote.setHinta(hinta);
 
-		// Muunnetaan lomakkeelta tullut teksti (esim. "KPL") enumin arvoksi.
+		// Muunnetaan yksikkö enumiin
 		try {
-			uusiTuote.setYksikko(fi.sotemindit.astori.model.TuoteYksikko.valueOf(yksikko));
+			uusiTuote.setYksikko(TuoteYksikko.valueOf(yksikko));
 		} catch (IllegalArgumentException e) {
-			// Jos arvo ei täsmää enumiin, virhe napataan kiinni tässä ilman sovelluksen
-			// kaatumista
+			// Virhetilanteessa pidetään mallin oletus (KPL)
+		}
+
+		// UUSI: Muunnetaan valittu ALV-kanta enumiin
+		try {
+			uusiTuote.setAlvKanta(AlvKanta.valueOf(alvKanta));
+		} catch (IllegalArgumentException e) {
+			// Virhetilanteessa pidetään mallin oletus (ALV_25_5)
 		}
 
 		tuoteRepository.save(uusiTuote);
-
-		// Ohjataan takaisin asetussivulle onnistumisilmoituksen kanssa
 		return "redirect:/asetukset?success=product_created";
 	}
 
-	// 6. REITTI: Muokkaa olemassa olevan tuotteen tietoja (UUSI)
+	// 6. REITTI: Muokkaa olemassa olevan tuotteen tietoja ja ALV-kantaa
 	@PostMapping("/asetukset/muokkaa-tuotetta/{id}")
 	public String muokkaaTuotetta(HttpSession session, @PathVariable Long id, @RequestParam String nimi,
-			@RequestParam String kuvaus, @RequestParam java.math.BigDecimal hinta, @RequestParam String yksikko) {
+			@RequestParam String kuvaus, @RequestParam java.math.BigDecimal hinta, @RequestParam String yksikko, @RequestParam String alvKanta) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		// Haetaan muokattava tuote tietokannasta
 		Tuote muokattava = tuoteRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt ID-numerolla: " + id));
 
-		// Päivitetään uudet tiedot
 		muokattava.setNimi(nimi);
 		muokattava.setKuvaus(kuvaus);
 		muokattava.setHinta(hinta);
 
 		try {
-			muokattava.setYksikko(fi.sotemindit.astori.model.TuoteYksikko.valueOf(yksikko));
+			muokattava.setYksikko(TuoteYksikko.valueOf(yksikko));
 		} catch (IllegalArgumentException e) {
 			// Virheen sattuessa pidetään vanha yksikkö
+		}
+
+		// UUSI: Päivitetään muokattavan tuotteen ALV-kanta
+		try {
+			muokattava.setAlvKanta(AlvKanta.valueOf(alvKanta));
+		} catch (IllegalArgumentException e) {
+			// Virheen sattuessa pidetään vanha ALV-kanta
 		}
 
 		tuoteRepository.save(muokattava);
 		return "redirect:/asetukset?success=product_updated";
 	}
-
 	@PostMapping("/asetukset/tallenna-yritys")
 	public String tallennaYrityksenTiedot(HttpSession session, @RequestParam String nimi, @RequestParam String yTunnus,
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
@@ -213,11 +222,9 @@ public class AsetuksetController {
 			return "redirect:/login";
 		}
 
-		// Haetaan olemassa oleva yritystietorivi tai luodaan uusi, jos kanta on tyhjä
-		fi.sotemindit.astori.model.Yritystiedot yritys = yritystiedotRepository.findById(1L)
-				.orElse(new fi.sotemindit.astori.model.Yritystiedot());
+		Yritystiedot yritys = yritystiedotRepository.findById(1L)
+				.orElse(new Yritystiedot());
 
-		// Varmistetaan kiinteä ID 1, jotta rivejä ei synny useampia
 		yritys.setId(1L);
 		yritys.setNimi(nimi);
 		yritys.setyTunnus(yTunnus);
@@ -228,46 +235,33 @@ public class AsetuksetController {
 		yritys.setBic(bic);
 
 		yritystiedotRepository.save(yritys);
-
 		return "redirect:/asetukset?success=company_updated";
 	}
 
-	// 7. REITTI: Luo ja lataa tietokannan reaaliaikaisen varmuuskopion (.sql)
 	@GetMapping("/asetukset/varmuuskopio")
-	public void otaVarmuuskopio(HttpSession session, jakarta.servlet.http.HttpServletResponse response) {
-		// Varmistetaan, että käyttäjä on kirjautunut sisään
+	public void otaVarmuuskopio(HttpSession session, HttpServletResponse response) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
-			response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 			return;
 		}
 
 		try {
-			// Haetaan yhteystiedot AI_CONTEXT.md:n mukaisista oletuksista
 			String dbName = "asiakastiedot";
 			String dbUser = "postgres";
-			String dbPassword = "admin"; // Huom: Tuotannossa siirrä nämä application.propertiesiin
+			String dbPassword = "admin";
 
-			// Rakennetaan PostgreSQL pg_dump -komento
 			ProcessBuilder pb = new ProcessBuilder("E:\\Program Files\\PostgreSQL\\18\\bin\\pg_dump.exe", "-U", dbUser,
-					"-h", "localhost", "-p", "5432", "-F", "p", // Tallennetaan
-					// selkokielisenä
-					// SQL-skriptinä
-					dbName);
+					"-h", "localhost", "-p", "5432", "-F", "p", dbName);
 
-			// Syötetään salasana ympäristömuuttujana, jotta prosessi ei jää jumiin
-			// odottamaan syötettä
 			pb.environment().put("PGPASSWORD", dbPassword);
-
 			Process prosessi = pb.start();
 
-			// Valmistellaan HTTP-otsikkotiedot tiedoston latausta varten
 			String tiedostonimi = "astori_varmuuskopio_" + System.currentTimeMillis() + ".sql";
 			response.setContentType("application/sql");
 			response.setCharacterEncoding("UTF-8");
 			response.setHeader("Content-Disposition", "attachment; filename=\"" + tiedostonimi + "\"");
 
-			// Streamataan pg_dumpin tuottama data suoraan selaimelle ladattavaksi
 			try (java.io.InputStream in = prosessi.getInputStream();
 					java.io.OutputStream out = response.getOutputStream()) {
 
@@ -279,7 +273,6 @@ public class AsetuksetController {
 				out.flush();
 			}
 
-			// Odotetaan prosessin päättymistä
 			int exitCode = prosessi.waitFor();
 			if (exitCode != 0) {
 				System.err.println("pg_dump päättyi virhekoodiin: " + exitCode);
@@ -287,7 +280,7 @@ public class AsetuksetController {
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 		}
 	}
 }

@@ -77,8 +77,6 @@ body {
 		<div class="profile-card border mb-4 bg-white shadow-sm p-4 rounded-3">
 
 			<!-- ==================== 1. KATSELUTILA (Oletusnäkymä) ==================== -->
-
-			<!-- ==================== 1. KATSELUTILA (Oletusnäkymä) ==================== -->
 			<div id="asiakas-katselu">
 
 				<!-- YLÄRIVI: Nimi vasemmalla, KAIKKI painikkeet oikealla rinnakkain -->
@@ -111,7 +109,7 @@ body {
 						<button type="button"
 							class="btn btn-sm btn-outline-success fw-bold py-1.5 px-2.5 small rounded-pill"
 							style="font-size: 0.85em;" data-bs-toggle="modal"
-							data-bs-target="#lisaaHankintaModal">+ Tuote/Palvelu</button>
+							data-bs-target="#lisaaTuoteModal">+ Tuote/Palvelu</button>
 						<button type="button"
 							class="btn btn-sm btn-outline-primary py-1.5 px-2.5 small rounded-pill"
 							style="font-size: 0.85em;" data-bs-toggle="modal"
@@ -547,8 +545,8 @@ body {
 					onclick="this.querySelector('.accordion-nuoli-yh').classList.toggle('rotate-180')">
 
 					<h3 class="fw-bold h6 text-secondary text-uppercase mb-0"
-						style="letter-spacing: 0.5px;">👥 Kaikki
-						yhteyshenkilöt (${yhteyshenkilot.size()})</h3>
+						style="letter-spacing: 0.5px;">👥 Kaikki yhteyshenkilöt
+						(${yhteyshenkilot.size()})</h3>
 
 					<!-- Dynaaminen nuolikuvake, joka kääntyy (oma luokka erottamaan palveluyksiköistä) -->
 					<span class="accordion-nuoli-yh text-muted fw-bold"
@@ -616,9 +614,8 @@ body {
 					<c:if test="${not empty ostetutTuotteet}">
 						<span
 							class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-3 py-1.5 rounded-2">
-							Asiakkuuden kokonaisarvo: <!-- Alustetaan summa ennen silmukkaa dynaamisesti -->
-							<c:set var="yhteissumma" value="0" /> <c:forEach var="ot"
-								items="${ostetutTuotteet}">
+							Asiakkuuden kokonaisarvo: <c:set var="yhteissumma" value="0" />
+							<c:forEach var="ot" items="${ostetutTuotteet}">
 								<c:set var="yhteissumma"
 									value="${yhteissumma + ot.kokonaishinta}" />
 							</c:forEach> ${yhteissumma} €
@@ -637,17 +634,13 @@ body {
 										<th>Yksikköhinta</th>
 										<th>Ostopäivä</th>
 										<th class="text-end">Yhteensä</th>
+										<th class="text-end">Toiminnot</th>
 									</tr>
 								</thead>
 								<tbody>
 									<c:forEach var="ot" items="${ostetutTuotteet}">
 										<tr>
-											<td><a href="#"
-												class="text-primary fw-bold text-decoration-none muokkaa-palvelu-linkki"
-												data-bs-toggle="modal" data-bs-target="#muokkaaPalveluModal"
-												data-id="${ot.id}" data-tuote="${ot.tuote.nimi}"
-												data-maara="${ot.maara}" data-hinta="${ot.myyntihinta}"
-												data-pvm="${ot.ostopaivamaara}"> ✏️ ${ot.tuote.nimi} </a></td>
+											<td><span class="fw-bold text-dark">${ot.tuote.nimi}</span></td>
 											<td>${ot.maara}${ot.tuote.yksikko.lyhenne}</td>
 											<td>${ot.myyntihinta}€</td>
 											<td><fmt:parseDate value="${ot.ostopaivamaara}"
@@ -655,6 +648,21 @@ body {
 													value="${parsedOstoPvm}" pattern="dd.MM.yyyy" /></td>
 											<td class="text-end fw-bold text-dark">${ot.kokonaishinta}
 												€</td>
+											<td class="text-end">
+												<!-- MUOKKAA-PAINIKE -->
+												<button type="button"
+													class="btn btn-sm btn-outline-primary rounded-pill px-3 muokkaa-palvelu-painike"
+													data-bs-toggle="modal"
+													data-bs-target="#keskitettyMuokkaaPalveluModal"
+													data-id="${ot.id}" data-tuote="${ot.tuote.nimi}"
+													data-maara="${ot.maara}" data-hinta="${ot.myyntihinta}"
+													data-pvm="${ot.ostopaivamaara}">Muokkaa</button> <!-- POISTA-PAINIKE -->
+												<button type="button"
+													class="btn btn-sm btn-outline-danger rounded-pill px-3 avaapoistomodal"
+													data-bs-toggle="modal"
+													data-bs-target="#varmistaPoistoModal" data-id="${ot.id}"
+													data-tuote="${ot.tuote.nimi}">Poista</button>
+											</td>
 										</tr>
 									</c:forEach>
 								</tbody>
@@ -671,46 +679,123 @@ body {
 			</div>
 		</div>
 
-	</div>
+		<!-- MODAL: KESKITETTY ASIAKASTUOTTEEN MUOKKAUS -->
+		<div class="modal fade" id="keskitettyMuokkaaPalveluModal"
+			tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content border-0 shadow-lg">
+					<div class="modal-header bg-primary text-white">
+						<h5 class="modal-title fw-bold" id="muokkaaOtsikko">Muokkaa
+							riviä</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal"></button>
+					</div>
+					<form id="muokkaaPalveluForm" action="" method="post">
+						<!-- Kontrollerisi vaatimat kytkökset: asiakasId ja dynaaminen ostopäivämäärä -->
+						<input type="hidden" name="asiakasId" value="${asiakas.id}">
+						<input type="hidden" id="muokkaaPvm" name="ostopaivamaara">
 
-	<!-- LISTAUS ASIAKKAAN AIEMMISTA TARJOUKSISTA -->
-	<div class="profile-card border mt-4">
-		<h3 class="fw-bold h5 text-dark mb-3">Tallennetut tarjoukset
-			(${tarjouksetMaara})</h3>
-		<div class="table-responsive">
-			<table class="table table-sm table-hover mb-0 align-middle">
-				<thead class="table-light">
-					<tr>
-						<th>Tarjousnumero</th>
-						<th>Päivämäärä</th>
-						<th>Voimassaolo</th>
-						<th class="text-end">Summa (Verollinen)</th>
-						<th class="text-end">Toiminnot</th>
-					</tr>
-				</thead>
-				<tbody>
-					<c:forEach var="t" items="${tarjoukset}">
-						<tr>
-							<td><strong>${t.tarjousNumero}</strong></td>
-							<td>${t.pvm}</td>
-							<td>${t.voimassaoloPvm}</td>
-							<td class="text-end fw-bold text-success">${t.verollinenYhteensa}
-								€</td>
-							<td class="text-end"><a
-								href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf"
-								class="btn btn-sm btn-outline-secondary px-2">Lataa PDF</a></td>
-						</tr>
-					</c:forEach>
-					<c:if test="${empty tarjoukset}">
-						<tr>
-							<td colspan="5" class="text-center text-muted py-3">Ei
-								tallennettuja tarjouksia.</td>
-						</tr>
-					</c:if>
-				</tbody>
-			</table>
+						<div class="modal-body p-4">
+							<div class="mb-3">
+								<label class="form-label small fw-bold text-secondary">Tuote
+									/ Palvelu</label> <input type="text" class="form-control bg-light"
+									id="muokkaaTuoteNimi" readonly>
+							</div>
+							<div class="row">
+								<div class="col-md-6 mb-3">
+									<label class="form-label small fw-bold text-secondary">Määrä</label>
+									<input type="number" min="1" class="form-control"
+										id="muokkaaMaara" name="maara" required>
+								</div>
+								<div class="col-md-6 mb-3">
+									<label class="form-label small fw-bold text-secondary">Myyntihinta
+										(€)</label> <input type="number" step="0.01" min="0"
+										class="form-control" id="muokkaaHinta" name="myyntihinta"
+										required>
+								</div>
+							</div>
+						</div>
+						<div class="modal-footer bg-light">
+							<button type="button" class="btn btn-secondary"
+								data-bs-dismiss="modal">Peruuta</button>
+							<button type="submit" class="btn btn-primary fw-bold px-4">Tallenna
+								muutokset</button>
+						</div>
+					</form>
+				</div>
+			</div>
 		</div>
-	</div>
+
+		<!-- MODAL: POISTON VARMISTUS -->
+		<div class="modal fade" id="varmistaPoistoModal" tabindex="-1"
+			aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content border-0 shadow-lg">
+					<div class="modal-header bg-danger text-white">
+						<h5 class="modal-title fw-bold">Varmista poisto</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body p-4">
+						<p>
+							Haluatko varmasti poistaa tuotteen <strong
+								id="poistettavaTuoteNimi"></strong> asiakkaan kortilta?
+						</p>
+						<p class="text-danger small fw-semibold mb-0">Tämä poistaa
+							tuotteen pysyvästi asiakkaan ostohistoriasta.</p>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<form id="poistaPalveluForm" action="" method="post"
+							style="display: inline;">
+							<button type="submit" class="btn btn-danger fw-bold px-4">Kyllä,
+								poista tuote</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+		<!-- LISTAUS ASIAKKAAN AIEMMISTA TARJOUKSISTA -->
+		<div class="profile-card border mt-4">
+			<h3 class="fw-bold h5 text-dark mb-3">Tallennetut tarjoukset
+				(${tarjouksetMaara})</h3>
+			<div class="table-responsive">
+				<table class="table table-sm table-hover mb-0 align-middle">
+					<thead class="table-light">
+						<tr>
+							<th>Tarjousnumero</th>
+							<th>Päivämäärä</th>
+							<th>Voimassaolo</th>
+							<th class="text-end">Summa (Verollinen)</th>
+							<th class="text-end">Toiminnot</th>
+						</tr>
+					</thead>
+					<tbody>
+						<c:forEach var="t" items="${tarjoukset}">
+							<tr>
+								<td><strong>${t.tarjousNumero}</strong></td>
+								<td>${t.pvm}</td>
+								<td>${t.voimassaoloPvm}</td>
+								<td class="text-end fw-bold text-success">${t.verollinenYhteensa}
+									€</td>
+								<td class="text-end"><a
+									href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf"
+									class="btn btn-sm btn-outline-secondary px-2">Lataa PDF</a></td>
+							</tr>
+						</c:forEach>
+						<c:if test="${empty tarjoukset}">
+							<tr>
+								<td colspan="5" class="text-center text-muted py-3">Ei
+									tallennettuja tarjouksia.</td>
+							</tr>
+						</c:if>
+					</tbody>
+				</table>
+			</div>
+		</div>
 
 	</div>
 	<!-- /container -->
@@ -916,54 +1001,78 @@ body {
 		</div>
 	</div>
 
-
-
-	<!-- MODAL UUDEN HANKINNAN / PALVELUN KIRJAAMISEEN -->
-	<div class="modal fade" id="lisaaHankintaModal" tabindex="-1"
-		aria-labelledby="lisaaHankintaModalLabel" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-centered">
-			<div class="modal-content border-0 shadow-lg">
+	<!-- LISÄÄ TUOTE MODAL -->
+	<div class="modal fade" id="lisaaTuoteModal" tabindex="-1"
+		aria-labelledby="lisaaTuoteModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="lisaaTuoteModalLabel">Kirjaa
+						tuotemyynti asiakkaalle</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Sulje"></button>
+				</div>
 				<form
 					action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-tuote"
 					method="post">
-					<div class="modal-header bg-dark text-white">
-						<h5 class="modal-title fw-bold" id="lisaaHankintaModalLabel">Kirjaa
-							uusi hankinta</h5>
-						<button type="button" class="btn-close btn-close-white"
-							data-bs-dismiss="modal" aria-label="Close"></button>
-					</div>
-					<div class="modal-body p-4">
+					<div class="modal-body">
+
+						<!-- Tuotteen valinta -->
 						<div class="mb-3">
-							<label class="form-label fw-bold text-secondary">Valitse
-								palvelu tai tuote *</label> <select class="form-select" name="tuoteId"
-								required>
-								<option value="">-- Valitse palvelu/tuote --</option>
-								<c:forEach var="t" items="${kaikkiTuotteet}">
-									<option value="${t.id}">${t.nimi}</option>
+							<label for="tuoteId" class="form-label fw-bold">Valitse
+								tuote / palvelu</label> <select class="form-select" id="tuoteId"
+								name="tuoteId" required>
+								<option value="" disabled selected>-- Valitse
+									tuoterekisteristä --</option>
+								<c:forEach var="tuote" items="${kaikkiTuotteet}">
+									<option value="${tuote.id}">${tuote.nimi}
+										(${tuote.hinta} € / ${tuote.yksikko.lyhenne})</option>
 								</c:forEach>
 							</select>
 						</div>
+
+						<!-- Määrä -->
 						<div class="mb-3">
-							<label class="form-label fw-bold text-secondary">Määrä *</label>
-							<input type="number" class="form-control" name="maara" min="1"
-								value="1" required placeholder="Syötä kappalemäärä tai tunnit">
+							<label for="maara" class="form-label fw-bold">Määrä</label> <input
+								type="number" class="form-control" id="maara" name="maara"
+								value="1" min="1" required>
 						</div>
+
+						<!-- UUSI: ALV-kannan valinta -->
 						<div class="mb-3">
-							<label class="form-label fw-bold text-secondary">Ostopäivämäärä
-								*</label> <input type="date" class="form-control" name="ostopaivamaara"
+							<label for="alvKanta" class="form-label fw-bold">Arvonlisäverokanta
+								(ALV)</label> <select class="form-select" id="alvKanta" name="alvKanta"
 								required>
+								<c:forEach var="kanta" items="${alvKannat}">
+									<option value="${kanta}"
+										${kanta == 'ALV_25_5' ? 'selected' : ''}>
+										${kanta.nayttorivi}</option>
+								</c:forEach>
+							</select>
 						</div>
+
+						<!-- Ostopäivämäärä -->
+						<div class="mb-3">
+							<label for="ostopaivamaara" class="form-label fw-bold">Myynti-
+								/ ostopäivä</label> <input type="date" class="form-control"
+								id="ostopaivamaara" name="ostopaivamaara"
+								value="<%=java.time.LocalDate.now()%>">
+							<div class="form-text">Jätä tyhjäksi, jos myynti tapahtuu
+								tänään.</div>
+						</div>
+
 					</div>
-					<div class="modal-footer bg-light">
+					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary"
 							data-bs-dismiss="modal">Peruuta</button>
-						<button type="submit" class="btn btn-success fw-bold">Kirjaa
-							hankinta</button>
+						<button type="submit" class="btn btn-success">Tallenna
+							myynti</button>
 					</div>
 				</form>
 			</div>
 		</div>
 	</div>
+
 
 	<!-- MODAL UUDEN LOKIMERKINNÄN LISÄÄMISEEN -->
 	<div class="modal fade" id="lisaaKirjausModal" tabindex="-1"
@@ -1140,51 +1249,6 @@ body {
 		</div>
 	</div>
 
-	<!-- MODAL MYYDYNTUOTTEEN / PALVELUN MUOKKAUKSEEN -->
-	<div class="modal fade" id="muokkaaPalveluModal" tabindex="-1"
-		aria-labelledby="muokkaaPalveluModalLabel" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-centered">
-			<div class="modal-content border-0 shadow-lg">
-				<form id="muokkaaPalveluForm" method="post" action="">
-					<input type="hidden" name="asiakasId" value="${asiakas.id}">
-					<div class="modal-header bg-dark text-white">
-						<h5 class="modal-title fw-bold" id="muokkaaPalveluModalLabel">Muokkaa
-							myytyä palvelua</h5>
-						<button type="button" class="btn-close btn-close-white"
-							data-bs-dismiss="modal" aria-label="Close"></button>
-					</div>
-					<div class="modal-body p-4">
-						<div class="mb-3">
-							<label class="form-label fw-bold text-secondary">Palvelu
-								/ Tuote</label> <input type="text" class="form-control bg-light"
-								id="muokkaaPalveluNimi" readonly>
-						</div>
-						<div class="mb-3">
-							<label class="form-label fw-bold text-secondary">Määrä *</label>
-							<input type="number" class="form-control"
-								id="muokkaaPalveluMaara" name="maara" min="1" required>
-						</div>
-						<div class="mb-3">
-							<label class="form-label fw-bold text-secondary">Myyntihinta
-								(€) *</label> <input type="number" class="form-control"
-								id="muokkaaPalveluHinta" name="myyntihinta" step="0.01" required>
-						</div>
-						<div class="mb-3">
-							<label class="form-label fw-bold text-secondary">Ostopäivämäärä
-								*</label> <input type="date" class="form-control" id="muokkaaPalveluPvm"
-								name="ostopaivamaara" required>
-						</div>
-					</div>
-					<div class="modal-footer bg-light">
-						<button type="button" class="btn btn-secondary"
-							data-bs-dismiss="modal">Peruuta</button>
-						<button type="submit" class="btn btn-primary fw-bold">Tallenna
-							muutokset</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
 
 	<!-- MODAL PALVELUYKSIKÖN MUOKKAUKSEEN -->
 	<div class="modal fade" id="muokkaaPyModal" tabindex="-1"
@@ -1277,11 +1341,11 @@ body {
 		</div>
 	</div>
 
-
 	<!-- ==================== JAVASCRIPT-TOIMINNOT ==================== -->
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 	<script>
+	
 		function avaaMuokkaus() {
 			document.getElementById('asiakas-katselu').classList.add('d-none')
 			document.getElementById('asiakas-muokkaus').classList.remove('d-none')
@@ -1339,28 +1403,48 @@ body {
 			})
 		})
 		
-		/* 3. Myydyn palvelun muokkaustoiminto nimen linkistä */
-		document.querySelectorAll('.muokkaa-palvelu-linkki').forEach(linkki => {
-			linkki.addEventListener('click', function(e) {
-				e.preventDefault()
+		/* 3. Myydyn palvelun muokkaus- ja poistotoiminto dynaamisilla reiteillä */
+		document.querySelectorAll('.muokkaa-palvelu-painike').forEach(button => {
+			button.addEventListener('click', function() {
+				const id = this.getAttribute('data-id');
+				const tuoteNimi = this.getAttribute('data-tuote');
+				const maara = this.getAttribute('data-maara');
+				const hinta = this.getAttribute('data-hinta');
+				const pvm = this.getAttribute('data-pvm');
 				
-				const id = this.getAttribute('data-id')
-				const tuoteNimi = this.getAttribute('data-tuote')
-				const maara = this.getAttribute('data-maara')
-				const hinta = this.getAttribute('data-hinta')
-				const pvm = this.getAttribute('data-pvm')
+				// Asetetaan lomakkeen action-reitti muokkausta varten oikealla ID:llä
+				const form = document.getElementById('muokkaaPalveluForm');
+				if (form) form.action = '${pageContext.request.contextPath}/palvelu/muokkaa/' + id;
 				
-				const form = document.getElementById('muokkaaPalveluForm')
-				if (form) form.action = '${pageContext.request.contextPath}/palvelu/muokkaa/' + id
+				// Täytetään muokkauslomakkeen näkyvät ja piilotetut kentät
+				if (document.getElementById('muokkaaOtsikko')) document.getElementById('muokkaaOtsikko').innerText = "Muokkaa riviä: " + tuoteNimi;
+				if (document.getElementById('muokkaaTuoteNimi')) document.getElementById('muokkaaTuoteNimi').value = tuoteNimi;
+				if (document.getElementById('muokkaaMaara')) document.getElementById('muokkaaMaara').value = maara;
+				if (document.getElementById('muokkaaHinta')) document.getElementById('muokkaaHinta').value = hinta;
+				if (document.getElementById('muokkaaPvm')) document.getElementById('muokkaaPvm').value = pvm;
+			});
+		});
+
+		// Dynaaminen reititys poistolomaketta varten
+		document.querySelectorAll('.avaapoistomodal').forEach(button => {
+			button.addEventListener('click', function() {
+				const id = this.getAttribute('data-id');
+				const tuoteNimi = this.getAttribute('data-tuote');
 				
-				if (document.getElementById('muokkaaPalveluNimi')) document.getElementById('muokkaaPalveluNimi').value = tuoteNimi
-				if (document.getElementById('muokkaaPalveluMaara')) document.getElementById('muokkaaPalveluMaara').value = maara
-				if (document.getElementById('muokkaaPalveluHinta')) document.getElementById('muokkaaPalveluHinta').value = hinta
-				if (document.getElementById('muokkaaPalveluPvm')) document.getElementById('muokkaaPalveluPvm').value = pvm
+				// Asetetaan tuotteen nimi varmistustekstiin
+				if (document.getElementById('poistettavaTuoteNimi')) {
+					document.getElementById('poistettavaTuoteNimi').innerText = tuoteNimi;
+				}
 				
-				if (palveluModalOlio) palveluModalOlio.show()
-			})
-		})
+				// Asetetaan poistolomakkeen action-reitti suoraan kontrollerisi POST-reittiin
+				const poistaForm = document.getElementById('poistaPalveluForm');
+				if (poistaForm) {
+					poistaForm.action = '${pageContext.request.contextPath}/palvelu/poista/' + id;
+				}
+			});
+		});
+
+
 
 				/* 4. Palveluyksikön muokkaustoiminto */
 		document.querySelectorAll('.muokkaa-py-btn').forEach(btn => {

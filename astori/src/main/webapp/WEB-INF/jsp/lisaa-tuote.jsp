@@ -78,19 +78,29 @@ body {
 				</div>
 
 				<div class="row">
-					<div class="col-md-6 mb-4">
-						<label for="hinta" class="form-label fw-semibold text-secondary">Oletushinta
-							(€)</label> <input type="number" class="form-control" id="hinta"
+					<div class="col-md-4 mb-4">
+						<label for="hinta" class="form-label fw-semibold text-secondary">Hinta
+							(ALV 0% €)</label> <input type="number" class="form-control" id="hinta"
 							name="hinta" step="0.01" min="0" required placeholder="0.00">
 					</div>
-					<div class="col-md-6 mb-4">
+
+					<div class="col-md-4 mb-4">
 						<label for="yksikko" class="form-label fw-semibold text-secondary">Yksikkö</label>
 						<select class="form-select" id="yksikko" name="yksikko" required>
-							<option value="KPL">kpl</option>
-							<option value="TUNTI">tunti</option>
-							<option value="KK">kk</option>
-							<option value="PV">päivä</option>
-							<option value="KM">km</option> 
+							<c:forEach var="y" items="${yksikot}">
+								<option value="${y.name()}">${y.lyhenne}</option>
+							</c:forEach>
+						</select>
+					</div>
+
+					<!-- UUSI: ALV-kannan dynaaminen valinta tuotetta luodessa -->
+					<div class="col-md-4 mb-4">
+						<label for="alvKanta"
+							class="form-label fw-semibold text-secondary">ALV-kanta</label> <select
+							class="form-select" id="alvKanta" name="alvKanta" required>
+							<c:forEach var="kanta" items="${alvKannat}">
+								<option value="${kanta.name()}">${kanta.nayttorivi}</option>
+							</c:forEach>
 						</select>
 					</div>
 				</div>

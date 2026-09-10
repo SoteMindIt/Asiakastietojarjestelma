@@ -104,9 +104,8 @@ body {
 			</div>
 		</c:if>
 
-
 		<div class="row g-4">
-			<!-- TUOTEHALLINTA -->
+			<!-- TUOTEHALLINTA ALKAA -->
 			<div class="col-md-12">
 				<div class="settings-card mb-4">
 					<div class="d-flex justify-content-between align-items-center mb-3">
@@ -124,7 +123,10 @@ body {
 									<th>Nimi</th>
 									<th>Kuvaus</th>
 									<th>Yksikkö</th>
-									<th class="text-end">Hinta (alv 0%)</th>
+									<th class="text-end">Hinta (ALV 0%)</th>
+									<th class="text-end">ALV-kanta</th>
+									<th class="text-end">Hinta (Sis. ALV)</th>
+									<th></th>
 								</tr>
 							</thead>
 							<tbody>
@@ -133,8 +135,12 @@ body {
 										<td class="text-muted">#${tuote.id}</td>
 										<td><strong>${tuote.nimi}</strong></td>
 										<td class="text-secondary">${tuote.kuvaus}</td>
-										<td><span class="badge bg-light text-dark border">${tuote.yksikko}</span></td>
+										<td><span class="badge bg-light text-dark border">${tuote.yksikko.lyhenne}</span></td>
 										<td class="text-end fw-bold text-dark">${tuote.hinta}€</td>
+										<td class="text-end text-secondary">${tuote.alvKanta.prosenttiStr}
+											%</td>
+										<td class="text-end fw-bold text-primary">${tuote.verollinenHinta}
+											€</td>
 										<td class="text-end">
 											<!-- MUOKKAA-PAINIKE -->
 											<button type="button"
@@ -170,20 +176,31 @@ body {
 															<textarea class="form-control" name="kuvaus" rows="3">${tuote.kuvaus}</textarea>
 														</div>
 														<div class="row">
-															<div class="col-md-6 mb-3">
+															<div class="col-md-4 mb-3">
 																<label class="form-label small fw-bold text-secondary">Hinta
 																	(€)</label> <input type="number" step="0.01" min="0"
 																	class="form-control" name="hinta"
 																	value="${tuote.hinta}" required>
 															</div>
 
-															<div class="col-md-6 mb-3">
+															<div class="col-md-4 mb-3">
 																<label class="form-label small fw-bold text-secondary">Yksikkö</label>
 																<select class="form-select" name="yksikko" required>
 																	<c:forEach var="y" items="${yksikot}">
 																		<option value="${y.name()}"
 																			${tuote.yksikko == y ? 'selected' : ''}>
 																			${y.lyhenne}</option>
+																	</c:forEach>
+																</select>
+															</div>
+
+															<div class="col-md-4 mb-3">
+																<label class="form-label small fw-bold text-secondary">ALV-kanta</label>
+																<select class="form-select" name="alvKanta" required>
+																	<c:forEach var="kanta" items="${alvKannat}">
+																		<option value="${kanta.name()}"
+																			${tuote.alvKanta == kanta ? 'selected' : ''}>
+																			${kanta.nayttorivi}</option>
 																	</c:forEach>
 																</select>
 															</div>
@@ -203,12 +220,11 @@ body {
 								</c:forEach>
 								<c:if test="${empty tuotteet}">
 									<tr>
-										<td colspan="6" class="text-center py-3 text-muted">Rekisterissä
+										<td colspan="8" class="text-center py-3 text-muted">Rekisterissä
 											ei ole vielä tuotteita.</td>
 									</tr>
 								</c:if>
 							</tbody>
-
 						</table>
 					</div>
 				</div>
@@ -396,9 +412,7 @@ body {
 				</div>
 			</div>
 		</div>
-		<!-- .row päättyminen -->
 	</div>
-	<!-- .container päättyminen -->
 
 	<!-- BOOTSTRAP POP-UP LOMAKE UUDELLE KÄYTTÄJÄLLE -->
 	<div class="modal fade" id="lisaaKayttajaModal" tabindex="-1"

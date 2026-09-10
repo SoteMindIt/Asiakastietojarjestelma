@@ -94,6 +94,7 @@ body {
 			<div id="calendar"></div>
 		</div>
 	</div>
+
 	<!-- BOOTSTRAP POP-UP LOMAKE UUDELLE VARAUKSELLE -->
 	<div class="modal fade" id="lisaaTapahtumaModal" tabindex="-1"
 		aria-hidden="true">
@@ -109,6 +110,17 @@ body {
 					<div class="modal-body p-4">
 
 						<div class="mb-3">
+							<label for="tyyppi" class="form-label fw-semibold text-secondary">Tapahtuman
+								tyyppi</label> <select class="form-select" id="tyyppi" name="tyyppi"
+								required>
+								<!-- Muutettu items="tyypit" -> "tapahtumaTyypit" -->
+								<c:forEach var="t" items="${tapahtumaTyypit}">
+									<option value="${t}">${t}</option>
+								</c:forEach>
+							</select>
+						</div>
+
+						<div class="mb-3">
 							<label for="asiakasHaku"
 								class="form-label fw-semibold text-secondary">Liitä
 								asiakkaaseen (Valinnainen)</label> <input type="text"
@@ -116,21 +128,13 @@ body {
 								placeholder="Kirjoita nimi tai valitse listasta..."> <input
 								type="hidden" id="asiakasId" name="asiakasId">
 							<datalist id="asiakasLista">
-								<c:forEach var="a" items="${asiakkaat}">
+								<!-- Muutettu items="asiakkaat" -> "kaikkiAsiakkaat" -->
+								<c:forEach var="a" items="${kaikkiAsiakkaat}">
 									<option data-id="${a.id}" value="${a.nimi}"></option>
 								</c:forEach>
 							</datalist>
 							<small class="form-text text-muted">Jätä tyhjäksi, jos
 								kyseessä on sisäinen merkintä.</small>
-						</div>
-						<div class="mb-3">
-							<label for="tyyppi" class="form-label fw-semibold text-secondary">Tapahtuman
-								tyyppi</label> <select class="form-select" id="tyyppi" name="tyyppi"
-								required>
-								<c:forEach var="t" items="${tyypit}">
-									<option value="${t}">${t}</option>
-								</c:forEach>
-							</select>
 						</div>
 
 						<div class="mb-3">
@@ -190,7 +194,8 @@ body {
 							<label class="form-label fw-semibold text-secondary">Tapahtuman
 								tyyppi</label> <select class="form-select" id="muokkaaTyyppi"
 								name="tyyppi" required>
-								<c:forEach var="t" items="${tyypit}">
+								<!-- Muutettu items="tyypit" -> "tapahtumaTyypit" -->
+								<c:forEach var="t" items="${tapahtumaTyypit}">
 									<option value="${t}">${t}</option>
 								</c:forEach>
 							</select>
@@ -205,7 +210,8 @@ body {
 								asiakas</label> <select class="form-select" id="muokkaaAsiakasId"
 								name="asiakasId">
 								<option value="">-- Ei kytketty asiakkaaseen --</option>
-								<c:forEach var="a" items="${asiakkaat}">
+								<!-- Muutettu items="asiakkaat" -> "kaikkiAsiakkaat" -->
+								<c:forEach var="a" items="${kaikkiAsiakkaat}">
 									<option value="${a.id}">${a.nimi}</option>
 								</c:forEach>
 							</select>

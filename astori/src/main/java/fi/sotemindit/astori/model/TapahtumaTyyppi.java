@@ -3,7 +3,9 @@ package fi.sotemindit.astori.model;
 public enum TapahtumaTyyppi {
     PUHELU("Puhelu"),
     TAPAAMINEN("Tapaaminen"),
-    ETAKOKOUS("Etäkokous"),
+    KOULUTUS("Koulutus"),
+    ETAPALAVERI("Etäpalaveri"),
+    ETAKOULUTUS("Etäkoulutus"),
     MUU("Muu tehtävä");
 
     private final String nayttorivi;

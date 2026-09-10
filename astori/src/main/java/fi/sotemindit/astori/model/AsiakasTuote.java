@@ -2,6 +2,7 @@ package fi.sotemindit.astori.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,6 +27,11 @@ public class AsiakasTuote {
 	@Column(nullable = false)
 	private Integer maara = 1; // Myyty määrä (oletus 1)
 
+	// Kytketään luomasi AlvKanta-enum tietokantaan merkkijonona. Oletus: ALV_25_5
+	@Enumerated(EnumType.STRING)
+	@Column(name = "alv_kanta", nullable = false)
+	private AlvKanta alvKanta = AlvKanta.ALV_25_5;
+
 	@Column(name = "ostopaivamaara", nullable = false)
 	private java.time.LocalDate ostopaivamaara;
 
@@ -40,14 +46,40 @@ public class AsiakasTuote {
 		this.myyntihinta = myyntihinta;
 		this.maara = maara;
 		this.ostopaivamaara = java.time.LocalDate.now();
+		this.alvKanta = AlvKanta.ALV_25_5; // Asetetaan oletus arvo myös konstruktoriin
 	}
 
-	// Apu-metodi laskemaan rivin kokonaishinnan (Hinta x Määrä) raportteja varten
+	// Alkuperäinen apumetodi palauttaa verottoman yhteishinnan
 	public BigDecimal getKokonaishinta() {
-		return this.myyntihinta.multiply(new BigDecimal(this.maara));
+		if (this.myyntihinta == null || this.maara == null) return BigDecimal.ZERO;
+		return this.myyntihinta.multiply(new BigDecimal(this.maara)).setScale(2, RoundingMode.HALF_UP);
 	}
 
-	// Getterit ja Setterit
+	// --- LASKENTAMETODIT ENUM-POHJAiselle ALVILLESelle ---
+
+	/**
+	 * Laskee pelkän ALV:n osuuden euroina käyttäen enumin BigDecimal-prosenttia
+	 */
+	public BigDecimal getAlvOsuus() {
+		if (this.alvKanta == null) return BigDecimal.ZERO;
+		
+		BigDecimal verotonYhteensa = getKokonaishinta();
+		BigDecimal satanen = new BigDecimal("100");
+		
+		// Haetaan prosentti enumista (esim. 25.5) ja jaetaan se sadalla
+		BigDecimal kerroin = this.alvKanta.getProsentti().divide(satanen, 4, RoundingMode.HALF_UP);
+		
+		return verotonYhteensa.multiply(kerroin).setScale(2, RoundingMode.HALF_UP);
+	}
+
+	/**
+	 * Laskee lopullisen verollisen kokonaishinnan (Veroton + ALV)
+	 */
+	public BigDecimal getVerollinenKokonaishinta() {
+		return getKokonaishinta().add(getAlvOsuus()).setScale(2, RoundingMode.HALF_UP);
+	}
+
+	// --- GETTERIT JA SETTERIT ---
 	public Long getId() {
 		return id;
 	}
@@ -86,6 +118,14 @@ public class AsiakasTuote {
 
 	public void setMaara(Integer maara) {
 		this.maara = maara;
+	}
+
+	public AlvKanta getAlvKanta() {
+		return alvKanta;
+	}
+
+	public void setAlvKanta(AlvKanta alvKanta) {
+		this.alvKanta = alvKanta;
 	}
 
 	public LocalDateTime getMyyntiaika() {

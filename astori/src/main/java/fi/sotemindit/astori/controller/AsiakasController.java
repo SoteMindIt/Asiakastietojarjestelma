@@ -207,9 +207,11 @@ public class AsiakasController {
 		model.addAttribute("tarjoukset", tarjoukset);
 		model.addAttribute("tarjouksetMaara", tarjoukset != null ? tarjoukset.size() : 0);
 		model.addAttribute("hyvinvointialueet", Hyvinvointialue.values());
+		//viedään alv kannat profiilisivulle
+		model.addAttribute("alvKannat", fi.sotemindit.astori.model.AlvKanta.values());
 		// Viedään myyntiputken tilat profiilisivulle muokkausta varten
 		model.addAttribute("tilat", AsiakkaanTila.values());
-
+		
 		return "asiakasprofiili";
 	}
 
@@ -294,32 +296,43 @@ public class AsiakasController {
 	}
 
 	// 6. TUOTEMYYNNIN KIRJAUS
-	@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
-	public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId, @RequestParam Integer maara,
-			jakarta.servlet.http.HttpSession session, @RequestParam(required = false) String ostopaivamaara) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
+		@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
+		public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId, @RequestParam Integer maara,
+				@RequestParam String alvKanta, // Vastaanotetaan valittu ALV-kanta lomakkeelta
+				jakarta.servlet.http.HttpSession session, @RequestParam(required = false) String ostopaivamaara) {
+			String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+			if (istuntoTunnus == null) {
+				return "redirect:/login";
+			}
+
+			Asiakas asiakas = asiakasRepository.findById(asiakasId)
+					.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
+			Tuote tuote = tuoteRepository.findById(tuoteId)
+					.orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt"));
+
+			fi.sotemindit.astori.model.AsiakasTuote uusiMyynti = new fi.sotemindit.astori.model.AsiakasTuote(asiakas, tuote,
+					tuote.getHinta(), maara);
+
+			// Muunnetaan merkkijono enumiksi ja asetetaan olion kenttään
+			if (alvKanta != null && !alvKanta.trim().isEmpty()) {
+				try {
+					uusiMyynti.setAlvKanta(fi.sotemindit.astori.model.AlvKanta.valueOf(alvKanta));
+				} catch (IllegalArgumentException e) {
+					uusiMyynti.setAlvKanta(fi.sotemindit.astori.model.AlvKanta.ALV_25_5); // Varmuuskopio-oletus virhetilanteessa
+				}
+			}
+
+			if (ostopaivamaara != null && !ostopaivamaara.trim().isEmpty()) {
+				uusiMyynti.setOstopaivamaara(java.time.LocalDate.parse(ostopaivamaara));
+			} else {
+				uusiMyynti.setOstopaivamaara(java.time.LocalDate.now()); // Oletus: tämä päivä
+			}
+
+			asiakasTuoteRepository.save(uusiMyynti);
+
+			return "redirect:/asiakas/" + asiakasId;
 		}
 
-		Asiakas asiakas = asiakasRepository.findById(asiakasId)
-				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
-		Tuote tuote = tuoteRepository.findById(tuoteId)
-				.orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt"));
-
-		fi.sotemindit.astori.model.AsiakasTuote uusiMyynti = new fi.sotemindit.astori.model.AsiakasTuote(asiakas, tuote,
-				tuote.getHinta(), maara);
-
-		if (ostopaivamaara != null && !ostopaivamaara.trim().isEmpty()) {
-			uusiMyynti.setOstopaivamaara(java.time.LocalDate.parse(ostopaivamaara));
-		} else {
-			uusiMyynti.setOstopaivamaara(java.time.LocalDate.now()); // Oletus: tämä päivä
-		}
-
-		asiakasTuoteRepository.save(uusiMyynti);
-
-		return "redirect:/asiakas/" + asiakasId;
-	}
 
 	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot, tilan, osoitteet,
 	// kotisivun ja Y-TUNNUKSEN
@@ -574,7 +587,7 @@ public class AsiakasController {
 		return "redirect:/asiakas/" + asiakasId;
 	}
 
-	//Tallentaa uuden lokimerkinnän asiakkaan profiiliin
+	// Tallentaa uuden lokimerkinnän asiakkaan profiiliin
 	@PostMapping("/asiakas/{asiakasId}/lisaa-kirjaus")
 	public String lisaaKirjaus(@PathVariable Long asiakasId, @RequestParam String teksti,
 			jakarta.servlet.http.HttpSession session) {
@@ -605,23 +618,28 @@ public class AsiakasController {
 		// 5. Palataan takaisin asiakkaan profiiliin
 		return "redirect:/asiakas/" + asiakasId;
 	}
-	
-	// 🔌 UUSI REITTI: Poistaa lokikirjauksen ja tallentaa alkuperäisen tekstin Audit Trailiin
+
+	// 🔌 UUSI REITTI: Poistaa lokikirjauksen ja tallentaa alkuperäisen tekstin
+	// Audit Trailiin
 	@PostMapping("/kirjaus/poista/{id}")
-	public String poistaKirjaus(@PathVariable Long id, @RequestParam Long asiakasId, jakarta.servlet.http.HttpSession session) {
+	public String poistaKirjaus(@PathVariable Long id, @RequestParam Long asiakasId,
+			jakarta.servlet.http.HttpSession session) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		// 1. Haetaan poistettava kirjaus tietokannasta, jotta saadaan sen teksti talteen
+		// 1. Haetaan poistettava kirjaus tietokannasta, jotta saadaan sen teksti
+		// talteen
 		fi.sotemindit.astori.model.Kirjaus kirjaus = kirjausRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Kirjausta ei löytynyt ID-numerolla: " + id));
 
-		// 2. 💡 TÄRKEÄÄ: Otetaan alkuperäinen teksti talteen JÄRJESTELMÄLOKIIN ennen poistoa
+		// 2. 💡 TÄRKEÄÄ: Otetaan alkuperäinen teksti talteen JÄRJESTELMÄLOKIIN ennen
+		// poistoa
 		String vanhaTeksti = kirjaus.getTeksti();
-		String lokiKuvaus = "Poistettu lokimerkintä asiakkaalta (ID: " + asiakasId + "). Alkuperäinen teksti oli: \"" + vanhaTeksti + "\"";
-		
+		String lokiKuvaus = "Poistettu lokimerkintä asiakkaalta (ID: " + asiakasId + "). Alkuperäinen teksti oli: \""
+				+ vanhaTeksti + "\"";
+
 		// Tallennetaan Audit Trailiin (POISTO-tyypillä)
 		lokiRepository.save(new Loki(istuntoTunnus, "POISTO", lokiKuvaus));
 
@@ -633,4 +651,23 @@ public class AsiakasController {
 	}
 
 
+	// 2. REITTI: Poistaa tuotteen / palvelun asiakkaan kortilta kokonaan
+	@PostMapping("/palvelu/poista/{id}")
+	public String poistaAsiakasTuote(jakarta.servlet.http.HttpSession session, @PathVariable Long id) {
+
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		AsiakasTuote poistettava = asiakasTuoteRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Poistettavaa riviä ei löytynyt ID-numerolla: " + id));
+
+		Long asiakasId = poistettava.getAsiakas().getId();
+
+		// Poistetaan tietokantarivi
+		asiakasTuoteRepository.delete(poistettava);
+
+		return "redirect:/asiakas/" + asiakasId + "?success=service_deleted";
+	}
 }
