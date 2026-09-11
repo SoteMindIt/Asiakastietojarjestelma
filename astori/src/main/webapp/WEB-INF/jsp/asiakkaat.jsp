@@ -196,7 +196,7 @@ body {
 								name="hyvinvointialue">
 								<option value="">-- Valitse hyvinvointialue --</option>
 								<c:forEach var="alue" items="${hyvinvointialueet}">
-									<option value="${alue}">${alue}</option>
+									<option value="${alue}">${alue.nimi}</option>
 								</c:forEach>
 							</select>
 						</div>

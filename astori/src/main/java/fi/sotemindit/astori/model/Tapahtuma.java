@@ -19,10 +19,10 @@ public class Tapahtuma {
 	@Column(nullable = false)
 	private LocalDateTime ajankohta;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private TapahtumaTyyppi tyyppi = TapahtumaTyyppi.TAPAAMINEN;
-
+	@ManyToOne
+	@JoinColumn(name = "tyyppi_id", nullable = false)
+	private TapahtumaTyyppi tyyppi;
+	
 	@ManyToOne
 	@JoinColumn(name = "asiakas_id", nullable = true)
 	private Asiakas asiakas;

@@ -244,7 +244,100 @@ body {
 				</div>
 			</div>
 
-			<!-- PALAUTETTU ALKUPERÄINEN OSIO: OMAN YRITYKSEN TIEDOT -->
+			<!-- KORTTI: KALENTERIN TAPAHTUMATYYPIT -->
+			<div class="card shadow-sm my-4 border">
+				<div class="card-header bg-dark text-white p-3">
+					<h5 class="mb-0 fw-bold">⚙️ Kalenterin tapahtumatyypit</h5>
+				</div>
+				<div class="card-body p-4">
+
+					<!-- LISÄYSLOMAKE -->
+					<form
+						action="${pageContext.request.contextPath}/asetukset/lisaa-tyyppi"
+						method="post" class="row g-3 mb-4 align-items-end">
+						<div class="col-md-5">
+							<label for="lisaaNimi"
+								class="form-label fw-semibold text-secondary">Selkokielinen
+								nimi (esim. Etäkokous)</label> <input type="text" class="form-control"
+								id="lisaaNimi" name="nimi" required
+								placeholder="Näkyy käyttäjälle järjestelmässä">
+						</div>
+						<div class="col-md-2">
+							<button type="submit" class="btn btn-primary w-100 fw-bold">+
+								Lisää</button>
+						</div>
+					</form>
+
+					<hr>
+
+					<!-- TAULUKKOLISTAUS -->
+					<div class="table-responsive">
+						<table class="table table-hover table-striped align-middle mb-0">
+							<thead class="table-light">
+								<tr>
+									<th>ID</th>
+									<th>Tapahtumatyyppi</th>
+									<th class="text-end">Toiminnot</th>
+								</tr>
+							</thead>
+							<tbody>
+								<c:forEach var="tt" items="${kaikkiTapahtumaTyypit}">
+									<tr>
+										<td><code>${tt.id}</code></td>
+										<td class="fw-bold">${tt.nimi}</td>
+										<td class="text-end">
+											<!-- Triggeröi muokkausmodalin ja ajaa JS-alustuksen -->
+											<button type="button"
+												class="btn btn-sm btn-outline-dark fw-semibold"
+												onclick="avaaTyypinMuokkaus('${tt.id}', '${tt.nimi}')">
+												Muokkaa nimeä</button>
+										</td>
+									</tr>
+								</c:forEach>
+								<c:if test="${empty kaikkiTapahtumaTyypit}">
+									<tr>
+										<td colspan="3" class="text-center text-muted py-3">Järjestelmään
+											ei ole vielä syötetty dynaamisia tapahtumatyyppejä.</td>
+									</tr>
+								</c:if>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- POP-UP MODAL TYYPIN NIMEN MUOKKAUKSELLE -->
+			<div class="modal fade" id="muokkaaTyyppiModal" tabindex="-1"
+				data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+				<div class="modal-dialog modal-dialog-centered">
+					<div class="modal-content border-0 shadow-lg">
+						<div class="modal-header bg-dark text-white">
+							<h5 class="modal-title fw-bold">Muokkaa nimeä</h5>
+							<button type="button" class="btn-close btn-close-white"
+								data-bs-dismiss="modal"></button>
+						</div>
+						<form id="muokkaaTyyppiForm" method="post">
+							<div class="modal-body p-4">
+								<div class="mb-3">
+									<label for="muokkaaNimi"
+										class="form-label fw-semibold text-secondary">Uusi
+										nimi</label> <input type="text" class="form-control" id="muokkaaNimi"
+										name="nimi" required>
+								</div>
+							</div>
+							<div class="modal-footer bg-light">
+								<button type="button" class="btn btn-secondary"
+									data-bs-dismiss="modal">Peruuta</button>
+								<button type="submit" class="btn btn-success px-4 fw-bold">Tallenna
+									muutokset</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+
+			<!-- OMAN YRITYKSEN TIEDOT -->
 			<div class="col-md-12">
 				<div class="settings-card mb-4">
 					<h4 class="text-secondary mb-3 fw-bold">Oman yrityksen tiedot
@@ -302,6 +395,7 @@ body {
 					</form>
 				</div>
 			</div>
+
 			<!-- KÄYTTÄJÄHALLINTA -->
 			<div class="col-md-12">
 				<div class="settings-card">
@@ -484,5 +578,29 @@ body {
 	<!-- Lataa paikallisen Bootstrap-JavaScriptin suoraan resources-juuresta -->
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+
+
+	<!-- Scriptit -->
+	<script>
+		function avaaTyypinMuokkaus(id, nykyinenNimi) {
+			// Haetaan lomake ja sen tekstikenttä uusin tunnistein
+			const form = document.getElementById('muokkaaTyyppiForm');
+			const input = document.getElementById('muokkaaNimi');
+
+			// Asetetaan nykyinen nimi tekstikenttään valmiiksi muokkausta varten
+			input.value = nykyinenNimi;
+
+			// Päivitetään lomakkeen lähetysosoite sisältämään muokattavan tyypin ID
+			// Muuta polku (/asetukset/muokkaa/) vastaamaan omaa kontrolleriasi
+			form.action = "${pageContext.request.contextPath}/asetukset/muokkaa-tyyppia/" + id;
+
+			// Avataan Bootstrap-modali ohjelmallisesti
+			const muokkausModal = new bootstrap.Modal(document
+					.getElementById('muokkaaTyyppiModal'));
+			muokkausModal.show();
+		}
+	</script>
+
+
 </body>
 </html>

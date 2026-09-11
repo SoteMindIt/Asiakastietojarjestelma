@@ -72,44 +72,6 @@ public class AsiakasController {
 	@Autowired
 	private fi.sotemindit.astori.repository.PalveluyksikkoRepository palveluyksikkoRepository;
 
-	// 1a. PÄIVITETTY ETUSIVU: Lasketaan reaaliaikaiset tiedot tietolaatikoihin
-	// (Dashboard)
-	@GetMapping("/")
-	public String naytaEtusivu(jakarta.servlet.http.HttpSession session, Model model) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-
-		// 1. Haetaan palvelimen reaaliaikainen kellonaika tapahtumille
-		java.time.LocalDateTime nyt = java.time.LocalDateTime.now();
-
-		// 2. Haetaan tulevat kalenterimerkinnät etusivun koosteeseen
-		List<Tapahtuma> tulevatTapahtumat = tapahtumaRepository
-				.findByKayttajaKayttajatunnusAndAjankohtaAfterOrderByAjankohtaAsc(istuntoTunnus, nyt);
-
-		// 📈 3. DYNAAMISET LASKURIT TIETOKANNASTA DASHBOARD-KORTEILLE:
-		// Lasketaan vain kyseisen kirjautuneen käyttäjän omat datat
-		long asiakkaatYhteensa = asiakasRepository.countByKayttajaKayttajatunnus(istuntoTunnus);
-		long tarjouksetYhteensa = tarjousRepository.countByAsiakasKayttajaKayttajatunnus(istuntoTunnus);
-
-		// Tehtävät tälle päivälle (haetaan tämän vuorokauden loppuun asti olevat
-		// tehtävät)
-		java.time.LocalDateTime vuorokaudenLoppu = java.time.LocalDate.now().atTime(23, 59, 59);
-		long tehtavatTanaan = tapahtumaRepository.countByKayttajaKayttajatunnusAndAjankohtaBetween(istuntoTunnus, nyt,
-				vuorokaudenLoppu);
-
-		// 🗳️ 4. Viedään laskurit ja datat JSP-sivulle (dashboard.jsp)
-		model.addAttribute("tulevatTapahtumat", tulevatTapahtumat);
-		model.addAttribute("asiakkaatLaskuri", asiakkaatYhteensa);
-		model.addAttribute("tarjouksetLaskuri", tarjouksetYhteensa);
-		model.addAttribute("tehtavatLaskuri", tehtavatTanaan);
-		model.addAttribute("asiakkaatLaskuri", asiakkaatYhteensa);
-		model.addAttribute("tarjouksetLaskuri", tarjouksetYhteensa);
-		model.addAttribute("tehtavatLaskuri", tehtavatTanaan);
-
-		return "dashboard";
-	}
 
 	// 1b. ASIAKKAAT OMA SIVU: Kaikki asiakkaat, haku ja sivutus siirretty tänne
 	@GetMapping("/asiakkaat")
@@ -141,6 +103,7 @@ public class AsiakasController {
 		model.addAttribute("totalPages", asiakasSivu.getTotalPages());
 		model.addAttribute("tilat", AsiakkaanTila.values());
 		model.addAttribute("haku", haku != null ? haku.trim() : "");
+		model.addAttribute("hyvinvointialueet", Hyvinvointialue.values());
 
 		return "asiakkaat"; // 💡 KORJATTU: Avaa uuden asiakkaat.jsp -sivun!
 	}
@@ -150,7 +113,7 @@ public class AsiakasController {
 	@PostMapping("/lisaa-asiakas")
 	public String lisaaAsiakas(jakarta.servlet.http.HttpSession session, @RequestParam String nimi,
 			@RequestParam(value = "yTunnus", required = false) String yTunnus,
-			@RequestParam(required = false) String kuvaus, // 💡 LISÄTTY PYYNTÖÖN
+			@RequestParam(required = false) String kuvaus, 
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
 			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,
@@ -164,7 +127,7 @@ public class AsiakasController {
 		fi.sotemindit.astori.model.Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
 				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
 
-		// Luodaan uusi asiakas päivitettyyn 10-muuttujaiseen konstruktoriin
+		// Luodaan uusi asiakas
 		Asiakas uusiAsiakas = new Asiakas(nimi, puhelin, sahkoposti, katuosoite, postinumero, postitoimipaikka,
 				kotisivu, tila, yTunnus, kuvaus, hyvinvointialue);
 

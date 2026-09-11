@@ -10,31 +10,29 @@ import fi.sotemindit.astori.model.TapahtumaTyyppi;
 
 public interface TapahtumaRepository extends JpaRepository<Tapahtuma, Long> {
 
-	// 💡 UUSI DYNAAMINEN HAKUMETODI KALENTERILLE
+	// 💡 VIIMEISTELTY DYNAAMINEN HAKUMETOLI KALENTERILLE (Oliotuki korjattu)
 	@Query("SELECT t FROM Tapahtuma t WHERE "
-			+ "(CAST(:kayttajatunnus AS string) IS NULL OR t.kayttaja.kayttajatunnus = :kayttajatunnus) AND "
-			+ "(CAST(:asiakasId AS long) IS NULL OR t.asiakas.id = :asiakasId) AND "
-			+ "(CAST(:tyyppi AS string) IS NULL OR t.tyyppi = :tyyppi) AND "
+			+ "(:kayttajatunnus IS NULL OR t.kayttaja.kayttajatunnus = :kayttajatunnus) AND "
+			+ "(:asiakasId IS NULL OR t.asiakas.id = :asiakasId) AND " + "(:tyyppi IS NULL OR t.tyyppi = :tyyppi) AND " // Puhdas
+																														// oliotason
+																														// NULL-tarkistus
 			+ "(CAST(:alkuPvm AS localdatetime) IS NULL OR t.ajankohta >= :alkuPvm) AND "
 			+ "(CAST(:loppuPvm AS localdatetime) IS NULL OR t.ajankohta <= :loppuPvm) " + "ORDER BY t.ajankohta ASC")
 	List<Tapahtuma> haeKalenteriSuodattimilla(@Param("kayttajatunnus") String kayttajatunnus,
 			@Param("asiakasId") Long asiakasId, @Param("tyyppi") TapahtumaTyyppi tyyppi,
-			@Param("alkuPvm") java.time.LocalDateTime alkuPvm, @Param("loppuPvm") java.time.LocalDateTime loppuPvm);
+			@Param("alkuPvm") LocalDateTime alkuPvm, @Param("loppuPvm") LocalDateTime loppuPvm);
 
 	// 🔍 1. Haetaan tulevat tapahtumat aikajärjestyksessä etusivun koosteeseen
-	// (KORJATTU PÄIVITETYLLÄ KYSELYLLÄ)
 	@Query("SELECT t FROM Tapahtuma t WHERE t.kayttaja.kayttajatunnus = :tunnus AND t.ajankohta > :nyt ORDER BY t.ajankohta ASC")
 	List<Tapahtuma> findByKayttajaKayttajatunnusAndAjankohtaAfterOrderByAjankohtaAsc(@Param("tunnus") String tunnus,
 			@Param("nyt") LocalDateTime nyt);
 
 	// 📈 2. Lasketaan tämän päivän tehtävien määrä etusivun dashboard-korttiin
-	// (KORJATTU PÄIVITETYLLÄ KYSELYLLÄ)
 	@Query("SELECT COUNT(t) FROM Tapahtuma t WHERE t.kayttaja.kayttajatunnus = :tunnus AND t.ajankohta BETWEEN :alku AND :loppu")
 	long countByKayttajaKayttajatunnusAndAjankohtaBetween(@Param("tunnus") String tunnus,
 			@Param("alku") LocalDateTime alku, @Param("loppu") LocalDateTime loppu);
 
-	// 📅 3. Kalenterisivun haku (Varmistetaan että tämäkin toimii ilman
-	// nimitulkintavirheitä)
+	// 📅 3. Kalenterisivun haku
 	@Query("SELECT t FROM Tapahtuma t WHERE t.kayttaja.kayttajatunnus = :tunnus")
 	List<Tapahtuma> findByKayttajatunnus(@Param("tunnus") String tunnus);
 }

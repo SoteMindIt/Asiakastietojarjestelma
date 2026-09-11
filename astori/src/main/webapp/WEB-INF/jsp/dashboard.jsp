@@ -37,6 +37,11 @@ body {
 	justify-content: center;
 	font-size: 24px;
 }
+
+/* 💡 Tyylivinkki: Alleviivaus näkyviin vain, kun hiiri on linkin päällä */
+.text-primary:hover {
+	text-decoration: underline !important;
+}
 </style>
 </head>
 <body>
@@ -68,8 +73,7 @@ body {
 	<div class="container py-2">
 		<div class="mb-4">
 			<h2 class="text-dark fw-bold mb-1">Tervetuloa Astoriin!</h2>
-			<p class="text-muted">Tässä on yleisnäkymä järjestelmän
-				tämänhetkisestä tilanteesta.</p>
+			<p class="text-muted">Tässä on yleisnäkymä järjestelmän tämänhetkisestä tilanteesta.</p>
 		</div>
 
 		<!-- 📊 TIETOLAATIKOT (DASHBOARD-KORTIT) -->
@@ -79,11 +83,8 @@ body {
 				<div
 					class="dashboard-card d-flex align-items-center justify-content-between">
 					<div>
-						<h6 class="text-secondary fw-semibold mb-1">Asiakkaat
-							yhteensä</h6>
-						<!-- 💡 KORJATTU: Käytetään nimeä asiakkaatLaskuri, näytetään 0 jos tyhjä -->
-						<h3 class="fw-bold text-dark mb-0">${not empty asiakkaatLaskuri ? asiakkaatLaskuri : '0'}
-							kpl</h3>
+						<h6 class="text-secondary fw-semibold mb-1">Asiakkaat yhteensä</h6>
+						<h3 class="fw-bold text-dark mb-0">${not empty asiakkaatLaskuri ? asiakkaatLaskuri : '0'} kpl</h3>
 						<small class="text-muted">Aktiiviset asiakkuutesi</small>
 					</div>
 					<div class="icon-box bg-primary bg-opacity-10 text-primary">👤</div>
@@ -94,11 +95,8 @@ body {
 				<div
 					class="dashboard-card d-flex align-items-center justify-content-between">
 					<div>
-						<h6 class="text-secondary fw-semibold mb-1">Avoimet
-							tarjoukset</h6>
-						<!-- 💡 KORJATTU: Käytetään nimeä tarjouksetLaskuri, näytetään 0 jos tyhjä -->
-						<h3 class="fw-bold text-dark mb-0">${not empty tarjouksetLaskuri ? tarjouksetLaskuri : '0'}
-							kpl</h3>
+						<h6 class="text-secondary fw-semibold mb-1">Avoimet tarjoukset</h6>
+						<h3 class="fw-bold text-dark mb-0">${not empty tarjouksetLaskuri ? tarjouksetLaskuri : '0'} kpl</h3>
 						<small class="text-muted">Jätetyt tarjouslaskelmat</small>
 					</div>
 					<div class="icon-box bg-success bg-opacity-10 text-success">💼</div>
@@ -109,111 +107,70 @@ body {
 				<div
 					class="dashboard-card d-flex align-items-center justify-content-between">
 					<div>
-						<h6 class="text-secondary fw-semibold mb-1">Tehtävät
-							loppupäivälle</h6>
-						<!-- 💡 KORJATTU: Käytetään nimeä tehtavatLaskuri, näytetään 0 jos tyhjä -->
-						<h3 class="fw-bold text-dark mb-0">${not empty tehtavatLaskuri ? tehtavatLaskuri : '0'}
-							kpl</h3>
+						<h6 class="text-secondary fw-semibold mb-1">Tehtävät loppupäivälle</h6>
+						<h3 class="fw-bold text-dark mb-0">${not empty tehtavatLaskuri ? tehtavatLaskuri : '0'} kpl</h3>
 						<small class="text-muted">Tämän päivän agenda</small>
 					</div>
 					<div class="icon-box bg-warning bg-opacity-10 text-warning">📅</div>
 				</div>
 			</div>
 		</div>
-
 		<div class="row g-4">
+			<!-- VASEN REUNA: KALENTERIMERKINNÄT -->
 			<div class="col-lg-8">
 				<div class="bg-white p-4 rounded-3 border shadow-sm">
-					<h4 class="text-dark fw-bold mb-4">Seuraavat
-						kalenterimerkinnät</h4>
+					<h4 class="text-dark fw-bold mb-4">Seuraavat kalenterimerkinnät</h4>
 
 					<c:forEach var="tap" items="${tulevatTapahtumat}">
-						<!-- 💡 KORJATTU: Tehty toString()-vertailut, jotka toimivat aina kaikilla palvelimilla -->
 						<div
 							class="p-3 mb-3 rounded border-start border-4 
 							<c:choose>
-								<c:when test="${tap.tyyppi.toString() == 'TAPAAMINEN'}">border-success bg-success bg-opacity-10</c:when>
-								<c:when test="${tap.tyyppi.toString() == 'PUHELU' || tap.tyyppi.toString() == 'SOITTO'}">border-warning bg-warning bg-opacity-10</c:when>
-								<c:when test="${tap.tyyppi.toString() == 'SÄHKÖPOSTI'}">border-info bg-info bg-opacity-10</c:when>
+								<c:when test="${tap.tyyppi.nimi == 'Tapaaminen'}">border-success bg-success bg-opacity-10</c:when>
+								<c:when test="${tap.tyyppi.nimi == 'Puhelu' || tap.tyyppi.nimi == 'Soitto'}">border-warning bg-warning bg-opacity-10</c:when>
+								<c:when test="${tap.tyyppi.nimi == 'Sähköposti'}">border-info bg-info bg-opacity-10</c:when>
 								<c:otherwise>border-primary bg-primary bg-opacity-10</c:otherwise>
 							</c:choose>">
 
-							<div class="d-flex justify-content-between align-items-start">
-								<a href="#"
-									class="text-primary fw-bold d-block mb-1 text-decoration-none"
-									data-bs-toggle="modal"
-									data-bs-target="#muokkaaTapahtumaModal${tap.id}">
-									${tap.otsikko} </a> <span
-									class="badge bg-white text-dark border small">${tap.tyyppi.toString()}</span>
+							<!-- 1. TAPAHTUMATYYPPI -->
+							<div class="mb-1">
+								<!-- 💡 PÄIVITETTY: Käyttää nyt tap.tyyppi.nimi -kenttää -->
+								<span class="badge bg-dark text-white uppercase small tracking-wider">${tap.tyyppi.nimi}</span>
 							</div>
 
+							<!-- 2. OTSIKKO / AIHE -->
+							<h5 class="mb-1">
+								<!-- 💡 KORJATTU: Luokat vaihdettu muotoon 'text-primary fw-semibold text-decoration-none' -->
+								<!-- 💡 KORJATTU: JavaScriptille välitetään nyt tyypin tekstitunnuksen sijaan numeerinen tyyppi.id -->
+								<a href="#" class="text-primary fw-semibold text-decoration-none"
+									onclick="avaaMuokkausModal('${tap.id}', '<c:out value="${tap.otsikko}"/>', '${tap.tyyppi.id}', '${tap.ajankohta}', '${not empty tap.asiakas ? tap.asiakas.id : ''}')">
+									<c:out value="${tap.otsikko}" />
+								</a>
+							</h5>
 
-							<!-- 💡 KORJATTU: Päivämäärä näytetään aina, kun ajankohta on olemassa (vaikka asiakasta ei olisi kytketty) -->
+							<!-- 3. ASIAKAS, JOHON TAPAHTUMA ON KOHDISTETTU -->
+							<div class="mb-2 text-secondary small">
+								<c:choose>
+									<c:when test="${not empty tap.asiakas}">
+										👤 Asiakas: <strong class="text-dark">${tap.asiakas.nimi}</strong>
+									</c:when>
+									<c:otherwise>
+										⚙️ <em>Sisäinen merkintä (Ei liitettyä asiakasta)</em>
+									</c:otherwise>
+								</c:choose>
+							</div>
+
+							<!-- Päivämäärä ja kellonaika -->
 							<c:if test="${not empty tap.ajankohta}">
-								<small class="text-muted fw-semibold"> <c:set
-										var="ajankohtaTeksti"
-										value="${tap.ajankohta.toString().substring(0, 16)}" /> <fmt:parseDate
-										value="${ajankohtaTeksti}" pattern="yyyy-MM-dd'T'HH:mm"
-										var="parsituPvm" type="both" /> <fmt:formatDate
-										value="${parsituPvm}" pattern="dd.MM.yyyy 'klo' HH:mm" />
+								<small class="text-muted fw-semibold d-block"> 
+									<c:set var="ajankohtaTeksti" value="${tap.ajankohta != null ? tap.ajankohta.toString().substring(0, 16) : ''}" />
+									<c:if test="${not empty ajankohtaTeksti}">
+										<fmt:parseDate value="${ajankohtaTeksti}" pattern="yyyy-MM-dd'T'HH:mm" var="parsituPvm" type="both" />
+										<fmt:formatDate value="${parsituPvm}" pattern="dd.MM.yyyy 'klo' HH:mm" />
+									</c:if>
 								</small>
 							</c:if>
 
 						</div>
-						<!-- MODAL-IKKUNA TAPAHTUMAN MUOKKAUKSELLE -->
-						<div class="modal fade" id="muokkaaTapahtumaModal${tap.id}"
-							tabindex="-1" aria-hidden="true">
-							<div class="modal-dialog modal-dialog-centered">
-								<div class="modal-content border-0 shadow-lg">
-									<div class="modal-header bg-dark text-white">
-										<h5 class="modal-title fw-bold">Muokkaa tapahtumaa</h5>
-										<button type="button" class="btn-close btn-close-white"
-											data-bs-dismiss="modal"></button>
-									</div>
-									<form
-										action="${pageContext.request.contextPath}/kalenteri/paivita/${tap.id}"
-										method="post">
-										<div class="modal-body p-4 text-start">
-											<div class="mb-3">
-												<label class="form-label fw-semibold text-secondary">Otsikko</label>
-												<input type="text" class="form-control" name="otsikko"
-													value="${tap.otsikko}" required>
-											</div>
-											<div class="mb-3">
-												<label class="form-label fw-semibold text-secondary">Tyyppi</label>
-												<select class="form-select" name="tyyppi" required>
-													<option value="TAPAAMINEN"
-														${tap.tyyppi.toString() == 'TAPAAMINEN' ? 'selected' : ''}>TAPAAMINEN</option>
-													<option value="PUHELU"
-														${tap.tyyppi.toString() == 'PUHELU' ? 'selected' : ''}>PUHELU</option>
-													<option value="SÄHKÖPOSTI"
-														${tap.tyyppi.toString() == 'SÄHKÖPOSTI' ? 'selected' : ''}>SÄHKÖPOSTI</option>
-												</select>
-											</div>
-											<div class="mb-3">
-												<label class="form-label fw-semibold text-secondary">Ajankohta</label>
-												<input type="datetime-local" class="form-control"
-													name="ajankohtaStr" value="${tap.ajankohta}" required>
-											</div>
-											<div class="mb-3">
-												<label class="form-label fw-semibold text-secondary">Kuvaus
-													/ Muistiinpanot</label>
-												<textarea class="form-control" name="kuvaus" rows="3">${tap.kuvaus}</textarea>
-											</div>
-											<input type="hidden" name="asiakasId"
-												value="${not empty tap.asiakas ? tap.asiakas.id : ''}">
-										</div>
-										<div class="modal-footer bg-light">
-											<button type="button" class="btn btn-secondary"
-												data-bs-dismiss="modal">Peruuta</button>
-											<button type="submit" class="btn btn-success px-4 fw-bold">Tallenna
-												muutokset</button>
-										</div>
-									</form>
-								</div>
-							</div>
-						</div>
-
 					</c:forEach>
 
 					<c:if test="${empty tulevatTapahtumat}">
@@ -223,15 +180,15 @@ body {
 					</c:if>
 				</div>
 			</div>
-
+				<!-- OIKEA REUNA: PIKALINKIT -->
 			<div class="col-lg-4">
 				<div class="bg-white p-4 rounded-3 border shadow-sm h-100">
 					<h5 class="fw-bold text-dark mb-3">Pikalinkit</h5>
 					<div class="list-group list-group-flush">
 						<a href="${pageContext.request.contextPath}/asiakkaat"
 							class="list-group-item list-group-item-action ps-0 text-primary">➡️
-							Hallitse asiakkaita</a> <a
-							href="${pageContext.request.contextPath}/kalenteri"
+							Hallitse asiakkaita</a> 
+						<a href="${pageContext.request.contextPath}/kalenteri"
 							class="list-group-item list-group-item-action ps-0 text-primary">➡️
 							Avaa iso kalenteri</a>
 					</div>
@@ -240,7 +197,118 @@ body {
 		</div>
 	</div>
 
-	<script
-		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+	<!-- 💡 TURVALLINEN HTML-SÄILÖ -->
+	<div style="display: none;">
+		<c:forEach var="tap" items="${tulevatTapahtumat}">
+			<div id="tap-kuvaus-${tap.id}">
+				<c:out value="${tap.kuvaus}" />
+			</div>
+		</c:forEach>
+	</div>
+
+	<!-- YHTENÄISTETTY JA DYNAAMINEN PONNAHDUSIKKUNA (MODAL) TAPAHTUMAN MUOKKAUKSELLE ETUSIVULLA -->
+	<div class="modal fade" id="muokkaaTapahtumaModal" tabindex="-1"
+		data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<div class="modal-header bg-dark text-white">
+					<h5 class="modal-title fw-bold">Muokkaa tapahtumaa</h5>
+					<button type="button" class="btn-close btn-close-white"
+						data-bs-dismiss="modal"></button>
+				</div>
+
+				<form id="muokkaaTapahtumaForm" method="post">
+					<input type="hidden" name="lahde" value="dashboard">
+
+					<div class="modal-body p-4 text-start">
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Otsikko / Aihe</label> 
+							<input type="text" class="form-control" id="muokkaaOtsikko" name="otsikko" required>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Tapahtuman tyyppi</label> 
+							<select class="form-select" id="muokkaaTyyppi" name="tyyppi" required>
+								<!-- 💡 KORJATTU: items käyttää nyt 'tapahtumaTyypit'-nimikettä muiden sivujen mukaisesti -->
+								<c:forEach var="t" items="${tapahtumaTyypit}">
+									<!-- 💡 KORJATTU: value tallentaa nyt ID:n, ei nimeä -->
+									<option value="${t.id}">${t.nimi}</option>
+								</c:forEach>
+							</select>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Ajankohta ja kellonaika</label> 
+							<input type="datetime-local" class="form-control" id="muokkaaAjankohta" name="ajankohtaStr" required>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Liitetty asiakas</label> 
+							<select class="form-select" id="muokkaaAsiakasId" name="asiakasId">
+								<option value="">-- Ei kytketty asiakkaaseen --</option>
+								<c:forEach var="a" items="${kaikkiAsiakkaat}">
+									<option value="${a.id}">${a.nimi}</option>
+								</c:forEach>
+							</select>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary">Lisätiedot / Muistiinpanot</label>
+							<textarea class="form-control" id="muokkaaKuvaus" name="kuvaus" rows="3"></textarea>
+						</div>
+					</div>
+					<div class="modal-footer bg-light d-flex justify-content-between">
+						<!-- 💡 KORJATTU: Lisätty poistopainikkeen HTML takaisin, jotta JS ei heitä virhettä elementin puuttumisesta -->
+						<button type="submit" id="poistaTapahtumaPainike" class="btn btn-outline-danger fw-bold"
+							onclick="return confirm('Haluatko varmasti poistaa tämän tapahtuman?');">Poista</button>
+						<div>
+							<button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Peruuta</button>
+							<button type="submit" class="btn btn-success px-4 fw-bold">Tallenna</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	<!-- ELEMENTTIEN TÄYTTÖ JAVASCRIPTILLÄ KLIKKAUKSESSA -->
+	<script>
+	function avaaMuokkausModal(id, otsikko, tyyppiId, ajankohta, asiakasId) {
+		// 1. Asetetaan lomakkeen ja poistopainikkeen dynaamiset reitit oikealle ID-numerolle
+		var form = document.getElementById('muokkaaTapahtumaForm');
+		form.action = '${pageContext.request.contextPath}/kalenteri/paivita/' + id;
+		
+		var poistaBtn = document.getElementById('poistaTapahtumaPainike');
+		if (poistaBtn) {
+			poistaBtn.formAction = '${pageContext.request.contextPath}/kalenteri/poista-suoraan/' + id + '?lahde=dashboard';
+		}
+
+		// 2. Päivitetään kenttien arvot klikatun tapahtuman mukaisiksi
+		document.getElementById('muokkaaOtsikko').value = otsikko;
+		
+		// 💡 KORJATTU: Asettaa nyt tyyppiId-arvon pudotusvalikkoon, jotta valinta täsmää
+		document.getElementById('muokkaaTyyppi').value = tyyppiId;
+		
+		// datetime-local vaatii muodon YYYY-MM-DDTHH:MM
+		if (ajankohta && ajankohta.length >= 16) {
+			document.getElementById('muokkaaAjankohta').value = ajankohta.substring(0, 16);
+		} else {
+			document.getElementById('muokkaaAjankohta').value = ajankohta;
+		}
+		
+		document.getElementById('muokkaaAsiakasId').value = asiakasId || "";
+		
+		// Haetaan kuvaus turvallisesta html-säilöstä
+		var kuvausElement = document.getElementById('tap-kuvaus-' + id);
+		document.getElementById('muokkaaKuvaus').value = kuvausElement ? kuvausElement.innerText.trim() : '';
+
+		// 3. Avataan yhtenäinen modal näkyviin
+		var modalElement = document.getElementById('muokkaaTapahtumaModal');
+		var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+		modal.show();
+	}
+	</script>
+
+	<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+		

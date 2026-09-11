@@ -1,7 +1,7 @@
 # AI_CONTEXT: Astori (Asiakastietojärjestelmä)
 Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja tietokantarakenteet. Tämän tiedon avulla tekoäly pysyy täysin synkronoituna koodipohjan kanssa eikä tee arkkitehtuuria rikkovia muutosehdotuksia.
 
-- **Tekniikka:** Java 17, Spring Boot 4.1.0, Maven (war-pakkaus)
+- **Tekniikka:** Java 17, Spring Boot 3.x, Maven (war-pakkaus)
 - **Tietokanta:** PostgreSQL (tietokanta: `asiakastiedot`) + Spring Data JPA (`ddl-auto=update`)
 - **Käyttöliittymä:** JSP (sijainti: `/WEB-INF/jsp/`)
 - **Lisäkirjastot:** Spring Security Crypto/Web, OpenPDF 1.3.40 (raportointi), FullCalendar 6
@@ -11,7 +11,7 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 ## ⚙️ 1. Konfiguraatiot ja Perusrakenne
 
 ### pom.xml (Maven)
-- Riippuvuudet: `spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `postgresql`, `spring-security-crypto`, `openpdf` (versio 1.3.40), `tomcat-embed-jasper` ja `jakarta.servlet.jsp.jstl` (JSP/JSTL-tuki Spring Boot 3/4:ssä).
+- Riippuvuudet: `spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `postgresql`, `spring-security-crypto`, `openpdf` (versio 1.3.40), `tomcat-embed-jasper` ja `jakarta.servlet.jsp.jstl` (JSP/JSTL-tuki Spring Boot 3:ssa).
 
 ### application.properties
 - Tietokantayhteys: `jdbc:postgresql://localhost:5432/asiakastiedot` (tunnus: `postgres`, salasana: `admin`).
@@ -20,7 +20,7 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 
 ---
 
-## 🏛️ 2. Tietomallit (Entities / Models)
+## 🏛️ 2. Tietomallit (Entities / Models) - Osa A
 
 ### Asiakas.java
 - Kentät: Long id (Identity), String nimi (nullable=false), String puhelin, String sahkoposti, String katuosoite, String postinumero, String postitoimipaikka, String kotisivu, String yTunnus (length=9).
@@ -58,15 +58,23 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 
 ### TuoteYksikko.java (Enum)
 - Arvot: `KPL`, `TUNTI`, `KK`, `PV`, `KM` (km matkakorvauksille). `getLyhenne()`.
-
 ### AsiakasTuote.java
 - `@ManyToOne` kytkökset `Asiakas` ja `Tuote`. Myyntitiedot ja `getKokonaishinta()`.
 
 ### Kirjaus.java
 - Kentät: `Long id`, `String teksti` (columnDefinition = "TEXT" pitkiä muistiinpanoja varten), `LocalDateTime luontiaika`. `@ManyToOne` kytkös `Asiakas`-malliin.
 
+### TapahtumaTyyppi.java (Uusi dynaaminen entiteetti)
+- Kentät: `Long id` (Identity), `String nimi` (nullable=false, unique=true, sallii ääkköset, esim. "Etäkokous", "Puhelu").
+- Huom: Vanha `nayttorivi`-kenttä on poistettu kokonaan tietokannasta ja koodipohjasta arkkitehtuurin selkeyttämiseksi.
+
+### Tapahtuma.java (Kalenteri)
+- Relaatiot: Kytketty dynaamiseen tapahtumatyyppiin suhteella `@ManyToOne @JoinColumn(name = "tapahtuma_tyyppi_id") TapahtumaTyyppi tyyppi`.
+- Muut kentät: `Long id`, `String otsikko`, `LocalDateTime ajankohta`, `String kuvaus`. Kytkökset `Asiakas`- ja `Kayttaja`-malleihin.
+
 ### Tarjoukset, Järjestelmäloki ja Liitteet
-- `Tarjous.java`, `TarjousRivi.java`, `Yritystiedot.java` (ID 1L), `Loki.java` (Audit Trail), `Tapahtuma.java` (Kalenteri), `Liitetiedosto.java`.
+- `Tarjous.java`, `TarjousRivi.java`, `Yritystiedot.java` (ID 1L), `Loki.java` (Audit Trail), `Liitetiedosto.java`.
+
 ---
 
 ## 🔌 3. Repository-rajapinnat (Repositories)
@@ -81,17 +89,24 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 ### YhteyshenkiloRepository.java
 - `List<Yhteyshenkilo> findByAsiakasId(Long asiakasId)` -> Listaus hakee kaikki asiakkaaseen sidotut kontaktit.
 
+### TapahtumaTyyppiRepository.java (Uusi)
+- `List<TapahtumaTyyppi> findAll()` -> Hakee dynaamiset kalenterin tapahtumatyypit aakkosjärjestyksessä tai ID:n mukaan.
+
 ---
 
 ## 🎮 4. Backend-kontrollerit (Controllers & Routes)
 
 - **`AsiakasController.java`**: 
   - Ohjaa dashboardia, asiakaslistauksen sivutusta ja asiakasprofiilia.
-  - Hoitaa yhteyshenkilöiden (`/yhteyshenkilo/muokkaa/{id}`), lokien (`/kirjaus/muokkaa/{id}` ja uusi `/asiakas/{asiakasId}/lisaa-kirjaus`) sekä ostettujen palveluiden muokkausreitit (`/palvelu/muokkaa/{id}`).
-  - **Palveluyksikkö-reitit:** `/asiakas/{asiakasId}/lisaa-palveluyksikko` (POST), joka tukee samalla lennosta ensimmäisen yhteyshenkilön luontia, sekä `/palveluyksikko/muokkaa/{id}` (POST) yksikön tietojen ja sen oman hyvinvointialueen muokkaamiseen.
+  - Hoitaa yhteyshenkilöiden, lokien sekä ostettujen palveluiden muokkausreitit.
+  - **Palveluyksikkö-reitit:** `/asiakas/{asiakasId}/lisaa-palveluyksikko` (POST) sekä `/palveluyksikko/muokkaa/{id}` (POST).
 - **`AsiakasController.java (Live Search)`**: `/asiakkaat/live-haku` (@ResponseBody) dynaamisille taulukkoriveille.
 - **`TarjousController.java`**: Tarjousrivit `BigDecimal`-laskennalla (25.5 % ALV-tuki) ja OpenPDF-generoinnilla.
-- **`AsetuksetController.java`**: Työntekijöiden ja tuoterekisterin dynaamiset muutokset (`/asetukset/muokkaa-tuotetta/{id}`) käyttäen `${yksikot}`-listaa.
+- **`AsetuksetController.java`**: 
+  - Tuoterekisteri, työntekijät ja dynaamiset tapahtumatyypit.
+  - **Uudet tapahtumatyyppireitit (Post):** `/asetukset/lisaa-tyyppi` uuden tyypin luomiseen ja `/asetukset/muokkaa-typpia/{id}` olemassa olevan nimen muokkaamiseen (URL-osoitteet pidetään ääkkösettöminä yhteensopivuuden takaamiseksi). Vastaanottaa `@RequestParam("nimi") String uusiNimi` konfliktien estämiseksi.
+- **`KalenteriController.java`**: 
+  - Vastaanottaa dynaamisen tapahtumatyypin numeerisen ID:n (`@RequestParam("tyyppi") Long tyyppiId`) reiteissä `/kalenteri/lisaa` ja `/kalenteri/paivita/{id}`, ja hakee siihen liittyvän `TapahtumaTyyppi`-olion tietokannasta ennen tallennusta.
 
 ---
 
@@ -99,14 +114,10 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 
 Kaikki sivut käyttävät dynaamista kontekstipolkua `${pageContext.request.contextPath}` ja paikallisia Bootstrap-resursseja.
 
-- **`asiakasprofiili.jsp`**: 
-  - Tehty tehokas ja skannattava kaksisarakkeinen yläasettelu: vasemmalla ovat organisaation omat perustiedot (mukaan lukien dynaaminen `${asiakas.hyvinvointialue.nimi}`) ja oikealla puolella on siisti, dynaamisesti suodatettu **Organisaation pääyhteyshenkilö** -kortti (yhteyshenkilö, jonka `palveluyksikko` on `null`).
-  - Keskiosassa on skrollaava **Asiakkaan loki** sekä keskitetyt hallintapainikkeet.
-  - Alaosassa on siistit täysleveät kortit allekkain:
-    1. **Palveluyksiköt ja toimipisteet** (Kokoontaitettava Bootstrap Collapse -osio kääntyvällä nuolikuvakkeella `▼`. Listaa dynaamisesti alayksiköt osoitteineen, kuvauksineen sekä kunkin yksikön alle suoraan sidotut omat vastuuhenkilöt).
-    2. **Yhteyshenkilöt** (Listaa organisaation muut yleiset kontaktit).
-    3. **Ostetut tuotteet ja palvelut** (Koko sivun leveä taulukko dynaamisilla muokkauslinkeillä).
-  - Modal-lomakkeet ja JavaScript: Suojattu latauksenaikaisilta `backdrop`-virheiltä. Lomakkeet alustetaan ja tuhotaan muistista (`dispose()`) lennosta klikkauksesta. `lisaaPalveluyksikkoModal` ja `muokkaaPyModal` tukevat dynaamista hyvinvointialueen ja ensimmäisen yhteyshenkilön syöttöä.
-- **`asetukset.jsp`**: Tuoterekisteri dynaamisella yksikkölistauksella, joka reagoi lennosta uusiin yksiköihin (kuten `km`).
+- **`asiakasprofiili.jsp`**: Organisaation perustiedot, pääyhteyshenkilö-kortti, lokit, palveluyksiköt ja ostetut palvelut.
+- **`asetukset.jsp`**: Tuoterekisteri ja **Tapahtumatyypit**. Tapahtumatyyppien taulukko listaa ID:n ja nimen (`${tt.id}`, `${tt.nimi}`). Muokkausmodal (`#muokkaaTyyppiModal`) lähettää muuttujan `name="nimi"` ja sen kohdepolku päivitetään JavaScriptillä muotoon `/asetukset/muokkaa-typpia/{id}`.
 - **`tarjoukset.jsp`**: Tarjouslaskentasivu JavaScript-rivimonistuksella ja valmiilla uudella **25.5 % ALV**-verokannalla.
-- **`dashboard.jsp`**, `asiakkaat.jsp` (live Fetch-haku), `kalenteri.jsp`, `raportit.jsp`.
+- **`kalenteri.jsp`**: 
+  - Alustaa FullCalendar 6 -näkymän. Sekä uuden varauksen modal (`#lisaaTapahtumaModal`) että muokkausmodal (`#muokkaaTapahtumaModal`) käyttävät dynaamista `<select>`-pudotusvalikkoa, jonka `<option value="${t.id}">${t.nimi}</option>` sitoo valinnan tyypin numeeriseen ID-arvoon merkkijonon sijaan.
+  - FullCalendarin `valmiitTapahtumat`-listaan tuodaan dynaaminen `tyyppiId: '${tap.tyyppi.id}'`. `eventClick`-käsittelijä asettaa muokkausvalikon dynaamiseksi arvoksi tämän `tyyppiId`-kentän arvon, jolloin oikea tyyppi näkyy dynaamisesti valittuna modalissa. Värikoodaus lennossa ehdolla `tap.tyyppi.nimi`.
+- **`dashboard.jsp`**, `asiakkaat.jsp` (live Fetch-haku), `raportit.jsp`.

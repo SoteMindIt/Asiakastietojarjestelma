@@ -3,10 +3,12 @@ package fi.sotemindit.astori.controller;
 import fi.sotemindit.astori.model.Kayttaja;
 import fi.sotemindit.astori.model.Tuote;
 import fi.sotemindit.astori.model.TuoteYksikko;
-import fi.sotemindit.astori.model.AlvKanta; // UUSI TUONTI
+import fi.sotemindit.astori.model.AlvKanta;
 import fi.sotemindit.astori.model.Yritystiedot;
 import fi.sotemindit.astori.repository.KayttajaRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
+import fi.sotemindit.astori.model.TapahtumaTyyppi;
+import fi.sotemindit.astori.repository.TapahtumaTyyppiRepository;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
@@ -31,7 +33,11 @@ public class AsetuksetController {
 	@Autowired
 	private fi.sotemindit.astori.repository.YritystiedotRepository yritystiedotRepository;
 
-	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat tiedot
+	@Autowired
+	private TapahtumaTyyppiRepository tapahtumaTyyppiRepository;
+
+	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat
+	// tiedot
 	@GetMapping("/asetukset")
 	public String naytaAsetukset(HttpSession session, Model model) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -57,8 +63,10 @@ public class AsetuksetController {
 		// Tuotteiden yksiköt. Esim. Km, kpl, tuntia jne
 		model.addAttribute("yksikot", TuoteYksikko.values());
 
-		// UUSI: Viedään kaikki ALV-kannat JSP-sivua varten
+		//Viedään kaikki ALV-kannat JSP-sivua varten
 		model.addAttribute("alvKannat", AlvKanta.values());
+		//Viedään kaikki tapahtumatyypit 
+		model.addAttribute("kaikkiTapahtumaTyypit", tapahtumaTyyppiRepository.findAll());
 
 		return "asetukset"; // Avaa asetukset.jsp
 	}
@@ -130,6 +138,7 @@ public class AsetuksetController {
 		kayttajaRepository.save(muokattava);
 		return "redirect:/asetukset?success=user_updated";
 	}
+
 	// 4. REITTI: Näyttää uuden tuotteen lisäyslomakkeen (lisaa-tuote.jsp)
 	@GetMapping("/asetukset/lisaa-tuote")
 	public String naytaUusiTuoteLomake(HttpSession session, Model model) {
@@ -181,7 +190,8 @@ public class AsetuksetController {
 	// 6. REITTI: Muokkaa olemassa olevan tuotteen tietoja ja ALV-kantaa
 	@PostMapping("/asetukset/muokkaa-tuotetta/{id}")
 	public String muokkaaTuotetta(HttpSession session, @PathVariable Long id, @RequestParam String nimi,
-			@RequestParam String kuvaus, @RequestParam java.math.BigDecimal hinta, @RequestParam String yksikko, @RequestParam String alvKanta) {
+			@RequestParam String kuvaus, @RequestParam java.math.BigDecimal hinta, @RequestParam String yksikko,
+			@RequestParam String alvKanta) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
@@ -211,6 +221,7 @@ public class AsetuksetController {
 		tuoteRepository.save(muokattava);
 		return "redirect:/asetukset?success=product_updated";
 	}
+
 	@PostMapping("/asetukset/tallenna-yritys")
 	public String tallennaYrityksenTiedot(HttpSession session, @RequestParam String nimi, @RequestParam String yTunnus,
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
@@ -222,8 +233,7 @@ public class AsetuksetController {
 			return "redirect:/login";
 		}
 
-		Yritystiedot yritys = yritystiedotRepository.findById(1L)
-				.orElse(new Yritystiedot());
+		Yritystiedot yritys = yritystiedotRepository.findById(1L).orElse(new Yritystiedot());
 
 		yritys.setId(1L);
 		yritys.setNimi(nimi);
@@ -283,4 +293,25 @@ public class AsetuksetController {
 			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 		}
 	}
+
+	// 2. UUDEN TAPAHTUMATYYPIN LISÄYS
+    @PostMapping("/asetukset/lisaa-tyyppi")
+    public String lisaaTapahtumaTyyppi(@RequestParam String nimi, HttpSession session) {
+        if (session.getAttribute("kirjautunutKayttaja") == null) return "redirect:/login";
+        
+        tapahtumaTyyppiRepository.save(new TapahtumaTyyppi(nimi.trim()));
+        return "redirect:/asetukset";
+    }
+
+ // 3. TAPAHTUMATYYPIN MUOKKAUS (POST)
+    @PostMapping("/asetukset/muokkaa-tyyppia/{id}") // Ääkkönen vaihdettu a:ksi
+    public String paivitaTapahtumaTyyppi(@PathVariable Long id, @RequestParam String nimi, HttpSession session) {
+        if (session.getAttribute("kirjautunutKayttaja") == null) return "redirect:/login";
+
+        TapahtumaTyyppi tyyppi = tapahtumaTyyppiRepository.findById(id).orElseThrow();
+        tyyppi.setNimi(nimi.trim());
+        tapahtumaTyyppiRepository.save(tyyppi);
+
+        return "redirect:/asetukset";
+    }
 }
