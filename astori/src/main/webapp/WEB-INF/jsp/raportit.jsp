@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core"%>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt"%>
 <!DOCTYPE html>
 <html lang="fi">
 <head>
@@ -76,7 +77,6 @@ body {
 						<h2 class="text-dark fw-bold mb-0">${asiakkaatYhteensa}</h2>
 					</div>
 					<div class="bg-primary bg-opacity-10 text-primary rounded p-3">
-						<!-- 💡 KORJAUS: Päivitetty standardinmukainen W3C-osoite SVG-kuvakkeelle -->
 						<svg xmlns="http://w3.org" width="24" height="24"
 							fill="currentColor" class="bi bi-people-fill" viewBox="0 0 16 16">
 							<path
@@ -92,10 +92,9 @@ body {
 					<div>
 						<h6 class="text-uppercase text-muted fw-bold mb-1"
 							style="font-size: 0.8rem; letter-spacing: 1px;">Lokitapahtumat</h6>
-						<h2 class="text-dark fw-bold mb-0">${lokirivit != null ? lokirivit.size() : 0}</h2>
+						<h2 class="text-dark fw-bold mb-0">${lokirivejaYhteensa}</h2>
 					</div>
 					<div class="bg-info bg-opacity-10 text-info rounded p-3">
-						<!-- 💡 KORJAUS: Päivitetty standardinmukainen W3C-osoite SVG-kuvakkeelle -->
 						<svg xmlns="http://w3.org" width="24" height="24"
 							fill="currentColor" class="bi bi-shield-check"
 							viewBox="0 0 16 16">
@@ -107,9 +106,35 @@ body {
 			</div>
 		</div>
 
+		<!-- HAKU- JA SUODATUSLOMAKE (UUSI) -->
+		<div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
+			<form action="${pageContext.request.contextPath}/raportit" method="get" class="row g-2 align-items-end">
+				<!-- Nollataan sivunumero aina uutta hakua tehdessä -->
+				<input type="hidden" name="sivu" value="0">
+				
+				<div class="col-md-4 col-sm-6">
+					<label for="alkuPvm" class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
+					<input type="date" id="alkuPvm" name="alkuPvm" class="form-control form-control-sm" value="${alkuPvm}">
+				</div>
+				
+				<div class="col-md-4 col-sm-6">
+					<label for="loppuPvm" class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
+					<input type="date" id="loppuPvm" name="loppuPvm" class="form-control form-control-sm" value="${loppuPvm}">
+				</div>
+				
+				<div class="col-md-4 col-12 d-flex gap-2">
+					<button type="submit" class="btn btn-sm btn-primary fw-bold px-3 w-100 rounded-pill">
+						🔍 Hae lokit
+					</button>
+					<a href="${pageContext.request.contextPath}/raportit" class="btn btn-sm btn-outline-secondary px-3 w-100 rounded-pill">
+						Tyhjennä
+					</a>
+				</div>
+			</form>
+		</div>
+
 		<!-- AUDIT TRAIL LOKI -->
-		<h4 class="text-secondary mb-3">Auditoitava käyttöloki (Audit
-			Trail)</h4>
+		<h4 class="text-secondary mb-3">Auditoitava käyttöloki (Audit Trail)</h4>
 		<div class="table-responsive border">
 			<table class="table table-hover align-middle mb-0">
 				<thead class="table-light">
@@ -124,7 +149,9 @@ body {
 					<c:forEach var="rivi" items="${lokirivit}">
 						<tr>
 							<td class="text-muted text-nowrap">
-								${rivi.aikaleima.toString().replace('T', ' ').substring(0, 19)}
+								<c:if test="${not empty rivi.aikaleima}">
+									${rivi.aikaleima.toString().replace('T', ' ').substring(0, 19)}
+								</c:if>
 							</td>
 							<td><span class="badge bg-secondary p-2">${rivi.kayttajatunnus}</span></td>
 							<td><span
@@ -143,12 +170,43 @@ body {
 					<c:if test="${empty lokirivit}">
 						<tr>
 							<td colspan="4" class="text-center py-4 text-muted">Lokiin
-								ei ole vielä tallentunut yhtään tapahtumaa.</td>
+								ei ole vielä tallentunut yhtään tapahtumaa valitulla aikavälillä.</td>
 						</tr>
 					</c:if>
 				</tbody>
 			</table>
 		</div>
+
+		<!-- BOOTSTRAP 5 SIVUTUSOHJAUS (Säilyttää päivämäärät siirryttäessä sivulta toiselle) -->
+		<c:if test="${kokonaissivut > 1}">
+			<nav aria-label="Lokin sivutus" class="d-flex justify-content-center mt-4">
+				<ul class="pagination pagination-sm mb-0">
+					
+					<!-- Edellinen sivu -->
+					<li class="page-item ${nykyinenSivu == 0 ? 'disabled' : ''}">
+						<a class="page-link" href="${pageContext.request.contextPath}/raportit?sivu=${nykyinenSivu - 1}&alkuPvm=${alkuPvm}&loppuPvm=${loppuPvm}">
+							&laquo; Edellinen
+						</a>
+					</li>
+					
+					<!-- Sivunumerot -->
+					<c:forEach var="i" begin="0" end="${kokonaissivut - 1}">
+						<li class="page-item ${nykyinenSivu == i ? 'active' : ''}">
+							<a class="page-link" href="${pageContext.request.contextPath}/raportit?sivu=${i}&alkuPvm=${alkuPvm}&loppuPvm=${loppuPvm}">${i + 1}</a>
+						</li>
+					</c:forEach>
+					
+					<!-- Seuraava sivu -->
+					<li class="page-item ${nykyinenSivu == kokonaissivut - 1 ? 'disabled' : ''}">
+						<a class="page-link" href="${pageContext.request.contextPath}/raportit?sivu=${nykyinenSivu + 1}&alkuPvm=${alkuPvm}&loppuPvm=${loppuPvm}">
+							Seuraava &raquo;
+						</a>
+					</li>
+					
+				</ul>
+			</nav>
+		</c:if>
+
 	</div>
 
 	<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->

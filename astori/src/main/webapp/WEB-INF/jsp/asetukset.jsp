@@ -257,14 +257,29 @@ body {
 						method="post" class="row g-3 mb-4 align-items-end">
 						<div class="col-md-5">
 							<label for="lisaaNimi"
-								class="form-label fw-semibold text-secondary">Selkokielinen
-								nimi (esim. Etäkokous)</label> <input type="text" class="form-control"
-								id="lisaaNimi" name="nimi" required
-								placeholder="Näkyy käyttäjälle järjestelmässä">
+								class="form-label fw-semibold text-secondary small">Selkokielinen
+								nimi (esim. Etäkokous)</label> <input type="text"
+								class="form-control form-control-sm" id="lisaaNimi" name="nimi"
+								required placeholder="Näkyy käyttäjälle järjestelmässä">
 						</div>
-						<div class="col-md-2">
-							<button type="submit" class="btn btn-primary w-100 fw-bold">+
-								Lisää</button>
+						<!-- UUSI: Värivalinta lisäykseen -->
+						<div class="col-md-4">
+							<label for="lisaaVari"
+								class="form-label fw-semibold text-secondary small">Kalenteriväri</label>
+							<select name="vari" id="lisaaVari"
+								class="form-select form-select-sm" required>
+								<option value="#0d6efd">Sininen</option>
+								<option value="#dc3545">Punainen</option>
+								<option value="#198754">Vihreä</option>
+								<option value="#ffc107">Keltainen</option>
+								<option value="#fd7e14">Oranssi</option>
+								<option value="#6f42c1">Violetti</option>
+							</select>
+						</div>
+						<div class="col-md-3">
+							<button type="submit"
+								class="btn btn-sm btn-primary w-100 fw-bold py-2 rounded-pill">+
+								Lisää tyyppi</button>
 						</div>
 					</form>
 
@@ -272,10 +287,11 @@ body {
 
 					<!-- TAULUKKOLISTAUS -->
 					<div class="table-responsive">
-						<table class="table table-hover table-striped align-middle mb-0">
-							<thead class="table-light">
+						<table
+							class="table table-hover table-striped align-middle mb-0 small">
+							<thead class="table-light text-secondary">
 								<tr>
-									<th>ID</th>
+									<th>Väri</th>
 									<th>Tapahtumatyyppi</th>
 									<th class="text-end">Toiminnot</th>
 								</tr>
@@ -283,20 +299,25 @@ body {
 							<tbody>
 								<c:forEach var="tt" items="${kaikkiTapahtumaTyypit}">
 									<tr>
-										<td><code>${tt.id}</code></td>
-										<td class="fw-bold">${tt.nimi}</td>
+
+
+										<td><span
+											class="d-inline-block rounded-circle shadow-sm border border-secondary border-opacity-25"
+											style="width: 16px; height: 16px; background-color: ${tt.vari}; vertical-align: middle;">
+										</span></td>
+										<td class="fw-bold text-dark">${tt.nimi}</td>
 										<td class="text-end">
-											<!-- Triggeröi muokkausmodalin ja ajaa JS-alustuksen -->
+											<!-- Triggeröi muokkausmodalin ja ajaa päivitetyn JS-alustuksen (lisätty tt.vari) -->
 											<button type="button"
-												class="btn btn-sm btn-outline-dark fw-semibold"
-												onclick="avaaTyypinMuokkaus('${tt.id}', '${tt.nimi}')">
-												Muokkaa nimeä</button>
+												class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-semibold"
+												onclick="avaaTyypinMuokkaus('${tt.id}', '${tt.nimi}', '${tt.vari}')">
+												Muokkaa</button>
 										</td>
 									</tr>
 								</c:forEach>
 								<c:if test="${empty kaikkiTapahtumaTyypit}">
 									<tr>
-										<td colspan="3" class="text-center text-muted py-3">Järjestelmään
+										<td colspan="4" class="text-center text-muted py-3 italic">Järjestelmään
 											ei ole vielä syötetty dynaamisia tapahtumatyyppejä.</td>
 									</tr>
 								</c:if>
@@ -305,6 +326,53 @@ body {
 					</div>
 				</div>
 			</div>
+
+			<!-- POP-UP MODAL TYYPIN NIMEN JA VÄRIN MUOKKAUKSELLE -->
+			<div class="modal fade" id="muokkaaTyyppiModal" tabindex="-1"
+				data-bs-backdrop="static" data-bs-keyboard="true" aria-hidden="true">
+				<div class="modal-dialog modal-dialog-centered">
+					<div class="modal-content border-0 shadow-lg">
+						<div class="modal-header bg-dark text-white">
+							<h5 class="modal-title fw-bold">Muokkaa tapahtumatyyppiä</h5>
+							<button type="button" class="btn-close btn-close-white"
+								data-bs-dismiss="modal"></button>
+						</div>
+						<form id="muokkaaTyyppiForm" method="post">
+							<div class="modal-body p-4">
+								<div class="mb-3">
+									<label for="muokkaaNimi"
+										class="form-label fw-semibold text-secondary small">Nimi</label>
+									<input type="text" class="form-control" id="muokkaaNimi"
+										name="nimi" required>
+								</div>
+								<!-- UUSI: Värivalinta muokkaukseen -->
+								<div class="mb-3">
+									<label for="muokkaaVari"
+										class="form-label fw-semibold text-secondary small">Kalenteriväri</label>
+									<select name="vari" id="muokkaaVari" class="form-select"
+										required>
+										<option value="#0d6efd">Sininen</option>
+										<option value="#dc3545">Punainen</option>
+										<option value="#198754">Vihreä</option>
+										<option value="#ffc107">Keltainen</option>
+										<option value="#fd7e14">Oranssi</option>
+										<option value="#6f42c1">Violetti</option>
+									</select>
+								</div>
+							</div>
+							<div class="modal-footer bg-light d-flex justify-content-between">
+								<button type="button"
+									class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+									data-bs-dismiss="modal">Peruuta</button>
+								<button type="submit"
+									class="btn btn-sm btn-success rounded-pill px-4 fw-bold">Tallenna
+									muutokset</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
 
 			<!-- POP-UP MODAL TYYPIN NIMEN MUOKKAUKSELLE -->
 			<div class="modal fade" id="muokkaaTyyppiModal" tabindex="-1"
@@ -582,22 +650,30 @@ body {
 
 	<!-- Scriptit -->
 	<script>
-		function avaaTyypinMuokkaus(id, nykyinenNimi) {
-			// Haetaan lomake ja sen tekstikenttä uusin tunnistein
-			const form = document.getElementById('muokkaaTyyppiForm');
-			const input = document.getElementById('muokkaaNimi');
+		function avaaTyypinMuokkaus(id, nimi, vari) {
+			// Asetetaan lomakkeen kohde-URL ääkkösettömään reittiin
+			var form = document.getElementById('muokkaaTyyppiForm');
+			if (form) {
+				form.action = "${pageContext.request.contextPath}/asetukset/muokkaa-typpia/"
+						+ id;
+			}
 
-			// Asetetaan nykyinen nimi tekstikenttään valmiiksi muokkausta varten
-			input.value = nykyinenNimi;
+			// Täytetään nimen arvo kenttään
+			var nimiKentta = document.getElementById('muokkaaNimi');
+			if (nimiKentta) {
+				nimiKentta.value = nimi;
+			}
 
-			// Päivitetään lomakkeen lähetysosoite sisältämään muokattavan tyypin ID
-			// Muuta polku (/asetukset/muokkaa/) vastaamaan omaa kontrolleriasi
-			form.action = "${pageContext.request.contextPath}/asetukset/muokkaa-tyyppia/" + id;
+			// UUSI: Täytetään tallennettu värikoodi valituksi pudotusvalikkoon
+			var variSelect = document.getElementById('muokkaaVari');
+			if (variSelect) {
+				variSelect.value = vari || "#0d6efd"; // Oletuksena sininen jos väriä ei löydy
+			}
 
-			// Avataan Bootstrap-modali ohjelmallisesti
-			const muokkausModal = new bootstrap.Modal(document
+			// Avataan modal-ikkuna ohjelmallisesti
+			var muokkaaModal = new bootstrap.Modal(document
 					.getElementById('muokkaaTyyppiModal'));
-			muokkausModal.show();
+			muokkaaModal.show();
 		}
 	</script>
 

@@ -63,9 +63,9 @@ public class AsetuksetController {
 		// Tuotteiden yksiköt. Esim. Km, kpl, tuntia jne
 		model.addAttribute("yksikot", TuoteYksikko.values());
 
-		//Viedään kaikki ALV-kannat JSP-sivua varten
+		// Viedään kaikki ALV-kannat JSP-sivua varten
 		model.addAttribute("alvKannat", AlvKanta.values());
-		//Viedään kaikki tapahtumatyypit 
+		// Viedään kaikki tapahtumatyypit
 		model.addAttribute("kaikkiTapahtumaTyypit", tapahtumaTyyppiRepository.findAll());
 
 		return "asetukset"; // Avaa asetukset.jsp
@@ -295,23 +295,27 @@ public class AsetuksetController {
 	}
 
 	// 2. UUDEN TAPAHTUMATYYPIN LISÄYS
-    @PostMapping("/asetukset/lisaa-tyyppi")
-    public String lisaaTapahtumaTyyppi(@RequestParam String nimi, HttpSession session) {
-        if (session.getAttribute("kirjautunutKayttaja") == null) return "redirect:/login";
-        
-        tapahtumaTyyppiRepository.save(new TapahtumaTyyppi(nimi.trim()));
-        return "redirect:/asetukset";
-    }
+	@PostMapping("/asetukset/lisaa-tyyppi")
+	public String lisaaTapahtumaTyyppi(@RequestParam("nimi") String nimi, @RequestParam("vari") String vari) {
 
- // 3. TAPAHTUMATYYPIN MUOKKAUS (POST)
-    @PostMapping("/asetukset/muokkaa-tyyppia/{id}") // Ääkkönen vaihdettu a:ksi
-    public String paivitaTapahtumaTyyppi(@PathVariable Long id, @RequestParam String nimi, HttpSession session) {
-        if (session.getAttribute("kirjautunutKayttaja") == null) return "redirect:/login";
+		TapahtumaTyyppi uusiTyyppi = new TapahtumaTyyppi();
+		uusiTyyppi.setNimi(nimi);
+		uusiTyyppi.setVari(vari); // Asetetaan valittu väri koodina
 
-        TapahtumaTyyppi tyyppi = tapahtumaTyyppiRepository.findById(id).orElseThrow();
-        tyyppi.setNimi(nimi.trim());
-        tapahtumaTyyppiRepository.save(tyyppi);
+		tapahtumaTyyppiRepository.save(uusiTyyppi);
+		return "redirect:/asetukset";
+	}
 
-        return "redirect:/asetukset";
-    }
+	@PostMapping("/asetukset/muokkaa-typpia/{id}")
+	public String muokkaaTapahtumaTyyppi(@PathVariable Long id, @RequestParam("nimi") String uusiNimi,
+			@RequestParam("vari") String vari) {
+
+		TapahtumaTyyppi tyyppi = tapahtumaTyyppiRepository.findById(id).orElse(null);
+		if (tyyppi != null) {
+			tyyppi.setNimi(uusiNimi);
+			tyyppi.setVari(vari); // Päivitetään väri
+			tapahtumaTyyppiRepository.save(tyyppi);
+		}
+		return "redirect:/asetukset";
+	}
 }

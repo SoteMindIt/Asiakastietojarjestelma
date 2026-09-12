@@ -58,10 +58,13 @@ body {
 
 			<div class="navbar-nav me-auto">
 				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a>
-				<a class="nav-link" href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> 
-				<a class="nav-link" href="${pageContext.request.contextPath}/asetukset">Asetukset</a> 
-				<a class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
-				<a class="nav-link active fw-bold" href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
+				<a class="nav-link"
+					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a
+					class="nav-link"
+					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
+					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
+				<a class="nav-link active fw-bold"
+					href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
 			</div>
 
 			<div class="d-flex align-items-center">
@@ -100,11 +103,11 @@ body {
 					<div class="modal-body p-4">
 
 						<div class="mb-3">
-							<label for="tyyppi" class="form-label fw-semibold text-secondary">Tapahtuman tyyppi</label> 
-							<select class="form-select" id="tyyppi" name="tyyppi" required>
+							<label for="tyyppi" class="form-label fw-semibold text-secondary">Tapahtuman
+								tyyppi</label> <select class="form-select" id="tyyppi" name="tyyppi"
+								required>
 								<option value="">-- Valitse tyyppi --</option>
 								<c:forEach var="t" items="${tapahtumaTyypit}">
-									<!-- 💡 KORJATTU: value tallentaa nyt ID:n, ei koko oliota -->
 									<option value="${t.id}">${t.nimi}</option>
 								</c:forEach>
 							</select>
@@ -122,24 +125,28 @@ body {
 									<option data-id="${a.id}" value="${a.nimi}"></option>
 								</c:forEach>
 							</datalist>
-							<small class="form-text text-muted">Jätä tyhjäksi, jos kyseessä on sisäinen merkintä.</small>
+							<small class="form-text text-muted">Jätä tyhjäksi, jos
+								kyseessä on sisäinen merkintä.</small>
 						</div>
 
 						<div class="mb-3">
 							<label for="otsikko"
-								class="form-label fw-semibold text-secondary">Otsikko / Aihe</label> 
-							<input type="text" class="form-control" id="otsikko" name="otsikko" required
+								class="form-label fw-semibold text-secondary">Otsikko /
+								Aihe</label> <input type="text" class="form-control" id="otsikko"
+								name="otsikko" required
 								placeholder="esim. Sopimusneuvottelu, Seurantapuhelu">
 						</div>
 
 						<div class="mb-3">
 							<label for="ajankohtaStr"
-								class="form-label fw-semibold text-secondary">Ajankohta ja kellonaika</label> 
-							<input type="datetime-local" class="form-control" id="ajankohtaStr" name="ajankohtaStr" required>
+								class="form-label fw-semibold text-secondary">Ajankohta
+								ja kellonaika</label> <input type="datetime-local" class="form-control"
+								id="ajankohtaStr" name="ajankohtaStr" required>
 						</div>
 
 						<div class="mb-3">
-							<label for="kuvaus" class="form-label fw-semibold text-secondary">Lisätiedot / Muistiinpanot</label>
+							<label for="kuvaus" class="form-label fw-semibold text-secondary">Lisätiedot
+								/ Muistiinpanot</label>
 							<textarea class="form-control" id="kuvaus" name="kuvaus" rows="3"
 								placeholder="Mitä sovitaan tai käydään läpi..."></textarea>
 						</div>
@@ -148,7 +155,8 @@ body {
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary"
 							data-bs-dismiss="modal">Peruuta</button>
-						<button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna kalenteriin</button>
+						<button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna
+							kalenteriin</button>
 					</div>
 				</form>
 			</div>
@@ -170,24 +178,28 @@ body {
 					<input type="hidden" name="lahde" value="kalenteri">
 					<div class="modal-body p-4 text-start">
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Otsikko / Aihe</label> 
-							<input type="text" class="form-control" id="muokkaaOtsikko" name="otsikko" required>
+							<label class="form-label fw-semibold text-secondary">Otsikko
+								/ Aihe</label> <input type="text" class="form-control"
+								id="muokkaaOtsikko" name="otsikko" required>
 						</div>
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Tapahtuman tyyppi</label> 
-							<select class="form-select" id="muokkaaTyyppi" name="tyyppi" required>
+							<label class="form-label fw-semibold text-secondary">Tapahtuman
+								tyyppi</label> <select class="form-select" id="muokkaaTyyppi"
+								name="tyyppi" required>
 								<c:forEach var="t" items="${tapahtumaTyypit}">
 									<option value="${t.id}">${t.nimi}</option>
 								</c:forEach>
 							</select>
 						</div>
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Ajankohta ja kellonaika</label> 
-							<input type="datetime-local" class="form-control" id="muokkaaAjankohta" name="ajankohtaStr" required>
+							<label class="form-label fw-semibold text-secondary">Ajankohta
+								ja kellonaika</label> <input type="datetime-local" class="form-control"
+								id="muokkaaAjankohta" name="ajankohtaStr" required>
 						</div>
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Liitetty asiakas</label> 
-							<select class="form-select" id="muokkaaAsiakasId" name="asiakasId">
+							<label class="form-label fw-semibold text-secondary">Liitetty
+								asiakas</label> <select class="form-select" id="muokkaaAsiakasId"
+								name="asiakasId">
 								<option value="">-- Ei kytketty asiakkaaseen --</option>
 								<c:forEach var="a" items="${kaikkiAsiakkaat}">
 									<option value="${a.id}">${a.nimi}</option>
@@ -195,8 +207,10 @@ body {
 							</select>
 						</div>
 						<div class="mb-3">
-							<label class="form-label fw-semibold text-secondary">Lisätiedot / Muistiinpanot</label>
-							<textarea class="form-control" id="muokkaaKuvaus" name="kuvaus" rows="3"></textarea>
+							<label class="form-label fw-semibold text-secondary">Lisätiedot
+								/ Muistiinpanot</label>
+							<textarea class="form-control" id="muokkaaKuvaus" name="kuvaus"
+								rows="3"></textarea>
 						</div>
 					</div>
 					<div class="modal-footer bg-light d-flex justify-content-between">
@@ -213,9 +227,11 @@ body {
 		</div>
 	</div>
 
-	<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+	<!-- Bootstrap Bundle suoraan resources-juuresta -->
+	<script
+		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 
-	<!-- 💡 TURVALLINEN HTML-SÄILÖ -->
+	<!-- 💡 TURVALLINEN HTML-SÄILÖ (Korjattu: Ei rivinvaihtoja tai sisennyksiä tagien välissä) -->
 	<div style="display: none;">
 		<c:forEach var="tap" items="${tapahtumat}">
 			<div id="tap-kuvaus-${tap.id}">
@@ -223,7 +239,9 @@ body {
 			</div>
 		</c:forEach>
 	</div>
-		<!-- ==================== JAVASCRIPT-TOIMINNOT ==================== -->
+
+	<!-- ==================== JAVASCRIPT-TOIMINNOT ==================== -->
+
 	<script>
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar')
@@ -238,37 +256,45 @@ body {
                     <c:set var="ktunnus" value=" [${tap.kayttaja.kayttajatunnus}]" />
                 </c:if>
 
+                <c:set var="tyypinNimi" value="${not empty tap.tyyppi ? tap.tyyppi.nimi : 'Yleinen'}" />
+                
+                // --- ASIAKKAAN NIMEN LIITTÄMINEN JA LYHENNYS (UUSI) ---
+                <c:set var="asiakasOsuus" value="" />
+                <c:if test="${not empty tap.asiakas}">
+                    <c:choose>
+                        <%-- Jos nimi on yli 10 merkkiä, katkaistaan se ja lisätään kolme pistettä --%>
+                        <c:when test="${fn:length(tap.asiakas.nimi) > 10}">
+                            <c:set var="asiakasOsuus" value=", ${fn:substring(tap.asiakas.nimi, 0, 10)}..." />
+                        </c:when>
+                        <%-- Jos nimi on 10 merkkiä tai lyhyempi, näytetään se sellaisenaan --%>
+                        <c:otherwise>
+                            <c:set var="asiakasOsuus" value=", ${tap.asiakas.nimi}" />
+                        </c:otherwise>
+                    </c:choose>
+                </c:if>
+
                 valmiitTapahtumat.push({
                     id: '${tap.id}',
-                    title: `<c:out value="${tap.otsikko}"/><c:out value="${ktunnus}"/>`,
+                    // 💡 PÄIVITETTY: Kalenteriruudun otsikkoon leivotaan nyt tyyppi, lyhennetty asiakas ja käyttäjätunnus
+                    title: `<c:out value="${tyypinNimi}"/><c:out value="${asiakasOsuus}"/><c:out value="${ktunnus}"/>`,
                     start: '${tap.ajankohta.toString()}',
                     extendedProps: {
+                    	tyypinNimi: `<c:out value="${tyypinNimi}"/>`,
+                        alkuperainenOtsikko: `<c:out value="${tap.otsikko}"/>`,
                         description: (() => {
                             let el = document.getElementById('tap-kuvaus-${tap.id}');
                             return el ? (el.innerText || el.textContent) : '';
                         })(),
                         asiakasId: '${not empty tap.asiakas ? tap.asiakas.id : ""}',
                         asiakasNimi: `<c:out value="${not empty tap.asiakas ? tap.asiakas.nimi : ''}"/>`,
-                        // 💡 KORJATTU: Luetaan dynaaminen ID uuden rakenteen mukaisesti
                         tyyppiId: '${not empty tap.tyyppi ? tap.tyyppi.id : ""}'
                     },
-                    // 💡 KORJATTU: Värikoodauksen ehdot mätsäävät nyt tap.tyyppi.nimi -kenttään
-                    <c:choose>
-                        <c:when test="${tap.tyyppi.nimi == 'Puhelu' || tap.tyyppi.nimi == 'Soitto'}">
-                            backgroundColor: '#ffc107', borderColor: '#ffc107', textColor: '#000000'
-                        </c:when>
-                        <c:when test="${tap.tyyppi.nimi == 'Tapaaminen'}">
-                            backgroundColor: '#198754', borderColor: '#198754', textColor: '#ffffff'
-                        </c:when>
-                        <c:when test="${tap.tyyppi.nimi == 'Sähköposti'}">
-                            backgroundColor: '#0dcaf0', borderColor: '#0dcaf0', textColor: '#000000'
-                        </c:when>
-                        <c:otherwise>
-                            backgroundColor: '#0d6efd', borderColor: '#0d6efd', textColor: '#ffffff'
-                        </c:otherwise>
-                    </c:choose>
+                    backgroundColor: '${not empty tap.tyyppi ? tap.tyyppi.vari : "#0d6efd"}',
+                    borderColor: '${not empty tap.tyyppi ? tap.tyyppi.vari : "#0d6efd"}',
+                    textColor: '${tap.tyyppi.vari == "#ffc107" ? "#000000" : "#ffffff"}'
                 }); 
             </c:forEach>
+
 
             /* 2. Alustetaan kalenteri */
             var calendar = new FullCalendar.Calendar(calendarEl, {
@@ -290,15 +316,17 @@ body {
                 eventClick: function(info) {
                     info.jsEvent.preventDefault()
                     
+                    // 💡 KORJATTU: Luetaan otsikko suoraan puhtaasta extendedProps-muuttujasta
                     var otsikkoKentta = document.getElementById('muokkaaOtsikko')
                     if (otsikkoKentta) {
-                        let fullTitle = info.event.title || ''
-                        otsikkoKentta.value = fullTitle.includes(' [') ? fullTitle.split(' [')[0] : fullTitle
+                        otsikkoKentta.value = info.event.extendedProps.alkuperainenOtsikko || '';
                     }
+                    
                     var kuvausKentta = document.getElementById('muokkaaKuvaus')
                     if (kuvausKentta) {
-                        kuvausKentta.value = info.event.extendedProps.description || ''
+                        kuvausKentta.value = (info.event.extendedProps.description || '').trim()
                     }
+                    
                     var ajankohtaKentta = document.getElementById('muokkaaAjankohta')
                     if (ajankohtaKentta && info.event.start) {
                         let pvm = new Date(info.event.start)
@@ -310,7 +338,6 @@ body {
                         ajankohtaKentta.value = vuosi + '-' + kuukausi + '-' + paiva + 'T' + tunnit + ':' + minuutit
                     }
                     
-                    // 💡 KORJATTU: Asetetaan tyyppiId, jotta <select> osaa dynaamisesti valita oikean <option>-rivin ID:n perusteella
                     var tyyppiSelect = document.getElementById('muokkaaTyyppi')
                     if(tyyppiSelect) {
                         tyyppiSelect.value = info.event.extendedProps.tyyppiId || ""
@@ -326,7 +353,6 @@ body {
                         form.action = "${pageContext.request.contextPath}/kalenteri/paivita/" + info.event.id
                     }
 
-                    // Poistopainikkeen suora ohjaus oikeaan reittiin
                     var poistoNappi = document.getElementById('poistaTapahtumaPainike');
                     if (poistoNappi) {
                         var uusiPoistoNappi = poistoNappi.cloneNode(true);
@@ -362,9 +388,30 @@ body {
                     lastClickTime = currentTime
                 },
                 
+                // 💡 UUSI: Tooltip-alustus, kun tapahtuma piirretään ruudulle
+                eventDidMount: function(info) {
+                    var props = info.event.extendedProps;
+                    
+                    // Rakennetaan siisti HTML-sisältö tooltipille
+                    var tooltipSisalto = 
+                        '<strong>Tyyppi:</strong> ' + props.tyypinNimi + '<br>' +
+                        '<strong>Otsikko:</strong> ' + props.alkuperainenOtsikko + '<br>' +
+                        '<strong>Asiakas:</strong> ' + props.asiakasNimi + '<br>' +
+                        '<strong>Lisätiedot:</strong> ' + (props.description.trim() || 'Ei merkintöjä');
+
+                    // Alustetaan Bootstrap 5 Tooltip kyseiselle kalenterielementille
+                    new bootstrap.Tooltip(info.el, {
+                        title: tooltipSisalto,
+                        placement: 'top',
+                        trigger: 'hover',
+                        container: 'body',
+                        html: true // Sallii <strong> ja <br> tagit laatikon sisällä
+                    });
+                },
+                
                 events: valmiitTapahtumat
-            })
-            
+            });
+
             /* 3. Piirretään valmis kalenteri ruudulle */
             calendar.render()
 
@@ -385,8 +432,8 @@ body {
                 document.getElementById('asiakasHaku').value = ""
                 document.getElementById('asiakasId').value = ""
             })
-        })
-    </script>
+        });
+	</script>
+
 </body>
 </html>
-	
