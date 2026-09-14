@@ -4,6 +4,10 @@ import jakarta.servlet.http.HttpSession;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,8 +19,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import fi.sotemindit.astori.model.Loki;
+import fi.sotemindit.astori.model.Asiakas;
+import fi.sotemindit.astori.model.Kirjaus;
 import fi.sotemindit.astori.repository.LokiRepository;
 import fi.sotemindit.astori.repository.AsiakasRepository;
+import fi.sotemindit.astori.repository.KirjausRepository;
 
 @Controller
 public class RaportitController {
@@ -26,57 +33,77 @@ public class RaportitController {
 
 	@Autowired
 	private AsiakasRepository asiakasRepository;
+	
+	@Autowired
+	private KirjausRepository kirjausRepository;
 
-	// RAPORTTISIVU: Listaa järjestelmän yleiset raportit ja auditoitavan
-	// käyttölokin sivutettuna (100 riviä / sivu) hakuaikavälillä
 	@GetMapping("/raportit")
 	public String naytaRaportit(
 			HttpSession session, 
 			@RequestParam(value = "sivu", defaultValue = "0") int sivu,
+			@RequestParam(value = "kSivu", defaultValue = "0") int kirjausSivu, 
 			@RequestParam(value = "alkuPvm", required = false) String alkuPvmStr,
 			@RequestParam(value = "loppuPvm", required = false) String loppuPvmStr,
 			Model model) {
 
-		// 1. Istuntotarkistus: Varmistetaan, että käyttäjä on kirjautunut sisään
+		// 1. Istuntotarkistus
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		// 2. Sivutuskonfiguraatio: Pyydetään 100 riviä kerrallaan
-		Pageable pageable = PageRequest.of(sivu, 100);
-		Page<Loki> lokiSivu;
-		long lokirivejaYhteensa;
+		// Asetetaan aikavälit
+		LocalDateTime alkuAika;
+		LocalDateTime loppuAika;
+		boolean kaytossaOletus30Pv = false;
 
-		// 3. Aikavälihaku tai yleishaku ehtojen mukaan
 		if (alkuPvmStr != null && !alkuPvmStr.trim().isEmpty() && loppuPvmStr != null && !loppuPvmStr.trim().isEmpty()) {
-			// Muutetaan String -> LocalDate (esim "2026-03-15")
-			LocalDate alkuPvm = LocalDate.parse(alkuPvmStr);
-			LocalDate loppuPvm = LocalDate.parse(loppuPvmStr);
-
-			// Laajennetaan LocalDate kattamaan koko vuorokausi (alku klo 00:00:00 ja loppu klo 23:59:59)
-			LocalDateTime alkuAika = alkuPvm.atStartOfDay();
-			LocalDateTime loppuAika = loppuPvm.atTime(LocalTime.MAX);
-
-			lokiSivu = lokiRepository.findByAikaleimaBetweenOrderByAikaleimaDesc(alkuAika, loppuAika, pageable);
-			lokirivejaYhteensa = lokiSivu.getTotalElements(); // Palauttaa suoraan kyseisen haun kokonaisrivimäärän
+			alkuAika = LocalDate.parse(alkuPvmStr).atStartOfDay();
+			loppuAika = LocalDate.parse(loppuPvmStr).atTime(LocalTime.MAX);
 		} else {
-			// Jos hakuehtoja ei ole, haetaan kaikki kuten ennenkin
-			lokiSivu = lokiRepository.findAllByOrderByAikaleimaDesc(pageable);
-			lokirivejaYhteensa = lokiRepository.count();
+			// OLETUS: Viimeiset 30 vuorokautta [2026]
+			LocalDate tanaan = LocalDate.now();
+			LocalDate kuukausiSitten = tanaan.minusDays(30);
+			alkuAika = kuukausiSitten.atStartOfDay();
+			loppuAika = tanaan.atTime(LocalTime.MAX);
+			
+			alkuPvmStr = kuukausiSitten.toString();
+			loppuPvmStr = tanaan.toString();
+			kaytossaOletus30Pv = true;
 		}
 
-		// Haetaan asiakkaiden kokonaismäärä tilastokorttia varten
-		long asiakkaatYhteensa = asiakasRepository.count();
+		// 2. HAETAAN KÄYTTÖLOKI (Audit Trail) - 100 riviä
+		Pageable lokiPageable = PageRequest.of(sivu, 100);
+		Page<Loki> lokiSivu = lokiRepository.findByAikaleimaBetweenOrderByAikaleimaDesc(alkuAika, loppuAika, lokiPageable);
 
-		// 4. Datan vieminen raportit.jsp-sivulle
-		model.addAttribute("asiakkaatYhteensa", asiakkaatYhteensa);
-		model.addAttribute("lokirivit", lokiSivu.getContent()); // Vain kyseisen sivun 100 riviä
+		// 3. HAETAAN ASIAKASKIRJAUKSET - 20 riviä per sivu
+		Pageable kirjausPageable = PageRequest.of(kirjausSivu, 20);
+		Page<Kirjaus> haetutKirjauksetSivu = kirjausRepository.findByLuontiaikaBetweenOrderByLuontiaikaDesc(alkuAika, loppuAika, kirjausPageable);
+
+		// Ryhmitetään haetut sivutetut kirjaukset asiakasID:n mukaan karttaan (Map)
+		Map<Long, List<Kirjaus>> kirjauksetKartta = haetutKirjauksetSivu.getContent().stream()
+				.collect(Collectors.groupingBy(k -> k.getAsiakas().getId()));
+
+		// Haetaan kaikki asiakkaat haitariotsikoita varten
+		List<Asiakas> kaikkiAsiakkaat = asiakasRepository.findAll();
+
+		// 4. DATAN REKISTERÖINTI JSP-SIVULLE
+		model.addAttribute("asiakkaatYhteensa", asiakasRepository.count());
+		model.addAttribute("haitariAsiakkaat", kaikkiAsiakkaat);
+		model.addAttribute("kirjauksetKartta", kirjauksetKartta); // Viedään kartta JSP-sivulle
+		
+		// Audit Trail -sivutusmuuttujat
+		model.addAttribute("lokirivit", lokiSivu.getContent());
 		model.addAttribute("nykyinenSivu", sivu);
 		model.addAttribute("kokonaissivut", lokiSivu.getTotalPages());
-		model.addAttribute("lokirivejaYhteensa", lokirivejaYhteensa);
-		
-		// Lähetetään arvot takaisin sivulle, jotta ne jäävät input-kenttiin näkyviin haun jälkeen
+		model.addAttribute("lokirivejaYhteensa", lokiSivu.getTotalElements());
+
+		// Kirjaushaitari -sivutusmuuttujat
+		model.addAttribute("nykyinenKirjausSivu", kirjausSivu);
+		model.addAttribute("kirjausKokonaissivut", haetutKirjauksetSivu.getTotalPages());
+		model.addAttribute("kirjauksiaYhteensa", haetutKirjauksetSivu.getTotalElements());
+		model.addAttribute("kaytossaOletus30Pv", kaytossaOletus30Pv);
+
 		model.addAttribute("alkuPvm", alkuPvmStr);
 		model.addAttribute("loppuPvm", loppuPvmStr);
 

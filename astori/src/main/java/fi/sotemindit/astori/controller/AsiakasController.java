@@ -133,6 +133,10 @@ public class AsiakasController {
 
 		uusiAsiakas.setKayttaja(nykyinenKayttaja);
 		asiakasRepository.save(uusiAsiakas);
+		
+		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS",
+				"Luotu uusi asiakasorganisaatio: " + uusiAsiakas.getNimi() + " (ID: " + uusiAsiakas.getId() + ")"));
+		
 		return "redirect:/asiakkaat";
 	}
 
