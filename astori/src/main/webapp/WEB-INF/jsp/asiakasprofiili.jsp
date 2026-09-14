@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core"%>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt"%>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html>
 <html lang="fi">
 <head>
@@ -13,17 +14,12 @@
 <style>
 body {
 	background-color: #f8f9fa;
-	.
-	rotate-180
-	{
-	transform
-	:
-	rotate(
-	180deg
-	);
 }
 
+.rotate-180 {
+	transform: rotate(180deg);
 }
+
 .profile-card {
 	background: white;
 	border-radius: 8px;
@@ -99,7 +95,7 @@ body {
 						</div>
 					</div>
 
-					<!-- 💡 LISÄTYT PAINIKKEET: Kaikki toimintapainikkeet siististi nimen oikealla puolelle -->
+					<!-- TOIMINTAPAINIKKEET -->
 					<div class="d-flex gap-2 align-items-center flex-wrap">
 						<button type="button"
 							class="btn btn-sm btn-outline-dark fw-bold py-1.5 px-2.5 small rounded-pill"
@@ -118,8 +114,6 @@ body {
 							class="btn btn-sm btn-outline-secondary py-1.5 px-2.5 small rounded-pill"
 							style="font-size: 0.85em;" data-bs-toggle="modal"
 							data-bs-target="#lisaaYhModal">+ Yhteyshenkilö</button>
-
-						<!-- Alkuperäinen muokkauspainike muutettu avaamaan modal-ikkunan -->
 						<button type="button"
 							class="btn btn-sm btn-primary fw-bold py-1.5 px-3 shadow-sm rounded-pill ms-md-2"
 							style="font-size: 0.85em;" data-bs-toggle="modal"
@@ -129,7 +123,6 @@ body {
 
 				<!-- PERUSTIEDOT KAKSISARAKKEISENA -->
 				<div class="row g-4 mb-4">
-
 					<!-- Vasen sarake: Yrityksen omat perustiedot -->
 					<div class="col-md-6">
 						<div class="pe-md-3">
@@ -203,11 +196,8 @@ body {
 							</c:if>
 						</div>
 					</div>
-
 				</div>
-
 			</div>
-
 			<!-- /asiakas-katselu -->
 			<c:if test="${not empty asiakas.kuvaus}">
 				<div class="mb-4 p-3 bg-white rounded-3 border">
@@ -220,10 +210,9 @@ body {
 				</div>
 			</c:if>
 
-
 			<!-- 💡 LOKI JA MUISTIINPANOT (Kokoontaitettava versio nuoli-indikaattorilla) -->
 			<div class="mb-4">
-				<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
+				<div class="border bg-white p-3 rounded-3">
 
 					<!-- Klikattava otsikkorivi, joka toimii haitarin kytkimenä -->
 					<div class="d-flex justify-content-between align-items-center"
@@ -236,7 +225,7 @@ body {
 							style="letter-spacing: 0.5px; font-size: 0.75em;">📋
 							Asiakkaan loki ja muistiinpanot (${kirjaukset.size()})</h6>
 
-						<!-- Dynaaminen nuolikuvake, joka kääntyy (oma luokka erottamaan muista haitareista) -->
+						<!-- Dynaaminen nuolikuvake, joka kääntyy -->
 						<span class="accordion-nuoli-loki text-muted fw-bold"
 							style="transition: transform 0.2s ease; display: inline-block;">
 							▼ </span>
@@ -297,15 +286,13 @@ body {
 
 				</div>
 			</div>
-			<!-- /asiakas-katselu -->
-
 
 			<!-- TÄYSLEVEÄT KORTIT ALLEKKAIN (Korjaa tyhjät aukot sivuilla) -->
 			<div class="row g-4 mb-4">
 
-				<!-- UUSI KORTTI: PALVELUYKSIKÖT (Kokoontaitettava versio nuoli-indikaattorilla) -->
+				<!-- KORTTI: PALVELUYKSIKÖT (Kokoontaitettava versio nuoli-indikaattorilla) -->
 				<div class="col-12">
-					<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
+					<div class="border bg-white p-3 rounded-3">
 
 						<!-- Klikattava otsikkorivi, joka toimii kytkimenä -->
 						<div class="d-flex justify-content-between align-items-center"
@@ -324,7 +311,6 @@ body {
 								▼ </span>
 						</div>
 
-						<!-- TÄMÄ OSIO ON OLETUSARVOISESTI PIILOSSA (Ota 'show' pois class-listasta jos haluat piiloon heti latauksessa) -->
 						<div class="collapse mt-3" id="palveluyksikotCollapse">
 							<c:choose>
 								<c:when test="${not empty asiakas.palveluyksikot}">
@@ -422,922 +408,906 @@ body {
 
 					</div>
 				</div>
-
 			</div>
-
-
+			<!-- /row g-4 mb-4 palveluyksiköt -->
 			<!-- KORTTI: YHTEYSHENKILÖT (Kokoontaitettava versio nuoli-indikaattorilla) -->
-			<div class="col-12">
-				<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
+			<div class="row g-4 mb-4">
+				<div class="col-12">
+					<div class="border bg-white p-3 rounded-3">
 
-					<!-- Klikattava otsikkorivi, joka toimii kytkimenä -->
-					<div class="d-flex justify-content-between align-items-center"
-						style="cursor: pointer;" data-bs-toggle="collapse"
-						data-bs-target="#yhteyshenkilotCollapse" aria-expanded="false"
-						aria-controls="yhteyshenkilotCollapse"
-						onclick="this.querySelector('.accordion-nuoli-yh').classList.toggle('rotate-180')">
+						<!-- Klikattava otsikkorivi, joka toimii kytkimenä -->
+						<div class="d-flex justify-content-between align-items-center"
+							style="cursor: pointer;" data-bs-toggle="collapse"
+							data-bs-target="#yhteyshenkilotCollapse" aria-expanded="false"
+							aria-controls="yhteyshenkilotCollapse"
+							onclick="this.querySelector('.accordion-nuoli-yh').classList.toggle('rotate-180')">
 
-						<h3 class="fw-bold h6 text-secondary text-uppercase mb-0"
-							style="letter-spacing: 0.5px;">👥 Kaikki yhteyshenkilöt
-							(${yhteyshenkilot.size()})</h3>
+							<h3 class="fw-bold h6 text-secondary text-uppercase mb-0"
+								style="letter-spacing: 0.5px;">👥 Kaikki yhteyshenkilöt
+								(${yhteyshenkilot.size()})</h3>
 
-						<!-- Dynaaminen nuolikuvake, joka kääntyy (oma luokka erottamaan palveluyksiköistä) -->
-						<span class="accordion-nuoli-yh text-muted fw-bold"
-							style="transition: transform 0.2s ease; display: inline-block;">
-							▼ </span>
-					</div>
+							<!-- Dynaaminen nuolikuvake, joka kääntyy -->
+							<span class="accordion-nuoli-yh text-muted fw-bold"
+								style="transition: transform 0.2s ease; display: inline-block;">
+								▼ </span>
+						</div>
 
-					<!-- TÄMÄ OSIO ON OLETUSARVOISESTI PIILOSSA (Aukeaa klikkaamalla) -->
-					<div class="collapse mt-3" id="yhteyshenkilotCollapse">
-						<c:choose>
-							<c:when test="${not empty yhteyshenkilot}">
-								<div class="d-flex flex-wrap gap-3">
-									<c:forEach var="h" items="${yhteyshenkilot}">
-										<div
-											class="card p-3 shadow-sm border bg-light d-flex flex-row justify-content-between align-items-center"
-											style="min-width: 280px; flex: 1 1 30%;">
-											<div>
-												<div class="d-flex align-items-center gap-2 flex-wrap">
-													<strong class="text-dark small d-block">${h.nimi}</strong>
+						<!-- TÄMÄ OSIO ON OLETUSARVOISESTI PIILOSSA (Aukeaa klikkaamalla) -->
+						<div class="collapse mt-3" id="yhteyshenkilotCollapse">
+							<c:choose>
+								<c:when test="${not empty yhteyshenkilot}">
+									<div class="d-flex flex-wrap gap-3">
+										<c:forEach var="h" items="${yhteyshenkilot}">
+											<div
+												class="card p-3 shadow-sm border bg-light d-flex flex-row justify-content-between align-items-center"
+												style="min-width: 280px; flex: 1 1 30%;">
+												<div>
+													<div class="d-flex align-items-center gap-2 flex-wrap">
+														<strong class="text-dark small d-block">${h.nimi}</strong>
 
-													<!-- Jos henkilö kuuluu tiettyyn palveluyksikköön, näytetään siitä siisti badge -->
-													<c:if test="${not empty h.palveluyksikko}">
-														<span
-															class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill"
-															style="font-size: 0.7em;"> 🏢
-															${h.palveluyksikko.nimi} </span>
-													</c:if>
+														<!-- Jos henkilö kuuluu tiettyyn palveluyksikköön, näytetään siitä siisti badge -->
+														<c:if test="${not empty h.palveluyksikko}">
+															<span
+																class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill"
+																style="font-size: 0.7em;"> 🏢
+																${h.palveluyksikko.nimi} </span>
+														</c:if>
+													</div>
+													<span class="text-muted d-block" style="font-size: 0.8em;">${h.rooli}</span>
+													<div class="text-muted mt-2" style="font-size: 0.75em;">
+														<div class="mb-1">✉️ ${h.sahkoposti}</div>
+														<div>📞 ${h.puhelin}</div>
+													</div>
 												</div>
-												<span class="text-muted d-block" style="font-size: 0.8em;">${h.rooli}</span>
-												<div class="text-muted mt-2" style="font-size: 0.75em;">
-													<div class="mb-1">✉️ ${h.sahkoposti}</div>
-													<div>📞 ${h.puhelin}</div>
-												</div>
+												<button type="button"
+													class="btn btn-sm btn-outline-primary py-1 px-2 muokkaa-yh-btn"
+													data-id="${h.id}" data-nimi="${h.nimi}"
+													data-rooli="${h.rooli}" data-email="${h.sahkoposti}"
+													data-puh="${h.puhelin}" style="font-size: 0.8em;">
+													Muokkaa</button>
 											</div>
-											<button type="button"
-												class="btn btn-sm btn-outline-primary py-1 px-2 muokkaa-yh-btn"
-												data-id="${h.id}" data-nimi="${h.nimi}"
-												data-rooli="${h.rooli}" data-email="${h.sahkoposti}"
-												data-puh="${h.puhelin}" style="font-size: 0.8em;">
-												Muokkaa</button>
-										</div>
-									</c:forEach>
+										</c:forEach>
+									</div>
+								</c:when>
+								<c:otherwise>
+									<div
+										class="p-3 bg-light rounded text-center text-muted small italic">
+										Asiakkaalle ei ole vielä luotu yhteyshenkilöitä. Voit lisätä
+										ensimmäisen yläpuolelta.</div>
+								</c:otherwise>
+							</c:choose>
+						</div>
+
+					</div>
+				</div>
+			</div>
+			<!-- /yhteyshenkilöt -->
+
+
+			<!-- KORTTI: MYYDYT PALVELUT -->
+			<div class="row g-4 mb-4">
+				<div class="col-12">
+					<div class="border bg-white p-3 rounded-3">
+						<div
+							class="d-flex justify-content-between align-items-center mb-3">
+							<h3 class="fw-bold h6 text-secondary text-uppercase mb-0"
+								style="letter-spacing: 0.5px;">🛒 Ostetut tuotteet ja
+								palvelut</h3>
+							<c:if test="${not empty ostetutTuotteet}">
+								<!-- Ryhmitetään badget allekkain oikeaan reunaan -->
+								<div class="d-flex flex-column align-items-end gap-2">
+
+									<!-- 1. Verollinen kokonaisarvo -->
+									<span
+										class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-3 py-1.5 rounded-2">
+										Asiakkuuden kokonaisarvo (sis. ALV): <c:set
+											var="yhteissummaVerollinen" value="0" /> <c:forEach var="ot"
+											items="${ostetutTuotteet}">
+											<c:set var="yhteissummaVerollinen"
+												value="${yhteissummaVerollinen + ot.verollinenKokonaishinta}" />
+										</c:forEach> <fmt:formatNumber value="${yhteissummaVerollinen}"
+											type="currency" currencySymbol="€" />
+									</span>
+
+									<!-- 2. Veroton myynti yhteensä -->
+									<span
+										class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fw-bold px-3 py-1.5 rounded-2">
+										Veroton myynti yhteensä (Alv 0%): <c:set
+											var="yhteissummaVeroton" value="0" /> <c:forEach var="ot"
+											items="${ostetutTuotteet}">
+											<c:set var="yhteissummaVeroton"
+												value="${yhteissummaVeroton + ot.kokonaishinta}" />
+										</c:forEach> <fmt:formatNumber value="${yhteissummaVeroton}"
+											type="currency" currencySymbol="€" />
+									</span>
+
+								</div>
+							</c:if>
+						</div>
+
+						<c:choose>
+							<c:when test="${not empty ostetutTuotteet}">
+								<div class="table-responsive">
+									<table
+										class="table table-sm table-hover mb-0 align-middle small">
+										<thead class="table-light text-secondary">
+											<tr>
+												<th>Tuote / Palvelu</th>
+												<th>Määrä</th>
+												<th>Yksikköhinta (Alv 0%)</th>
+												<th>Ostopäivä</th>
+												<th class="text-end">Yhteensä (Alv 0%)</th>
+												<th class="text-end">ALV-kanta</th>
+												<th class="text-end">Yhteensä (Verollinen)</th>
+												<th class="text-end">Toiminnot</th>
+											</tr>
+										</thead>
+										<tbody>
+											<c:forEach var="ot" items="${ostetutTuotteet}">
+												<tr>
+													<td><span class="fw-bold text-dark">${ot.tuote.nimi}</span></td>
+													<td>${ot.maara}${ot.tuote.yksikko.lyhenne}</td>
+													<td><fmt:formatNumber value="${ot.myyntihinta}"
+															type="currency" currencySymbol="€" /></td>
+													<td><fmt:parseDate value="${ot.ostopaivamaara}"
+															pattern="yyyy-MM-dd" var="parsedOstoPvm" type="date" />
+														<fmt:formatDate value="${parsedOstoPvm}"
+															pattern="dd.MM.yyyy" /></td>
+
+													<td class="text-end text-secondary"><fmt:formatNumber
+															value="${ot.kokonaishinta}" type="currency"
+															currencySymbol="€" /></td>
+
+													<td class="text-end text-muted"><fmt:formatNumber
+															value="${ot.alvKanta.prosentti}" maxFractionDigits="1" />
+														%</td>
+
+													<td class="text-end fw-bold text-dark"><fmt:formatNumber
+															value="${ot.verollinenKokonaishinta}" type="currency"
+															currencySymbol="€" /></td>
+
+													<td class="text-end">
+														<button type="button"
+															class="btn btn-sm btn-outline-primary rounded-pill px-3 muokkaa-palvelu-painike"
+															data-bs-toggle="modal"
+															data-bs-target="#keskitettyMuokkaaPalveluModal"
+															data-id="${ot.id}" data-tuote="${ot.tuote.nimi}"
+															data-maara="${ot.maara}" data-hinta="${ot.myyntihinta}"
+															data-pvm="${ot.ostopaivamaara}">Muokkaa</button>
+														<button type="button"
+															class="btn btn-sm btn-outline-danger rounded-pill px-3 avaapoistomodal"
+															data-bs-toggle="modal"
+															data-bs-target="#varmistaPoistoModal" data-id="${ot.id}"
+															data-tuote="${ot.tuote.nimi}">Poista</button>
+													</td>
+												</tr>
+											</c:forEach>
+										</tbody>
+									</table>
 								</div>
 							</c:when>
 							<c:otherwise>
 								<div
 									class="p-3 bg-light rounded text-center text-muted small italic">
-									Asiakkaalle ei ole vielä luotu yhteyshenkilöitä. Voit lisätä
-									ensimmäisen yläpuolelta.</div>
+									Ei kirjattuja hankintoja. Voit kirjata uuden hankinnan
+									yläpuolelta.</div>
 							</c:otherwise>
 						</c:choose>
 					</div>
-
 				</div>
 			</div>
-
-
-			<!-- 2. KORTTI: MYYDYT PALVELUT (Kattava taulukko verottomilla ja verollisilla summilla) -->
-			<div class="col-12">
-				<div class="profile-card border bg-white shadow-sm p-3 rounded-3">
-					<div class="d-flex justify-content-between align-items-center mb-3">
-						<h3 class="fw-bold h6 text-secondary text-uppercase mb-0"
-							style="letter-spacing: 0.5px;">🛒 Ostetut tuotteet ja
-							palvelut</h3>
-						<c:if test="${not empty ostetutTuotteet}">
-							<!-- Ryhmitetään badget allekkain oikeaan reunaan -->
-							<div class="d-flex flex-column align-items-end gap-2">
-
-								<!-- 1. Verollinen kokonaisarvo -->
-								<span
-									class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-3 py-1.5 rounded-2">
-									Asiakkuuden kokonaisarvo (sis. ALV): <c:set
-										var="yhteissummaVerollinen" value="0" /> <c:forEach var="ot"
-										items="${ostetutTuotteet}">
-										<c:set var="yhteissummaVerollinen"
-											value="${yhteissummaVerollinen + ot.verollinenKokonaishinta}" />
-									</c:forEach> <fmt:formatNumber value="${yhteissummaVerollinen}"
-										type="currency" currencySymbol="€" />
-								</span>
-
-								<!-- 2. UUSI: Veroton myynti yhteensä -->
-								<span
-									class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fw-bold px-3 py-1.5 rounded-2">
-									Veroton myynti yhteensä (Alv 0%): <c:set
-										var="yhteissummaVeroton" value="0" /> <c:forEach var="ot"
-										items="${ostetutTuotteet}">
-										<c:set var="yhteissummaVeroton"
-											value="${yhteissummaVeroton + ot.kokonaishinta}" />
-									</c:forEach> <fmt:formatNumber value="${yhteissummaVeroton}"
-										type="currency" currencySymbol="€" />
-								</span>
-
-							</div>
-						</c:if>
-					</div>
-
-					<c:choose>
-						<c:when test="${not empty ostetutTuotteet}">
-							<div class="table-responsive">
-								<table
-									class="table table-sm table-hover mb-0 align-middle small">
-									<thead class="table-light text-secondary">
-										<tr>
-											<th>Tuote / Palvelu</th>
-											<th>Määrä</th>
-											<th>Yksikköhinta (Alv 0%)</th>
-											<th>Ostopäivä</th>
-											<th class="text-end">Yhteensä (Alv 0%)</th>
-											<th class="text-end">ALV-kanta</th>
-											<th class="text-end">Yhteensä (Verollinen)</th>
-											<th class="text-end">Toiminnot</th>
-										</tr>
-									</thead>
-									<tbody>
-										<c:forEach var="ot" items="${ostetutTuotteet}">
-											<tr>
-												<td><span class="fw-bold text-dark">${ot.tuote.nimi}</span></td>
-												<!-- Välilyönti määrän ja yksikön välissä -->
-												<td>${ot.maara} ${ot.tuote.yksikko.lyhenne}</td>
-												<td><fmt:formatNumber value="${ot.myyntihinta}"
-														type="currency" currencySymbol="€" /></td>
-												<td><fmt:parseDate value="${ot.ostopaivamaara}"
-														pattern="yyyy-MM-dd" var="parsedOstoPvm" type="date" /> <fmt:formatDate
-														value="${parsedOstoPvm}" pattern="dd.MM.yyyy" /></td>
-
-												<!-- Veroton yhteissumma -->
-												<td class="text-end text-secondary"><fmt:formatNumber
-														value="${ot.kokonaishinta}" type="currency"
-														currencySymbol="€" /></td>
-
-												<!-- ALV-prosentti (esim. 25,5 %) -->
-												<td class="text-end text-muted"><fmt:formatNumber
-														value="${ot.alvKanta.prosentti}" maxFractionDigits="1" />
-													%</td>
-
-												<!-- Verollinen yhteissumma -->
-												<td class="text-end fw-bold text-dark"><fmt:formatNumber
-														value="${ot.verollinenKokonaishinta}" type="currency"
-														currencySymbol="€" /></td>
-
-												<td class="text-end">
-													<!-- MUOKKAA-PAINIKE (Säilytetty modal-yhteensopivana) -->
-													<button type="button"
-														class="btn btn-sm btn-outline-primary rounded-pill px-3 muokkaa-palvelu-painike"
-														data-bs-toggle="modal"
-														data-bs-target="#keskitettyMuokkaaPalveluModal"
-														data-id="${ot.id}" data-tuote="${ot.tuote.nimi}"
-														data-maara="${ot.maara}" data-hinta="${ot.myyntihinta}"
-														data-pvm="${ot.ostopaivamaara}">Muokkaa</button> <!-- POISTA-PAINIKE -->
-													<button type="button"
-														class="btn btn-sm btn-outline-danger rounded-pill px-3 avaapoistomodal"
-														data-bs-toggle="modal"
-														data-bs-target="#varmistaPoistoModal" data-id="${ot.id}"
-														data-tuote="${ot.tuote.nimi}">Poista</button>
-												</td>
-											</tr>
-										</c:forEach>
-									</tbody>
-								</table>
-							</div>
-						</c:when>
-						<c:otherwise>
-							<div
-								class="p-3 bg-light rounded text-center text-muted small italic">
-								Ei kirjattuja hankintoja. Voit kirjata uuden hankinnan
-								yläpuolelta.</div>
-						</c:otherwise>
-					</c:choose>
-				</div>
-			</div>
-
+			<!-- /ostetut tuotteet -->
 
 
 			<!-- LISTAUS ASIAKKAAN AIEMMISTA TARJOUKSISTA -->
-			<div class="profile-card border mt-4">
-				<h3 class="fw-bold h5 text-dark mb-3">Tallennetut tarjoukset
-					(${tarjouksetMaara})</h3>
-				<div class="table-responsive">
-					<table class="table table-sm table-hover mb-0 align-middle">
-						<thead class="table-light">
-							<tr>
-								<th>Tarjousnumero</th>
-								<th>Päivämäärä</th>
-								<th>Voimassaolo</th>
-								<th class="text-end">Summa (Verollinen)</th>
-								<th class="text-end">Toiminnot</th>
-							</tr>
-						</thead>
-						<tbody>
-							<c:forEach var="t" items="${tarjoukset}">
-								<tr>
-									<td><strong>${t.tarjousNumero}</strong></td>
-									<td>${t.pvm}</td>
-									<td>${t.voimassaoloPvm}</td>
-									<td class="text-end fw-bold text-success">${t.verollinenYhteensa}
-										€</td>
-									<td class="text-end"><a
-										href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf"
-										class="btn btn-sm btn-outline-secondary px-2">Lataa PDF</a></td>
-								</tr>
-							</c:forEach>
-							<c:if test="${empty tarjoukset}">
-								<tr>
-									<td colspan="5" class="text-center text-muted py-3">Ei
-										tallennettuja tarjouksia.</td>
-								</tr>
-							</c:if>
-						</tbody>
-					</table>
+			<div class="row g-4 mb-4">
+				<div class="col-12">
+					<div class="border bg-white p-3 rounded-3">
+						<h3 class="fw-bold h5 text-dark mb-3">Tallennetut tarjoukset
+							(${tarjouksetMaara})</h3>
+						<div class="table-responsive">
+							<table class="table table-sm table-hover mb-0 align-middle">
+								<thead class="table-light">
+									<tr>
+										<th>Tarjousnumero</th>
+										<th>Päivämäärä</th>
+										<th>Voimassaolo</th>
+										<th class="text-end">Summa (Verollinen)</th>
+										<th class="text-end">Toiminnot</th>
+									</tr>
+								</thead>
+								<tbody>
+									<c:forEach var="t" items="${tarjoukset}">
+										<tr>
+											<td><strong>${t.tarjousNumero}</strong></td>
+											<td>${t.pvm}</td>
+											<td>${t.voimassaoloPvm}</td>
+											<td class="text-end fw-bold text-success">${t.verollinenYhteensa}
+												€</td>
+											<td class="text-end"><a
+												href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf"
+												class="btn btn-sm btn-outline-secondary px-2">Lataa PDF</a></td>
+										</tr>
+									</c:forEach>
+									<c:if test="${empty tarjoukset}">
+										<tr>
+											<td colspan="5" class="text-center text-muted py-3">Ei
+												tallennettuja tarjouksia.</td>
+										</tr>
+									</c:if>
+								</tbody>
+							</table>
+						</div>
+					</div>
 				</div>
 			</div>
+			<!-- /tarjoukset -->
 
 		</div>
-		<!-- /container -->
-		<!-- ==================== MODAL-IKKUNAT ==================== -->
+		<!-- /profile-card pääsulku -->
+	</div>
+	<!-- /container pääsulku -->
+	<!-- ==================== MODAL-IKKUNAT ==================== -->
 
-		<!-- MODAL: KESKITETTY ASIAKASTUOTTEEN MUOKKAUS -->
-		<div class="modal fade" id="keskitettyMuokkaaPalveluModal"
-			tabindex="-1" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content border-0 shadow-lg">
-					<div class="modal-header bg-primary text-white">
-						<h5 class="modal-title fw-bold" id="muokkaaOtsikko">Muokkaa
-							riviä</h5>
-						<button type="button" class="btn-close btn-close-white"
-							data-bs-dismiss="modal"></button>
-					</div>
-					<form id="muokkaaPalveluForm" action="" method="post">
-						<!-- Kontrollerisi vaatimat kytkökset: asiakasId ja dynaaminen ostopäivämäärä -->
-						<input type="hidden" name="asiakasId" value="${asiakas.id}">
-						<input type="hidden" id="muokkaaPvm" name="ostopaivamaara">
-
-						<div class="modal-body p-4">
-							<div class="mb-3">
-								<label class="form-label small fw-bold text-secondary">Tuote
-									/ Palvelu</label> <input type="text" class="form-control bg-light"
-									id="muokkaaTuoteNimi" readonly>
-							</div>
-							<div class="row">
-								<div class="col-md-6 mb-3">
-									<label class="form-label small fw-bold text-secondary">Määrä</label>
-									<input type="number" min="1" class="form-control"
-										id="muokkaaMaara" name="maara" required>
-								</div>
-								<div class="col-md-6 mb-3">
-									<label class="form-label small fw-bold text-secondary">Myyntihinta
-										(€)</label> <input type="number" step="0.01" min="0"
-										class="form-control" id="muokkaaHinta" name="myyntihinta"
-										required>
-								</div>
-							</div>
-						</div>
-						<div class="modal-footer bg-light">
-							<button type="button" class="btn btn-secondary"
-								data-bs-dismiss="modal">Peruuta</button>
-							<button type="submit" class="btn btn-primary fw-bold px-4">Tallenna
-								muutokset</button>
-						</div>
-					</form>
+	<!-- MODAL: KESKITETTY ASIAKASTUOTTEEN MUOKKAUS -->
+	<div class="modal fade" id="keskitettyMuokkaaPalveluModal"
+		tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<div class="modal-header bg-primary text-white">
+					<h5 class="modal-title fw-bold" id="muokkaaOtsikko">Muokkaa
+						riviä</h5>
+					<button type="button" class="btn-close btn-close-white"
+						data-bs-dismiss="modal"></button>
 				</div>
-			</div>
-		</div>
+				<form id="muokkaaPalveluForm" action="" method="post">
+					<input type="hidden" name="asiakasId" value="${asiakas.id}">
+					<input type="hidden" id="muokkaaPvm" name="ostopaivamaara">
 
-		<!-- MODAL: POISTON VARMISTUS -->
-		<div class="modal fade" id="varmistaPoistoModal" tabindex="-1"
-			aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content border-0 shadow-lg">
-					<div class="modal-header bg-danger text-white">
-						<h5 class="modal-title fw-bold">Varmista poisto</h5>
-						<button type="button" class="btn-close btn-close-white"
-							data-bs-dismiss="modal"></button>
-					</div>
 					<div class="modal-body p-4">
-						<p>
-							Haluatko varmasti poistaa tuotteen <strong
-								id="poistettavaTuoteNimi"></strong> asiakkaan kortilta?
-						</p>
-						<p class="text-danger small fw-semibold mb-0">Tämä poistaa
-							tuotteen pysyvästi asiakkaan ostohistoriasta.</p>
+						<div class="mb-3">
+							<label class="form-label small fw-bold text-secondary">Tuote
+								/ Palvelu</label> <input type="text" class="form-control bg-light"
+								id="muokkaaTuoteNimi" readonly>
+						</div>
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label class="form-label small fw-bold text-secondary">Määrä</label>
+								<input type="number" min="1" class="form-control"
+									id="muokkaaMaara" name="maara" required>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label small fw-bold text-secondary">Myyntihinta
+									(€)</label> <input type="number" step="0.01" min="0"
+									class="form-control" id="muokkaaHinta" name="myyntihinta"
+									required>
+							</div>
+						</div>
 					</div>
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary"
 							data-bs-dismiss="modal">Peruuta</button>
-						<form id="poistaPalveluForm" action="" method="post"
-							style="display: inline;">
-							<button type="submit" class="btn btn-danger fw-bold px-4">Kyllä,
-								poista tuote</button>
-						</form>
+						<button type="submit" class="btn btn-primary fw-bold px-4">Tallenna
+							muutokset</button>
 					</div>
-				</div>
+				</form>
 			</div>
 		</div>
+	</div>
 
-		<!-- 1. MODAL UUDEN PALVELUYKSIKÖN LISÄÄMISEEN  -->
-		<div class="modal fade" id="lisaaPalveluyksikkoModal" tabindex="-1"
-			aria-labelledby="lisaaPalveluyksikkoModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered modal-lg">
-				<div class="modal-content border-0 shadow-lg">
-					<form
-						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-palveluyksikko"
-						method="post">
-						<div class="modal-header bg-dark text-white">
-							<h5 class="modal-title fw-bold"
-								id="lisaaPalveluyksikkoModalLabel">Lisää uusi
-								palveluyksikkö</h5>
-							<button type="button" class="btn-close btn-close-white"
-								data-bs-dismiss="modal" aria-label="Close"></button>
-						</div>
-						<div class="modal-body p-4 text-start">
-							<div class="mb-3">
-								<label class="form-label fw-bold text-secondary small">Palveluyksikön
-									/ Toimipisteen nimi *</label> <input type="text" class="form-control"
-									name="nimi"
-									placeholder="esim. Hoivakoti Hopeatähti tai Osasto B" required>
-							</div>
-
-							<div class="row g-3">
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Hyvinvointialue</label>
-									<select class="form-select" name="hyvinvointialue">
-										<option value="">-- Valitse hyvinvointialue (jos eri)
-											--</option>
-										<c:forEach var="alue" items="${hyvinvointialueet}">
-											<option value="${alue}">${alue.nimi}</option>
-										</c:forEach>
-									</select>
-								</div>
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Katuosoite</label>
-									<input type="text" class="form-control" name="katuosoite"
-										placeholder="esim. Puistotie 4">
-								</div>
-							</div>
-
-							<div class="row g-3">
-								<div class="col-md-4 mb-3">
-									<label class="form-label fw-bold text-secondary small">Postinumero</label>
-									<input type="text" class="form-control" name="postinumero"
-										placeholder="00100" maxlength="10">
-								</div>
-								<div class="col-md-8 mb-3">
-									<label class="form-label fw-bold text-secondary small">Postitoimipaikka</label>
-									<input type="text" class="form-control" name="postitoimipaikka"
-										placeholder="Helsinki">
-								</div>
-							</div>
-
-							<div class="row g-3">
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Yksikön
-										puhelinnumero</label> <input type="tel" class="form-control"
-										name="puhelin" placeholder="esim. 040 123 4567">
-								</div>
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Yksikön
-										sähköposti</label> <input type="email" class="form-control"
-										name="sahkoposti" placeholder="yksikko@yritys.fi">
-								</div>
-							</div>
-
-							<!-- 💡 UUSI OSIO: Yksikön ensimmäisen yhteyshenkilön tiedot (Vapaaehtoinen) -->
-							<div class="p-3 bg-light rounded-3 border mb-3 mt-2">
-								<h6
-									class="fw-bold text-uppercase text-secondary mb-3 shadow-sm-none"
-									style="font-size: 0.75em; letter-spacing: 0.5px;">👤
-									Yksikön yhteyshenkilö / Vastuuhenkilö</h6>
-
-								<div class="mb-3">
-									<label class="form-label text-dark small fw-normal mb-1">Yhteyshenkilön
-										nimi</label> <input type="text" class="form-control bg-white"
-										name="yhNimi" placeholder="esim. Johanna Jokinen">
-								</div>
-
-								<div class="mb-3">
-									<label class="form-label text-dark small fw-normal mb-1">Rooli
-										/ Nimike</label> <input type="text" class="form-control bg-white"
-										name="yhRooli"
-										placeholder="esim. Yksikönjohtaja tai Vastaava hoitaja">
-								</div>
-
-								<div class="row g-3">
-									<div class="col-md-6 mb-2">
-										<label class="form-label text-dark small fw-normal mb-1">Suora
-											puhelinnumero</label> <input type="tel" class="form-control bg-white"
-											name="yhPuhelin" placeholder="040 123 4567">
-									</div>
-									<div class="col-md-6 mb-2">
-										<label class="form-label text-dark small fw-normal mb-1">Suora
-											sähköposti</label> <input type="email" class="form-control bg-white"
-											name="yhSahkoposti" placeholder="johanna.jokinen@yritys.fi">
-									</div>
-								</div>
-							</div>
-
-							<div class="mb-3">
-								<label class="form-label fw-bold text-secondary small">Lisätiedot
-									/ Yksikön kuvaus</label>
-								<textarea class="form-control" name="kuvaus" rows="3"
-									placeholder="Kirjoita tähän vapaamuotoisia huomioita..."></textarea>
-							</div>
-						</div>
-						<div class="modal-footer bg-light">
-							<button type="button" class="btn btn-secondary"
-								data-bs-dismiss="modal">Peruuta</button>
-							<button type="submit" class="btn btn-success fw-bold px-4">Tallenna
-								yksikkö</button>
-						</div>
+	<!-- MODAL: POISTON VARMISTUS -->
+	<div class="modal fade" id="varmistaPoistoModal" tabindex="-1"
+		aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<div class="modal-header bg-danger text-white">
+					<h5 class="modal-title fw-bold">Varmista poisto</h5>
+					<button type="button" class="btn-close btn-close-white"
+						data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body p-4">
+					<p>
+						Haluatko varmasti poistaa tuotteen <strong
+							id="poistettavaTuoteNimi"></strong> asiakkaan kortilta?
+					</p>
+					<p class="text-danger small fw-semibold mb-0">Tämä poistaa
+						tuotteen pysyvästi asiakkaan ostohistoriasta.</p>
+				</div>
+				<div class="modal-footer bg-light">
+					<button type="button" class="btn btn-secondary"
+						data-bs-dismiss="modal">Peruuta</button>
+					<form id="poistaPalveluForm" action="" method="post"
+						style="display: inline;">
+						<button type="submit" class="btn btn-danger fw-bold px-4">Kyllä,
+							poista tuote</button>
 					</form>
 				</div>
 			</div>
 		</div>
+	</div>
 
-		<!-- 2. UUSI MODAL PALVELUYKSIKÖN MUOKKAUKSEEN (Sisältää JavaScriptin vaatimat ID-tunnisteet) -->
-		<div class="modal fade" id="muokkaaPyModal" tabindex="-1"
-			aria-labelledby="muokkaaPyModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered modal-lg">
-				<div class="modal-content border-0 shadow-lg">
-					<form id="muokkaaPyForm" method="post" action="">
-						<input type="hidden" name="asiakasId" value="${asiakas.id}">
-						<div class="modal-header bg-dark text-white">
-							<h5 class="modal-title fw-bold" id="muokkaaPyModalLabel">Muokkaa
-								palveluyksikköä</h5>
-							<button type="button" class="btn-close btn-close-white"
-								data-bs-dismiss="modal" aria-label="Close"></button>
-						</div>
-						<div class="modal-body p-4 text-start">
-							<div class="mb-3">
-								<label class="form-label fw-bold text-secondary small">Palveluyksikön
-									/ Toimipisteen nimi *</label> <input type="text" class="form-control"
-									id="pyNimi" name="nimi" required>
-							</div>
-
-							<div class="row g-3">
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Hyvinvointialue</label>
-									<select class="form-select" id="pyHyvinvointialue"
-										name="hyvinvointialue">
-										<option value="">-- Valitse hyvinvointialue --</option>
-										<c:forEach var="alue" items="${hyvinvointialueet}">
-											<option value="${alue}">${alue.nimi}</option>
-										</c:forEach>
-									</select>
-								</div>
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Katuosoite</label>
-									<input type="text" class="form-control" id="pyKatuosoite"
-										name="katuosoite">
-								</div>
-							</div>
-
-							<div class="row g-3">
-								<div class="col-md-4 mb-3">
-									<label class="form-label fw-bold text-secondary small">Postinumero</label>
-									<input type="text" class="form-control" id="pyPostinumero"
-										name="postinumero" maxlength="10">
-								</div>
-								<div class="col-md-8 mb-3">
-									<label class="form-label fw-bold text-secondary small">Postitoimipaikka</label>
-									<input type="text" class="form-control" id="pyPostitoimipaikka"
-										name="postitoimipaikka">
-								</div>
-							</div>
-
-							<div class="row g-3">
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Yksikön
-										puhelinnumero</label> <input type="tel" class="form-control"
-										id="pyPuhelin" name="puhelin">
-								</div>
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Yksikön
-										sähköposti</label> <input type="email" class="form-control"
-										id="pySahkoposti" name="sahkoposti">
-								</div>
-							</div>
-
-							<div class="mb-3">
-								<label class="form-label fw-bold text-secondary small">Lisätiedot
-									/ Yksikön kuvaus</label>
-								<textarea class="form-control" id="pyKuvaus" name="kuvaus"
-									rows="3"></textarea>
-							</div>
-						</div>
-						<div class="modal-footer bg-light">
-							<button type="button" class="btn btn-secondary"
-								data-bs-dismiss="modal">Peruuta</button>
-							<button type="submit" class="btn btn-primary fw-bold px-4">Tallenna
-								muutokset</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
-
-		<!-- LISÄÄ TUOTE MODAL -->
-		<div class="modal fade" id="lisaaTuoteModal" tabindex="-1"
-			aria-labelledby="lisaaTuoteModalLabel" aria-hidden="true">
-			<div class="modal-dialog">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="lisaaTuoteModalLabel">Kirjaa
-							tuotemyynti asiakkaalle</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal"
-							aria-label="Sulje"></button>
+	<!-- MODAL: UUDEN PALVELUYKSIKÖN LISÄÄMINEN -->
+	<div class="modal fade" id="lisaaPalveluyksikkoModal" tabindex="-1"
+		aria-labelledby="lisaaPalveluyksikkoModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content border-0 shadow-lg">
+				<form
+					action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-palveluyksikko"
+					method="post">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold" id="lisaaPalveluyksikkoModalLabel">Lisää
+							uusi palveluyksikkö</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
-					<form
-						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-tuote"
-						method="post">
-						<div class="modal-body">
-
-							<!-- Tuotteen valinta -->
-							<div class="mb-3">
-								<label for="tuoteId" class="form-label fw-bold">Valitse
-									tuote / palvelu</label> <select class="form-select" id="tuoteId"
-									name="tuoteId" required>
-									<option value="" disabled selected>-- Valitse
-										tuoterekisteristä --</option>
-									<c:forEach var="tuote" items="${kaikkiTuotteet}">
-										<option value="${tuote.id}">${tuote.nimi}
-											(${tuote.hinta} € / ${tuote.yksikko.lyhenne})</option>
-									</c:forEach>
-								</select>
-							</div>
-
-							<!-- Määrä -->
-							<div class="mb-3">
-								<label for="maara" class="form-label fw-bold">Määrä</label> <input
-									type="number" class="form-control" id="maara" name="maara"
-									value="1" min="1" required>
-							</div>
-
-							<!-- UUSI: ALV-kannan valinta -->
-							<div class="mb-3">
-								<label for="alvKanta" class="form-label fw-bold">Arvonlisäverokanta
-									(ALV)</label> <select class="form-select" id="alvKanta" name="alvKanta"
-									required>
-									<c:forEach var="kanta" items="${alvKannat}">
-										<option value="${kanta}"
-											${kanta == 'ALV_25_5' ? 'selected' : ''}>
-											${kanta.nayttorivi}</option>
-									</c:forEach>
-								</select>
-							</div>
-
-							<!-- Ostopäivämäärä -->
-							<div class="mb-3">
-								<label for="ostopaivamaara" class="form-label fw-bold">Myynti-
-									/ ostopäivä</label> <input type="date" class="form-control"
-									id="ostopaivamaara" name="ostopaivamaara"
-									value="<%=java.time.LocalDate.now()%>">
-								<div class="form-text">Jätä tyhjäksi, jos myynti tapahtuu
-									tänään.</div>
-							</div>
-
+					<div class="modal-body p-4 text-start">
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Palveluyksikön
+								/ Toimipisteen nimi *</label> <input type="text" class="form-control"
+								name="nimi"
+								placeholder="esim. Hoivakoti Hopeatähti tai Osasto B" required>
 						</div>
-						<div class="modal-footer">
-							<button type="button" class="btn btn-secondary"
-								data-bs-dismiss="modal">Peruuta</button>
-							<button type="submit" class="btn btn-success">Tallenna
-								myynti</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
 
-
-		<!-- MODAL UUDEN LOKIMERKINNÄN LISÄÄMISEEN -->
-		<div class="modal fade" id="lisaaKirjausModal" tabindex="-1"
-			aria-labelledby="lisaaKirjausModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content border-0 shadow-lg">
-					<form
-						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-kirjaus"
-						method="post">
-						<div class="modal-header bg-dark text-white">
-							<h5 class="modal-title fw-bold" id="lisaaKirjausModalLabel">Lisää
-								uusi lokimerkintä</h5>
-							<button type="button" class="btn-close btn-close-white"
-								data-bs-dismiss="modal" aria-label="Close"></button>
-						</div>
-						<div class="modal-body p-4">
-							<div class="mb-3">
-								<label class="form-label fw-bold text-secondary">Muistiinpanot
-									/ Tapahtumatiedot *</label>
-								<textarea class="form-control" name="teksti" rows="5" required
-									placeholder="Kirjoita tähän lokimerkinnän sisältö..."></textarea>
-							</div>
-						</div>
-						<div class="modal-footer bg-light">
-							<button type="button" class="btn btn-secondary"
-								data-bs-dismiss="modal">Peruuta</button>
-							<button type="submit" class="btn btn-primary fw-bold">Tallenna
-								kirjaus</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
-
-		<!-- 💡 PALAUTETTU: MODAL LOKIMERKINNÄN MUOKKAUKSEEN -->
-		<div class="modal fade" id="muokkaaLokiModal" tabindex="-1"
-			aria-labelledby="muokkaaLokiModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content border-0 shadow-lg">
-					<!-- JavaScript tunnistaa tämän lomakkeen id:n perusteella -->
-					<form id="muokkaaLokiForm" method="post" action="">
-						<input type="hidden" name="asiakasId" value="${asiakas.id}">
-						<div class="modal-header bg-dark text-white">
-							<h5 class="modal-title fw-bold" id="muokkaaLokiModalLabel">Muokkaa
-								lokimerkintää</h5>
-							<button type="button" class="btn-close btn-close-white"
-								data-bs-dismiss="modal" aria-label="Close"></button>
-						</div>
-						<div class="modal-body p-4">
-							<div class="mb-3">
-								<label class="form-label fw-bold text-secondary">Muistiinpanot
-									/ Tapahtumatiedot *</label>
-								<!-- JavaScript syöttää muokattavan tekstin tähän id-kenttään -->
-								<textarea class="form-control" id="lokiTeksti" name="teksti"
-									rows="5" required></textarea>
-							</div>
-						</div>
-						<div class="modal-footer bg-light">
-							<button type="button" class="btn btn-secondary"
-								data-bs-dismiss="modal">Peruuta</button>
-							<button type="submit" class="btn btn-primary fw-bold">Tallenna
-								muutokset</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
-
-		<!-- MODAL UUDEN YHTEYSHENKILÖN LISÄÄMISEEN -->
-		<div class="modal fade" id="lisaaYhModal" tabindex="-1"
-			aria-labelledby="lisaaYhModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content border-0 shadow-lg">
-					<form method="post"
-						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-yhteyshenkilo">
-						<div class="modal-header bg-dark text-white">
-							<h5 class="modal-title fw-bold" id="lisaaYhModalLabel">Lisää
-								uusi yhteyshenkilö</h5>
-							<button type="button" class="btn-close btn-close-white"
-								data-bs-dismiss="modal" aria-label="Close"></button>
-						</div>
-						<div class="modal-body p-4">
-							<div class="mb-3">
-								<label class="form-label fw-bold">Nimi *</label> <input
-									type="text" class="form-control" name="nimi"
-									placeholder="Yhteyshenkilön nimi" required>
-							</div>
-							<div class="mb-3">
-								<label class="form-label fw-bold">Rooli / Nimike</label> <input
-									type="text" class="form-control" name="rooli"
-									placeholder="esim. Toimitusjohtaja">
-							</div>
-							<div class="mb-3">
-								<label class="form-label fw-bold">Sähköposti</label> <input
-									type="email" class="form-control" name="sahkoposti"
-									placeholder="esim. nimi@yritys.fi">
-							</div>
-							<div class="mb-3">
-								<label class="form-label fw-bold">Puhelin</label> <input
-									type="text" class="form-control" name="puhelin"
-									placeholder="Puhelinnumero">
-							</div>
-
-							<!-- DYNAAMINEN PUDOTUSVALIKKO PALVELUYKSIKÖN VALINTAAN -->
-							<div class="mb-3 pt-2 border-top">
-								<label class="form-label fw-bold text-secondary small">Kohdistetaanko
-									tiettyyn palveluyksikköön?</label> <select class="form-select"
-									name="palveluyksikkoId">
-									<option value="">-- Yleinen organisaatiotason kontakti
+						<div class="row g-3">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Hyvinvointialue</label>
+								<select class="form-select" name="hyvinvointialue">
+									<option value="">-- Valitse hyvinvointialue (jos eri)
 										--</option>
-									<c:forEach var="yksikko" items="${asiakas.palveluyksikot}">
-										<option value="${yksikko.id}">${yksikko.nimi}</option>
+									<c:forEach var="alue" items="${hyvinvointialueet}">
+										<option value="${alue}">${alue.nimi}</option>
 									</c:forEach>
 								</select>
-								<div class="form-text text-muted" style="font-size: 0.8em;">
-									Jos jätät tämän tyhjäksi, henkilö näkyy yrityksen yleisissä
-									yhteystiedoissa.</div>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Katuosoite</label>
+								<input type="text" class="form-control" name="katuosoite"
+									placeholder="esim. Puistotie 4">
 							</div>
 						</div>
-						<div class="modal-footer bg-light">
-							<button type="button" class="btn btn-secondary"
-								data-bs-dismiss="modal">Peruuta</button>
-							<button type="submit" class="btn btn-success fw-bold">Tallenna
-								yhteyshenkilö</button>
+						<div class="row g-3">
+							<div class="col-md-4 mb-3">
+								<label class="form-label fw-bold text-secondary small">Postinumero</label>
+								<input type="text" class="form-control" name="postinumero"
+									placeholder="00100" maxlength="10">
+							</div>
+							<div class="col-md-8 mb-3">
+								<label class="form-label fw-bold text-secondary small">Postitoimipaikka</label>
+								<input type="text" class="form-control" name="postitoimipaikka"
+									placeholder="Helsinki">
+							</div>
 						</div>
-					</form>
-				</div>
+
+						<div class="row g-3">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Yksikön
+									puhelinnumero</label> <input type="tel" class="form-control"
+									name="puhelin" placeholder="esim. 040 123 4567">
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Yksikön
+									sähköposti</label> <input type="email" class="form-control"
+									name="sahkoposti" placeholder="yksikko@yritys.fi">
+							</div>
+						</div>
+
+						<div class="p-3 bg-light rounded-3 border mb-3 mt-2">
+							<h6 class="fw-bold text-uppercase text-secondary mb-3"
+								style="font-size: 0.75em; letter-spacing: 0.5px;">👤
+								Yksikön yhteyshenkilö / Vastuuhenkilö</h6>
+							<div class="mb-3">
+								<label class="form-label text-dark small fw-normal mb-1">Yhteyshenkilön
+									nimi</label> <input type="text" class="form-control bg-white"
+									name="yhNimi" placeholder="esim. Johanna Jokinen">
+							</div>
+							<div class="mb-3">
+								<label class="form-label text-dark small fw-normal mb-1">Rooli
+									/ Nimike</label> <input type="text" class="form-control bg-white"
+									name="yhRooli"
+									placeholder="esim. Yksikönjohtaja tai Vastaava hoitaja">
+							</div>
+							<div class="row g-3">
+								<div class="col-md-6 mb-2">
+									<label class="form-label text-dark small fw-normal mb-1">Suora
+										puhelinnumero</label> <input type="tel" class="form-control bg-white"
+										name="yhPuhelin" placeholder="040 123 4567">
+								</div>
+								<div class="col-md-6 mb-2">
+									<label class="form-label text-dark small fw-normal mb-1">Suora
+										sähköposti</label> <input type="email" class="form-control bg-white"
+										name="yhSahkoposti" placeholder="johanna.jokinen@yritys.fi">
+								</div>
+							</div>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Lisätiedot
+								/ Yksikön kuvaus</label>
+							<textarea class="form-control" name="kuvaus" rows="3"
+								placeholder="Kirjoita tähän vapaamuotoisia huomioita..."></textarea>
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-success fw-bold px-4">Tallenna
+							yksikkö</button>
+					</div>
+				</form>
 			</div>
 		</div>
+	</div>
 
-		<!-- MODAL YHTEYSHENKILÖN MUOKKAUKSEEN -->
-		<div class="modal fade" id="muokkaaYhModal" tabindex="-1"
-			aria-labelledby="muokkaaYhModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content border-0 shadow-lg">
-					<form id="muokkaaYhForm" method="post" action="">
-						<input type="hidden" name="asiakasId" value="${asiakas.id}">
-						<div class="modal-header bg-dark text-white">
-							<h5 class="modal-title fw-bold" id="muokkaaYhModalLabel">Muokkaa
-								yhteyshenkilöä</h5>
-							<button type="button" class="btn-close btn-close-white"
-								data-bs-dismiss="modal" aria-label="Close"></button>
+	<!-- MODAL: PALVELUYKSIKÖN MUOKKAUS -->
+	<div class="modal fade" id="muokkaaPyModal" tabindex="-1"
+		aria-labelledby="muokkaaPyModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content border-0 shadow-lg">
+				<form id="muokkaaPyForm" method="post" action="">
+					<input type="hidden" name="asiakasId" value="${asiakas.id}">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold" id="muokkaaPyModalLabel">Muokkaa
+							palveluyksikköä</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body p-4 text-start">
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Palveluyksikön
+								/ Toimipisteen nimi *</label> <input type="text" class="form-control"
+								id="pyNimi" name="nimi" required>
 						</div>
-						<div class="modal-body p-4">
-							<div class="mb-3">
-								<label for="yhNimi" class="form-label fw-bold">Nimi</label> <input
-									type="text" class="form-control" id="yhNimi" name="nimi"
-									required>
+
+						<div class="row g-3">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Hyvinvointialue</label>
+								<select class="form-select" id="pyHyvinvointialue"
+									name="hyvinvointialue">
+									<option value="">-- Valitse hyvinvointialue --</option>
+									<c:forEach var="alue" items="${hyvinvointialueet}">
+										<option value="${alue}">${alue.nimi}</option>
+									</c:forEach>
+								</select>
 							</div>
-							<div class="mb-3">
-								<label for="yhRooli" class="form-label fw-bold">Rooli /
-									Nimike</label> <input type="text" class="form-control" id="yhRooli"
-									name="rooli">
-							</div>
-							<div class="mb-3">
-								<label for="yhSahkoposti" class="form-label fw-bold">Sähköposti</label>
-								<input type="email" class="form-control" id="yhSahkoposti"
-									name="sahkoposti">
-							</div>
-							<div class="mb-3">
-								<label for="yhPuhelin" class="form-label fw-bold">Puhelin</label>
-								<input type="text" class="form-control" id="yhPuhelin"
-									name="puhelin">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Katuosoite</label>
+								<input type="text" class="form-control" id="pyKatuosoite"
+									name="katuosoite">
 							</div>
 						</div>
-						<div class="modal-footer bg-light">
-							<button type="button" class="btn btn-secondary"
-								data-bs-dismiss="modal">Peruuta</button>
-							<button type="submit" class="btn btn-primary fw-bold">Tallenna
-								muutokset</button>
+
+						<div class="row g-3">
+							<div class="col-md-4 mb-3">
+								<label class="form-label fw-bold text-secondary small">Postinumero</label>
+								<input type="text" class="form-control" id="pyPostinumero"
+									name="postinumero" maxlength="10">
+							</div>
+							<div class="col-md-8 mb-3">
+								<label class="form-label fw-bold text-secondary small">Postitoimipaikka</label>
+								<input type="text" class="form-control" id="pyPostitoimipaikka"
+									name="postitoimipaikka">
+							</div>
 						</div>
-					</form>
-				</div>
+
+						<div class="row g-3">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Yksikön
+									puhelinnumero</label> <input type="tel" class="form-control"
+									id="pyPuhelin" name="puhelin">
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-bold text-secondary small">Yksikön
+									sähköposti</label> <input type="email" class="form-control"
+									id="pySahkoposti" name="sahkoposti">
+							</div>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary small">Lisätiedot
+								/ Yksikön kuvaus</label>
+							<textarea class="form-control" id="pyKuvaus" name="kuvaus"
+								rows="3"></textarea>
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-primary fw-bold px-4">Tallenna
+							muutokset</button>
+					</div>
+				</form>
 			</div>
 		</div>
-
-
-		<!-- MODAL PALVELUYKSIKÖN MUOKKAUKSEEN -->
-		<div class="modal fade" id="muokkaaPyModal" tabindex="-1"
-			aria-labelledby="muokkaaPyModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered modal-lg">
-				<div class="modal-content border-0 shadow-lg">
-					<form id="muokkaaPyForm" method="post" action="">
-						<input type="hidden" name="asiakasId" value="${asiakas.id}">
-						<div class="modal-header bg-dark text-white">
-							<h5 class="modal-title fw-bold" id="muokkaaPyModalLabel">Muokkaa
-								palveluyksikköä</h5>
-							<button type="button"
-								class="btn btn-sm btn-outline-primary py-0 px-2 muokkaa-py-btn"
-								style="font-size: 0.8em;" data-id="${yksikko.id}"
-								data-nimi="${yksikko.nimi}"
-								data-alue="${yksikko.hyvinvointialue}"
-								data-katu="${yksikko.katuosoite}"
-								data-pno="${yksikko.postinumero}"
-								data-ptp="${yksikko.postitoimipaikka}"
-								data-puh="${yksikko.puhelin}" data-email="${yksikko.sahkoposti}"
-								data-kuvaus="<c:out value='${yksikko.kuvaus}'/>">
-								Muokkaa</button>
-						</div>
-						<div class="modal-body p-4 text-start">
-							<div class="mb-3">
-								<label class="form-label fw-bold text-secondary small">Palveluyksikön
-									/ Toimipisteen nimi *</label> <input type="text" class="form-control"
-									id="pyNimi" name="nimi" required>
-							</div>
-
-							<div class="row g-3">
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Hyvinvointialue</label>
-									<select class="form-select" id="pyHyvinvointialue"
-										name="hyvinvointialue">
-										<option value="">-- Valitse hyvinvointialue --</option>
-										<c:forEach var="alue" items="${hyvinvointialueet}">
-											<option value="${alue}">${alue.nimi}</option>
-										</c:forEach>
-									</select>
-								</div>
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Katuosoite</label>
-									<input type="text" class="form-control" id="pyKatuosoite"
-										name="katuosoite">
-								</div>
-							</div>
-
-							<div class="row g-3">
-								<div class="col-md-4 mb-3">
-									<label class="form-label fw-bold text-secondary small">Postinumero</label>
-									<input type="text" class="form-control" id="pyPostinumero"
-										name="postinumero" maxlength="10">
-								</div>
-								<div class="col-md-8 mb-3">
-									<label class="form-label fw-bold text-secondary small">Postitoimipaikka</label>
-									<input type="text" class="form-control" id="pyPostitoimipaikka"
-										name="postitoimipaikka">
-								</div>
-							</div>
-
-							<div class="row g-3">
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Yksikön
-										puhelinnumero</label> <input type="tel" class="form-control"
-										id="pyPuhelin" name="puhelin">
-								</div>
-								<div class="col-md-6 mb-3">
-									<label class="form-label fw-bold text-secondary small">Yksikön
-										sähköposti</label> <input type="email" class="form-control"
-										id="pySahkoposti" name="sahkoposti">
-								</div>
-							</div>
-
-							<div class="mb-3">
-								<label class="form-label fw-bold text-secondary small">Lisätiedot
-									/ Yksikön kuvaus</label>
-								<textarea class="form-control" id="pyKuvaus" name="kuvaus"
-									rows="3"></textarea>
-							</div>
-						</div>
-						<div class="modal-footer bg-light">
-							<button type="button" class="btn btn-secondary"
-								data-bs-dismiss="modal">Peruuta</button>
-							<button type="submit" class="btn btn-primary fw-bold px-4">Tallenna
-								muutokset</button>
-						</div>
-					</form>
+	</div>
+	<!-- MODAL: LISÄÄ TUOTE MODAL -->
+	<div class="modal fade" id="lisaaTuoteModal" tabindex="-1"
+		aria-labelledby="lisaaTuoteModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<div class="modal-header bg-dark text-white">
+					<h5 class="modal-title fw-bold" id="lisaaTuoteModalLabel">Kirjaa
+						tuotemyynti asiakkaalle</h5>
+					<button type="button" class="btn-close btn-close-white"
+						data-bs-dismiss="modal" aria-label="Sulje"></button>
 				</div>
+				<form
+					action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-tuote"
+					method="post">
+					<div class="modal-body p-4">
+						<div class="mb-3">
+							<label for="tuoteId"
+								class="form-label fw-bold small text-secondary">Valitse
+								tuote / palvelu</label> <select class="form-select" id="tuoteId"
+								name="tuoteId" required>
+								<option value="" disabled selected>-- Valitse
+									tuoterekisteristä --</option>
+								<c:forEach var="tuote" items="${kaikkiTuotteet}">
+									<option value="${tuote.id}">${tuote.nimi}
+										(${tuote.hinta} € / ${tuote.yksikko.lyhenne})</option>
+								</c:forEach>
+							</select>
+						</div>
+						<div class="mb-3">
+							<label for="maara"
+								class="form-label fw-bold small text-secondary">Määrä</label> <input
+								type="number" class="form-control" id="maara" name="maara"
+								value="1" min="1" required>
+						</div>
+						<div class="mb-3">
+							<label for="alvKanta"
+								class="form-label fw-bold small text-secondary">Arvonlisäverokanta
+								(ALV)</label> <select class="form-select" id="alvKanta" name="alvKanta"
+								required>
+								<c:forEach var="kanta" items="${alvKannat}">
+									<option value="${kanta}"
+										${kanta == 'ALV_25_5' ? 'selected' : ''}>${kanta.nayttorivi}</option>
+								</c:forEach>
+							</select>
+						</div>
+						<div class="mb-3">
+							<label for="ostopaivamaara"
+								class="form-label fw-bold small text-secondary">Myynti-
+								/ ostopäivä</label> <input type="date" class="form-control"
+								id="ostopaivamaara" name="ostopaivamaara"
+								value="<%=java.time.LocalDate.now()%>">
+							<div class="form-text text-muted small">Jätä ennalleen, jos
+								myynti tapahtuu tänään.</div>
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-success fw-bold px-4">Tallenna
+							myynti</button>
+					</div>
+				</form>
 			</div>
 		</div>
+	</div>
 
-		<!-- ==================== JAVASCRIPT-TOIMINNOT ==================== -->
-		<script
-			src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
-		<script>
-	
-		function avaaMuokkaus() {
-			document.getElementById('asiakas-katselu').classList.add('d-none')
-			document.getElementById('asiakas-muokkaus').classList.remove('d-none')
-		}
+	<!-- MODAL: LISÄÄ LOKIMERKINTÄ -->
+	<div class="modal fade" id="lisaaKirjausModal" tabindex="-1"
+		aria-labelledby="lisaaKirjausModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<form
+					action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-kirjaus"
+					method="post">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold" id="lisaaKirjausModalLabel">Lisää
+							uusi lokimerkintä</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body p-4">
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary">Muistiinpanot
+								/ Tapahtumatiedot *</label>
+							<textarea class="form-control" name="teksti" rows="5" required
+								placeholder="Kirjoita tähän lokimerkinnän sisältö..."></textarea>
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-primary fw-bold">Tallenna
+							kirjaus</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
 
-		function peruutaMuokkaus() {
-			document.getElementById('asiakas-muokkaus').classList.add('d-none')
-			document.getElementById('asiakas-katselu').classList.remove('d-none')
-		}
+	<!-- MODAL: MUOKKAA LOKIMERKINTÄÄ -->
+	<div class="modal fade" id="muokkaaLokiModal" tabindex="-1"
+		aria-labelledby="muokkaaLokiModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<form id="muokkaaLokiForm" method="post" action="">
+					<input type="hidden" name="asiakasId" value="${asiakas.id}">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold" id="muokkaaLokiModalLabel">Muokkaa
+							lokimerkintää</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body p-4">
+						<div class="mb-3">
+							<label class="form-label fw-bold text-secondary">Muistiinpanot
+								/ Tapahtumatiedot *</label>
+							<textarea class="form-control" id="lokiTeksti" name="teksti"
+								rows="5" required></textarea>
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-primary fw-bold">Tallenna
+							muutokset</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	<!-- MODAL: UUDEN YHTEYSHENKILÖN LISÄÄMINEN -->
+	<div class="modal fade" id="lisaaYhModal" tabindex="-1"
+		aria-labelledby="lisaaYhModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<form method="post"
+					action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/lisaa-yhteyshenkilo">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold" id="lisaaYhModalLabel">Lisää
+							uusi yhteyshenkilö</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body p-4">
+						<div class="mb-3">
+							<label class="form-label fw-bold small text-secondary">Nimi
+								*</label> <input type="text" class="form-control" name="nimi"
+								placeholder="Yhteyshenkilön nimi" required>
+						</div>
+						<div class="mb-3">
+							<label class="form-label fw-bold small text-secondary">Rooli
+								/ Nimike</label> <input type="text" class="form-control" name="rooli"
+								placeholder="esim. Toimitusjohtaja">
+						</div>
+						<div class="mb-3">
+							<label class="form-label fw-bold small text-secondary">Sähköposti</label>
+							<input type="email" class="form-control" name="sahkoposti"
+								placeholder="esim. nimi@yritys.fi">
+						</div>
+						<div class="mb-3">
+							<label class="form-label fw-bold small text-secondary">Puhelin</label>
+							<input type="text" class="form-control" name="puhelin"
+								placeholder="Puhelinnumero">
+						</div>
+						<div class="mb-3 pt-2 border-top">
+							<label class="form-label fw-bold text-secondary small">Kohdistetaanko
+								tiettyyn palveluyksikköön?</label> <select class="form-select"
+								name="palveluyksikkoId">
+								<option value="">-- Yleinen organisaatiotason kontakti
+									--</option>
+								<c:forEach var="yksikko" items="${asiakas.palveluyksikot}">
+									<option value="${yksikko.id}">${yksikko.nimi}</option>
+								</c:forEach>
+							</select>
+							<div class="form-text text-muted small">Jos jätät tämän
+								tyhjäksi, henkilö näkyy yrityksen yleisissä yhteystiedoissa.</div>
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-success fw-bold">Tallenna
+							yhteyshenkilö</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
 
-		
+	<!-- MODAL: YHTEYSHENKILÖN MUOKKAUS -->
+	<div class="modal fade" id="muokkaaYhModal" tabindex="-1"
+		aria-labelledby="muokkaaYhModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<form id="muokkaaYhForm" method="post" action="">
+					<input type="hidden" name="asiakasId" value="${asiakas.id}">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold" id="muokkaaYhModalLabel">Muokkaa
+							yhteyshenkilöä</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body p-4">
+						<div class="mb-3">
+							<label for="yhNimi"
+								class="form-label fw-bold small text-secondary">Nimi</label> <input
+								type="text" class="form-control" id="yhNimi" name="nimi"
+								required>
+						</div>
+						<div class="mb-3">
+							<label for="yhRooli"
+								class="form-label fw-bold small text-secondary">Rooli /
+								Nimike</label> <input type="text" class="form-control" id="yhRooli"
+								name="rooli">
+						</div>
+						<div class="mb-3">
+							<label for="yhSahkoposti"
+								class="form-label fw-bold small text-secondary">Sähköposti</label>
+							<input type="email" class="form-control" id="yhSahkoposti"
+								name="sahkoposti">
+						</div>
+						<div class="mb-3">
+							<label for="yhPuhelin"
+								class="form-label fw-bold small text-secondary">Puhelin</label>
+							<input type="text" class="form-control" id="yhPuhelin"
+								name="puhelin">
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-primary fw-bold">Tallenna
+							muutokset</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	<!-- MODAL: ASIAKASTIETOJEN KOKONAISMUOKKAUS -->
+	<div class="modal fade" id="muokkaaAsiakasModal" tabindex="-1"
+		aria-labelledby="muokkaaAsiakasModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg modal-dialog-centered">
+			<div class="modal-content rounded-3 shadow border-0 text-dark">
+				<div class="modal-header bg-dark text-white border-bottom">
+					<h5 class="modal-title fw-bold" id="muokkaaAsiakasModalLabel">✏️
+						Muokkaa asiakkaan tietoja</h5>
+					<span class="badge bg-secondary ms-2">ID #${asiakas.id}</span>
+					<button type="button" class="btn-close btn-close-white"
+						data-bs-dismiss="modal" aria-label="Sulje"></button>
+				</div>
+				<form
+					action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/muokkaa"
+					method="post">
+					<div class="modal-body p-4">
+						<div class="row g-3">
+							<div class="col-12">
+								<label class="form-label fw-bold small text-secondary">Asiakkaan
+									/ Yrityksen nimi <span class="text-danger">*</span>
+								</label> <input type="text" class="form-control form-control-sm"
+									name="nimi" value="${asiakas.nimi}" required>
+							</div>
+							<div class="col-md-6">
+								<label for="muokkaaHyvinvointialue"
+									class="form-label fw-bold small text-secondary">Hyvinvointialue</label>
+								<select class="form-select" id="muokkaaHyvinvointialue"
+									name="hyvinvointialue">
+									<option value="">-- Valitse hyvinvointialue --</option>
+									<c:forEach var="alue" items="${hyvinvointialueet}">
+										<option value="${alue}"
+											<c:if test="${asiakas.hyvinvointialue == alue.name()}">selected</c:if>>${alue.nimi}</option>
+									</c:forEach>
+								</select>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label fw-bold small text-secondary">Y-tunnus</label>
+								<input type="text" class="form-control form-control-sm"
+									id="yTunnus" name="yTunnus" placeholder="esim. 1234567-8"
+									maxlength="9" value="${asiakas.yTunnus}">
+							</div>
+							<div class="col-md-6">
+								<label class="form-label fw-bold small text-secondary">Puhelinnumero</label>
+								<input type="tel" class="form-control form-control-sm"
+									name="puhelin" value="${asiakas.puhelin}">
+							</div>
+							<div class="col-md-6">
+								<label class="form-label fw-bold small text-secondary">Sähköposti</label>
+								<input type="email" class="form-control form-control-sm"
+									name="sahkoposti" value="${asiakas.sahkoposti}">
+							</div>
+							<div class="col-12">
+								<label class="form-label fw-bold small text-secondary">Katuosoite</label>
+								<input type="text" class="form-control form-control-sm"
+									name="katuosoite" value="${asiakas.katuosoite}">
+							</div>
+							<div class="col-md-4">
+								<label class="form-label fw-bold small text-secondary">Postinumero</label>
+								<input type="text" class="form-control form-control-sm"
+									name="postinumero" value="${asiakas.postinumero}"
+									maxlength="10">
+							</div>
+							<div class="col-md-8">
+								<label class="form-label fw-bold small text-secondary">Postitoimipaikka</label>
+								<input type="text" class="form-control form-control-sm"
+									name="postitoimipaikka" value="${asiakas.postitoimipaikka}">
+							</div>
+							<div class="col-12">
+								<label class="form-label fw-bold small text-secondary">Kotisivun
+									osoite</label> <input type="url" class="form-control form-control-sm"
+									name="kotisivu" value="${asiakas.kotisivu}"
+									placeholder="https://">
+							</div>
+							<div class="col-12">
+								<label class="form-label fw-bold small text-secondary">Asiakkuuden
+									tila myyntiputkessa</label> <select class="form-select form-select-sm"
+									name="tila" required>
+									<c:forEach var="tilaVaihtoehto" items="${tilat}">
+										<option value="${tilaVaihtoehto}"
+											<c:if test="${asiakas.tila == tilaVaihtoehto}">selected</c:if>>${tilaVaihtoehto.nayttorivi}</option>
+									</c:forEach>
+								</select>
+							</div>
+							<div class="col-12">
+								<label class="form-label fw-bold small text-secondary">Toiminnan
+									kuvaus / Toimiala</label>
+								<textarea class="form-control form-control-sm" name="kuvaus"
+									rows="3">${asiakas.kuvaus}</textarea>
+							</div>
+						</div>
+					</div>
+					<div
+						class="modal-footer bg-light border-top d-flex justify-content-between">
+						<button type="button"
+							class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit"
+							class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">Tallenna
+							muutokset</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	<!-- SCRIPTS -->
+	<script
+		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+	<script>
 		const yhElement = document.getElementById('muokkaaYhModal');
 		const yhModalOlio = yhElement ? new bootstrap.Modal(yhElement) : null;
 
 		const lokiElement = document.getElementById('muokkaaLokiModal');
 		const lokiModalOlio = lokiElement ? new bootstrap.Modal(lokiElement) : null;
 
-		const palveluElement = document.getElementById('muokkaaPalveluModal');
-		const palveluModalOlio = palveluElement ? new bootstrap.Modal(palveluElement) : null;
-
-		
 		/* 1. Yhteyshenkilön muokkaustoiminto */
 		document.querySelectorAll('.muokkaa-yh-btn').forEach(btn => {
 			btn.addEventListener('click', function() {
-				const id = this.getAttribute('data-id')
-				const nimi = this.getAttribute('data-nimi')
-				const rooli = this.getAttribute('data-rooli')
-				const email = this.getAttribute('data-email')
-				const puh = this.getAttribute('data-puh')
+				const id = this.getAttribute('data-id');
+				const nimi = this.getAttribute('data-nimi');
+				const rooli = this.getAttribute('data-rooli');
+				const email = this.getAttribute('data-email');
+				const puh = this.getAttribute('data-puh');
 				
-				const form = document.getElementById('muokkaaYhForm')
-				if (form) form.action = '${pageContext.request.contextPath}/yhteyshenkilo/muokkaa/' + id
+				const form = document.getElementById('muokkaaYhForm');
+				if (form) form.action = '${pageContext.request.contextPath}/yhteyshenkilo/muokkaa/' + id;
 				
-				if (document.getElementById('yhNimi')) document.getElementById('yhNimi').value = nimi
-				if (document.getElementById('yhRooli')) document.getElementById('yhRooli').value = rooli
-				if (document.getElementById('yhSahkoposti')) document.getElementById('yhSahkoposti').value = email
-				if (document.getElementById('yhPuhelin')) document.getElementById('yhPuhelin').value = puh
+				if (document.getElementById('yhNimi')) document.getElementById('yhNimi').value = nimi;
+				if (document.getElementById('yhRooli')) document.getElementById('yhRooli').value = rooli;
+				if (document.getElementById('yhSahkoposti')) document.getElementById('yhSahkoposti').value = email;
+				if (document.getElementById('yhPuhelin')) document.getElementById('yhPuhelin').value = puh;
 				
-				if (yhModalOlio) yhModalOlio.show()
-			})
-		})
+				if (yhModalOlio) yhModalOlio.show();
+			});
+		});
 		
 		/* 2. Lokimerkinnän muokkaustoiminto */
 		document.querySelectorAll('.muokkaa-loki-btn').forEach(btn => {
 			btn.addEventListener('click', function() {
-				const id = this.getAttribute('data-id')
-				const teksti = this.getAttribute('data-teksti')
+				const id = this.getAttribute('data-id');
+				const teksti = this.getAttribute('data-teksti');
 				
-				const form = document.getElementById('muokkaaLokiForm')
-				if (form) form.action = '${pageContext.request.contextPath}/kirjaus/muokkaa/' + id
+				const form = document.getElementById('muokkaaLokiForm');
+				if (form) form.action = '${pageContext.request.contextPath}/kirjaus/muokkaa/' + id;
 				
-				if (document.getElementById('lokiTeksti')) document.getElementById('lokiTeksti').value = teksti
+				if (document.getElementById('lokiTeksti')) document.getElementById('lokiTeksti').value = teksti;
 				
-				if (lokiModalOlio) lokiModalOlio.show()
-			})
-		})
+				if (lokiModalOlio) lokiModalOlio.show();
+			});
+		});
 		
-		/* 3. Myydyn palvelun muokkaus- ja poistotoiminto dynaamisilla reiteillä */
+		/* 3. Myydyn palvelun muokkaustoiminto */
 		document.querySelectorAll('.muokkaa-palvelu-painike').forEach(button => {
 			button.addEventListener('click', function() {
 				const id = this.getAttribute('data-id');
@@ -1346,11 +1316,9 @@ body {
 				const hinta = this.getAttribute('data-hinta');
 				const pvm = this.getAttribute('data-pvm');
 				
-				// Asetetaan lomakkeen action-reitti muokkausta varten oikealla ID:llä
 				const form = document.getElementById('muokkaaPalveluForm');
 				if (form) form.action = '${pageContext.request.contextPath}/palvelu/muokkaa/' + id;
 				
-				// Täytetään muokkauslomakkeen näkyvät ja piilotetut kentät
 				if (document.getElementById('muokkaaOtsikko')) document.getElementById('muokkaaOtsikko').innerText = "Muokkaa riviä: " + tuoteNimi;
 				if (document.getElementById('muokkaaTuoteNimi')) document.getElementById('muokkaaTuoteNimi').value = tuoteNimi;
 				if (document.getElementById('muokkaaMaara')) document.getElementById('muokkaaMaara').value = maara;
@@ -1359,18 +1327,16 @@ body {
 			});
 		});
 
-		// Dynaaminen reititys poistolomaketta varten
+		/* 4. Myydyn palvelun poistotoiminto */
 		document.querySelectorAll('.avaapoistomodal').forEach(button => {
 			button.addEventListener('click', function() {
 				const id = this.getAttribute('data-id');
 				const tuoteNimi = this.getAttribute('data-tuote');
 				
-				// Asetetaan tuotteen nimi varmistustekstiin
 				if (document.getElementById('poistettavaTuoteNimi')) {
 					document.getElementById('poistettavaTuoteNimi').innerText = tuoteNimi;
 				}
 				
-				// Asetetaan poistolomakkeen action-reitti suoraan kontrollerisi POST-reittiin
 				const poistaForm = document.getElementById('poistaPalveluForm');
 				if (poistaForm) {
 					poistaForm.action = '${pageContext.request.contextPath}/palvelu/poista/' + id;
@@ -1378,175 +1344,38 @@ body {
 			});
 		});
 
-
-
-				/* 4. Palveluyksikön muokkaustoiminto */
+		/* 5. Palveluyksikön muokkaustoiminto */
 		document.querySelectorAll('.muokkaa-py-btn').forEach(btn => {
 			btn.addEventListener('click', function() {
-				const id = this.getAttribute('data-id')
-				const nimi = this.getAttribute('data-nimi')
-				const alue = this.getAttribute('data-alue')
-				const katu = this.getAttribute('data-katu')
-				const pno = this.getAttribute('data-pno')
-				const ptp = this.getAttribute('data-ptp')
-				const puh = this.getAttribute('data-puh')
-				const email = this.getAttribute('data-email')
-				const kuvaus = this.getAttribute('data-kuvaus')
+				const id = this.getAttribute('data-id');
+				const nimi = this.getAttribute('data-nimi');
+				const alue = this.getAttribute('data-alue');
+				const katu = this.getAttribute('data-katu');
+				const pno = this.getAttribute('data-pno');
+				const ptp = this.getAttribute('data-ptp');
+				const puh = this.getAttribute('data-puh');
+				const email = this.getAttribute('data-email');
+				const kuvaus = this.getAttribute('data-kuvaus');
 				
-				const form = document.getElementById('muokkaaPyForm')
-				form.action = '${pageContext.request.contextPath}/palveluyksikko/muokkaa/' + id
+				const form = document.getElementById('muokkaaPyForm');
+				if (form) form.action = '${pageContext.request.contextPath}/palveluyksikko/muokkaa/' + id;
 				
-				document.getElementById('pyNimi').value = nimi
-				document.getElementById('pyHyvinvointialue').value = alue
-				document.getElementById('pyKatuosoite').value = katu
-				document.getElementById('pyPostinumero').value = pno
-				document.getElementById('pyPostitoimipaikka').value = ptp
-				document.getElementById('pyPuhelin').value = puh
-				document.getElementById('pySahkoposti').value = email
-				document.getElementById('pyKuvaus').value = kuvaus
+				if (document.getElementById('pyNimi')) document.getElementById('pyNimi').value = nimi;
+				if (document.getElementById('pyHyvinvointialue')) document.getElementById('pyHyvinvointialue').value = alue;
+				if (document.getElementById('pyKatuosoite')) document.getElementById('pyKatuosoite').value = katu;
+				if (document.getElementById('pyPostinumero')) document.getElementById('pyPostinumero').value = pno;
+				if (document.getElementById('pyPostitoimipaikka')) document.getElementById('pyPostitoimipaikka').value = ptp;
+				if (document.getElementById('pyPuhelin')) document.getElementById('pyPuhelin').value = puh;
+				if (document.getElementById('pySahkoposti')) document.getElementById('pySahkoposti').value = email;
+				if (document.getElementById('pyKuvaus')) document.getElementById('pyKuvaus').value = kuvaus;
 				
-				// Alustetaan ja näytetään modal suoralla, puhtaalla komennolla ilman kytkentöjä
 				const modalElement = document.getElementById('muokkaaPyModal');
 				if (modalElement) {
 					const uusiModal = new bootstrap.Modal(modalElement);
 					uusiModal.show();
 				}
-			})
-		})
-
-
-
-		
+			});
+		});
 	</script>
-
-		<!-- ASIKASTIETOJEN MUOKKAUSMODAL -->
-		<div class="modal fade" id="muokkaaAsiakasModal" tabindex="-1"
-			aria-labelledby="muokkaaAsiakasModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-lg modal-dialog-centered">
-				<div class="modal-content rounded-3 shadow border-0 text-dark">
-					<div class="modal-header bg-dark text-white border-bottom">
-						<h5 class="modal-title fw-bold" id="muokkaaAsiakasModalLabel">✏️
-							Muokkaa asiakkaan tietoja</h5>
-						<span class="badge bg-secondary ms-2">ID #${asiakas.id}</span>
-						<button type="button" class="btn-close btn-close-white"
-							data-bs-dismiss="modal" aria-label="Sulje"></button>
-					</div>
-
-					<form
-						action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/muokkaa"
-						method="post">
-						<div class="modal-body p-4">
-							<div class="row g-3">
-								<!-- Nimi -->
-								<div class="col-12">
-									<label class="form-label fw-bold small text-secondary">Asiakkaan
-										/ Yrityksen nimi <span class="text-danger">*</span>
-									</label> <input type="text" class="form-control form-control-sm"
-										name="nimi" value="${asiakas.nimi}" required>
-								</div>
-
-								<!-- Hyvinvointialue (Korjattu label-tägi) -->
-								<div class="col-md-6">
-									<label for="muokkaaHyvinvointialue"
-										class="form-label fw-bold small text-secondary">Hyvinvointialue</label>
-									<select class="form-select form-select-sm"
-										id="muokkaaHyvinvointialue" name="hyvinvointialue">
-										<option value="">-- Valitse hyvinvointialue --</option>
-										<c:forEach var="alue" items="${hyvinvointialueet}">
-											<option value="${alue}"
-												<c:if test="${asiakas.hyvinvointialue == alue.name()}">selected</c:if>>
-												${alue.nimi}</option>
-										</c:forEach>
-									</select>
-								</div>
-
-								<!-- Y-tunnus -->
-								<div class="col-md-6">
-									<label class="form-label fw-bold small text-secondary">Y-tunnus</label>
-									<input type="text" class="form-control form-control-sm"
-										id="yTunnus" name="yTunnus" placeholder="esim. 1234567-8"
-										maxlength="9" value="${asiakas.yTunnus}">
-								</div>
-
-								<!-- Puhelin -->
-								<div class="col-md-6">
-									<label class="form-label fw-bold small text-secondary">Puhelinnumero</label>
-									<input type="tel" class="form-control form-control-sm"
-										name="puhelin" value="${asiakas.puhelin}">
-								</div>
-
-								<!-- Sähköposti -->
-								<div class="col-md-6">
-									<label class="form-label fw-bold small text-secondary">Sähköposti</label>
-									<input type="email" class="form-control form-control-sm"
-										name="sahkoposti" value="${asiakas.sahkoposti}">
-								</div>
-
-								<!-- Katuosoite -->
-								<div class="col-12">
-									<label class="form-label fw-bold small text-secondary">Katuosoite</label>
-									<input type="text" class="form-control form-control-sm"
-										name="katuosoite" value="${asiakas.katuosoite}">
-								</div>
-
-								<!-- Postinumero -->
-								<div class="col-md-4">
-									<label class="form-label fw-bold small text-secondary">Postinumero</label>
-									<input type="text" class="form-control form-control-sm"
-										name="postinumero" value="${asiakas.postinumero}"
-										maxlength="10">
-								</div>
-
-								<!-- Postitoimipaikka -->
-								<div class="col-md-8">
-									<label class="form-label fw-bold small text-secondary">Postitoimipaikka</label>
-									<input type="text" class="form-control form-control-sm"
-										name="postitoimipaikka" value="${asiakas.postitoimipaikka}">
-								</div>
-
-								<!-- Kotisivu -->
-								<div class="col-12">
-									<label class="form-label fw-bold small text-secondary">Kotisivun
-										osoite</label> <input type="url" class="form-control form-control-sm"
-										name="kotisivu" value="${asiakas.kotisivu}"
-										placeholder="https://">
-								</div>
-
-								<!-- Asiakkuuden tila -->
-								<div class="col-12">
-									<label class="form-label fw-bold small text-secondary">Asiakkuuden
-										tila myyntiputkessa</label> <select class="form-select form-select-sm"
-										name="tila" required>
-										<c:forEach var="tilaVaihtoehto" items="${tilat}">
-											<option value="${tilaVaihtoehto}"
-												<c:if test="${asiakas.tila == tilaVaihtoehto}">selected</c:if>>
-												${tilaVaihtoehto.nayttorivi}</option>
-										</c:forEach>
-									</select>
-								</div>
-
-								<!-- Toiminnan kuvaus -->
-								<div class="col-12">
-									<label class="form-label fw-bold small text-secondary">Toiminnan
-										kuvaus / Toimiala</label>
-									<textarea class="form-control form-control-sm" name="kuvaus"
-										rows="3">${asiakas.kuvaus}</textarea>
-								</div>
-							</div>
-						</div>
-
-						<div
-							class="modal-footer bg-light border-top d-flex justify-content-between">
-							<button type="button"
-								class="btn btn-sm btn-outline-secondary rounded-pill px-3"
-								data-bs-dismiss="modal">Peruuta</button>
-							<button type="submit"
-								class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">Tallenna
-								muutokset</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
 </body>
 </html>

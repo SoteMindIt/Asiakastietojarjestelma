@@ -1,10 +1,11 @@
-# AI_CONTEXT: Astori (Asiakantietojärjestelmä) - Päivitetty
+# AI_CONTEXT.md - Astori CRM Järjestelmäarkkitehtuuri
 
-Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja tietokantarakenteet. Tämän tiedon avulla tekoäly pysyy täysin synkronoituna koodipohjan kanssa eikä tee arkkitehtuuria rikkovia muutosehdotuksia.
+## 1. Järjestelmän yleiskuva
+Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle, vaan myös muille aloille (CRM). Järjestelmä on rakennettu Spring Boot 3.x -kehyksellä, hyödyntää PostgreSQL-tietokantaa ja sen käyttöliittymäkerros on toteutettu JSP (JavaServer Pages) -tekniikalla ja Bootstrap 5 -muotoilulla.
 
 - **Tekniikka:** Java 17, Spring Boot 3.x, Maven (war-pakkaus)
 - **Tietokanta:** PostgreSQL (tietokanta: `asiakastiedot`) + Spring Data JPA (`ddl-auto=update`)
-- **Käyttöliittymä:** JSP (sijainti: `/WEB-INF/jsp/`)
+- **Käyttöliittymä:** JSP (sijainti: `/WEB-INF/jsp/`) ja Generic Code Editor (Wild Web Developer) oletuksena.
 - **Lisäkirjastot:** Spring Security Crypto/Web, OpenPDF 1.3.40 (raportointi), FullCalendar 6
 
 ---
@@ -73,10 +74,9 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 
 ### Kirjaus.java
 - Kentät: `Long id`, `String teksti` (columnDefinition = "TEXT"), `LocalDateTime luontiaika`. `@ManyToOne` kytkös `Asiakas`-malliin.
-
 ### TapahtumaTyyppi.java
-- Kentät: `Long id` (Identity), `String nimi` (nullable=false, unique=true).
-- Huom: Vanha `nayttorivi`-kenttä on poistettu kokonaan arkkitehtuurin selkeyttämiseksi.
+- Kentät: `Long id` (Identity), `String nimi` (nullable=false, unique=true), `String vari` (nullable=false, columnDefinition="VARCHAR(255) DEFAULT '#0d6efd'").
+- Värivalinnat (esim. `#0d6efd`, `#dc3545`) tallennetaan suoraan tietokantaan dynaamista FullCalendar-väritystä varten.
 
 ### Tapahtuma.java (Kalenteri)
 - Relaatiot: `@ManyToOne @JoinColumn(name = "tapahtuma_tyyppi_id") TapahtumaTyyppi tyyppi`, kytkökset `Asiakas`- ja `Kayttaja`-malleihin.
@@ -105,9 +105,12 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 ### TapahtumaTyyppiRepository.java
 - `List<TapahtumaTyyppi> findAll()`
 
+### KirjausRepository.java
+- `Page<Kirjaus> findByLuontiaikaBetweenOrderByLuontiaikaDesc(LocalDateTime alku, LocalDateTime loppu, Pageable pageable)` -> Hakee dynaamisesti 20 kirjausta per sivu tietokantatasolla.
+
 ### LokiRepository.java
 - `Page<Loki> findAllByOrderByAikaleimaDesc(Pageable pageable)` -> Haetaan kaikki lokit 100 rivin erissä uusin ensin.
-- `Page<Loki> findByAikaleimaBetweenOrderByAikaleimaDesc(LocalDateTime alku, LocalDateTime loppu, Pageable pageable)` -> Aikavälihaku 100 rivin sivutuksella.
+- `Page<Loki> findByAikaleimaBetweenOrderByAikaleimaDesc(LocalDateTime alku, LocalDateTime loppu, Pageable pageable)` -> Audit Trail -aikavälihaku 100 rivin sivutuksella.
 
 ---
 
@@ -116,27 +119,37 @@ Tämä muistio sisältää sovelluksen arkkitehtuurin, muuttujanerot, reitit ja 
 - **`AsiakasController.java`**: 
   - Ohjaa dashboardia, asiakaslistauksen sivutusta ja asiakasprofiilia.
   - Vastaanottaa asiakastietojen muokkaukset osoitteeseen `/asiakas/{id}/muokkaa` (POST) Bootstrap-modalista.
+  - Kirjaa uuden asiakkaan luonnin automaattisesti järjestelmälokiin (`new Loki(istuntoTunnus, "LISÄYS", ...)`), mikä sytyttää vihreän badgen raporteissa.
   - Palveluyksikkö-reitit: `/asiakas/{asiakasId}/lisaa-palveluyksikko` (POST) sekä `/palveluyksikko/muokkaa/{id}` (POST).
   - Live Search reitti: `/asiakkaat/live-haku` (@ResponseBody).
 - **`RaportitController.java`**:
-  - Reitti `/raportit` (GET) tarkistaa istunnon (`kirjautunutKayttaja`) ja hoitaa **sekä yleisen lokilistauksen että dynaamisen aikavälihaun** (`alkuPvm` ja `loppuPvm`) 100 rivin sivutuksella (`PageRequest.of(sivu, 100)`).
-  - Hyödyntää tehokasta `lokiRepository.count()` -metodia listan kalliin `.size()` sijaan.
+  - Reitti `/raportit` (GET) tarkistaa istunnon ja hoitaa sekä yleisen lokilistauksen että dynaamisen aikavälihaun.
+  - Sisältää tehokkaan `LokiRepository` ja `KirjausRepository` -sivutuksen (100 riviä lokeille, 20 riviä päiväkirjauksille). 
+  - Jos aikaväliä ei anneta, asettaa oletukseksi automaattisesti viimeiset 30 vuorokautta.
+  - Ryhmittelee sivutetut kirjaukset muistissa `Map<Long, List<Kirjaus>>` -rakenteeseen ilman tietokantaolioiden tilan sotkemista.
 - **`TarjousController.java`**: Tarjousrivit `BigDecimal`-laskennalla (uusi 25.5 % ALV-tuki) ja OpenPDF-generoinnilla.
 - **`AsetuksetController.java`**: 
   - Tuoterekisteri, työntekijät ja tapahtumatyypit.
-  - Ääkkösettömät reitit konfliktien estämiseksi: `/asetukset/lisaa-tyyppi` (POST) ja `/asetukset/muokkaa-typpia/{id}` (POST), vastaanottaa `@RequestParam("nimi") String uusiNimi`.
-- **`KalenteriController.java`**: Vastaanottaa tapahtumatyypin numeerisen ID:n (`@RequestParam("tyyppi") Long tyyppiId`) reiteissä `/kalenteri/lisaa` ja `/kalenteri/paivita/{id}`.
-
----
-
+  - Ääkkösettömät reitit konfliktien estämiseksi: `/asetukset/lisaa-tyyppi` (POST) ja `/asetukset/muokkaa-typpia/{id}` (POST).
+- **`KalenteriController.java`**: Vastaanottaa tapahtumatyypin numeerisen ID:n reiteissä `/kalenteri/lisaa` ja `/kalenteri/paivita/{id}`.
 ## 💻 5. Käyttöliittymäkerros (JSP-näkymät)
 
 - **`asiakasprofiili.jsp`**: 
-  - Asiakkaan muokkaus tapahtuu siististi **Bootstrap 5 Modal-ikkunassa** (`#muokkaaAsiakasModal`) vanhan inline-muokkakuksen sijaan.
+  - Asiakkaan tietojen muokkaus tapahtuu siististi **Bootstrap 5 Modal-ikkunassa** (`#muokkaaAsiakasModal`) vanhan inline-muokkauksen sijaan.
   - Ostetut tuotteet ja palvelut -kortti listaa erikseen **Yhteensä (Alv 0%)**, **ALV-prosentin** sekä **Yhteensä (Verollinen)**.
   - Yläreunassa näytetään allekkain siistein välein (`gap-2`) kaksi badgea: **Asiakkuuden kokonaisarvo (sis. ALV)** (vihreä) ja **Veroton myynti yhteensä (Alv 0%)** (harmaa).
+  - Kaikki HTML-sulkutagit (`</div>`) on korjattu ja sovitettu siististi Generic Code Editorin mukaiseksi.
+
 - **`raportit.jsp`**: 
-  - Sisältää HTML5-päivämääräkentillä toimivan hakulomakkeen lokien suodatukseen.
-  - Alalaidassa on Bootstrap 5 -sivutuspalkki, joka **säilyttää valitut hakupäivämäärät** URL-osoitteessa sivujen välillä siirryttäessä.
-- **`asetukset.jsp`**: Tapahtumatyypit listataan ID:n ja nimen mukaan. Muokkausmodal (`#muokkaaTyyppiModal`) lähettää muuttujan `name="nimi"` JavaScriptillä dynaamisesti päivitettyyn polkuun `/asetukset/muokkaa-typpia/{id}`.
-- **`kalenteri.jsp`**: Alustaa FullCalendar 6 -näkymän. Modalit (`#lisaaTapahtumaModal`, `#muokkaaTapahtumaModal`) käyttävät dynaamista `<select>`-pudotusvalikkoa sidottuna tyypin numeeriseen ID:hen (`value="${t.id}"`). Tapahtumat tuodaan kalenteriin dynaamisella `tyyppiId: '${tap.tyyppi.id}'` -kentällä.
+  - Sisältää dynaamisen **Bootstrap 5 -välilehtirakenteen** (Tabs), joka jakaa näkymän erillisiin alivälilehtiin: `📋 Asiakaskohtaiset päiväkirjaukset` ja `🛡️ Järjestelmän käyttöloki (Audit Trail)`.
+  - Hakulomakkeeseen on lisätty `tab`-piilokenttä sekä alalaidan JavaScript-kuuntelijat. Kun käyttäjä painaa haku- tai sivutuspainiketta, näkymä muistaa ja pitää automaattisesti auki sen välilehden, josta klikkaus tapahtui.
+  - Alalaidan Bootstrap 5 -sivutuspalkit säilyttävät kaikki valitut hakupäivämäärät ja välilehtitiedot URL-osoitteessa sivujen välillä liikuttaessa.
+
+- **`asetukset.jsp`**: 
+  - Tapahtumatyypit listataan ID:n ja nimen mukaan. Muokkausmodal (`#muokkaaTyyppiModal`) lähettää muuttujan `name="nimi"` JavaScriptillä dynaamisesti päivitettyyn polkuun `/asetukset/muokkaa-typpia/{id}`.
+
+- **`kalenteri.jsp`**: 
+  - Alustaa FullCalendar 6 -kuukausinäkymän, jossa tapahtumat värjätään suoraan tietokannasta luetulla dynaamisella `vari`-sarakkeella.
+  - Kalenteriruudukko näyttää vain kellonajan, tyypin nimen sekä dynaamisesti katkaistun asiakasnimen (jos yli 10 merkkiä, esim. `Puhelu, Palvelutal...`). Alkuperäinen aihe on piilotettu ruudukosta.
+  - Kursoria elementin päälle vietäessä aukeaa interaktiivinen Bootstrap 5 Tooltip, joka näyttää tyypin, puhtaan alkuperäisen otsikon, täyden asiakasnimen sekä lisätiedot omilla riveillään HTML-muotoiltuna.
+  - Klikattaessa muokkauslomake (`eventClick`) lukee puhtaan aiheen suoraan `extendedProps.alkuperainenOtsikko` -muuttujasta, jolloin aihe-kenttä ei sotkeudu dynaamisista liitteistä.
