@@ -7,15 +7,17 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import fi.sotemindit.astori.model.Asiakas;
+import fi.sotemindit.astori.model.Hyvinvointialue;
 
 public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 
-	// Haetaan käyttäjän asiakkaat sivutettuna
+	// 1. Haetaan käyttäjän asiakkaat sivutettuna ilman rajauksia
 	Page<Asiakas> findByKayttajaKayttajatunnus(String kayttajatunnus, Pageable pageable);
 
-	
-	
-	// Hakutoiminto neljälle kentälle
+	// 2. 🔗 UUSI: Hakee tietyn käyttäjän asiakkaat pelkän hyvinvointialueen perusteella sivutettuna
+	Page<Asiakas> findByKayttajaKayttajatunnusAndHyvinvointialue(String kayttajatunnus, Hyvinvointialue hyvinvointialue, Pageable pageable);
+
+	// 3. Hakutoiminto viidelle kentälle (Vapaa tekstihaku ilman aluerajausta)
 	@Query("SELECT a FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus AND " +
 		       "(LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
 		       "LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
@@ -27,7 +29,19 @@ public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 			@Param("haku") String haku, 
 			Pageable pageable);
 
-	// 📈 KORJATTU LASKURI: Käyttää Javan luokkarakennetta (Asiakas isolla), toimii satavarmasti ilman SQL-ongelmia
+	// 4. 🔗 UUSI YHDISTELMÄHAKU: Hakee vapaalla hakusanalla JA rajatulla hyvinvointialueella sivutettuna
+	@Query("SELECT a FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus AND a.hyvinvointialue = :hyvinvointialue AND " +
+		       "(LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.puhelin) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')))")
+	Page<Asiakas> findByKayttajaKayttajatunnusAndHyvinvointialueAndHaku(
+			@Param("tunnus") String tunnus, 
+			@Param("hyvinvointialue") Hyvinvointialue hyvinvointialue,
+			@Param("haku") String haku, 
+			Pageable pageable);
+
+	// 5. 📈 KORJATTU LASKURI: Käyttää Javan luokkarakennetta, toimii satavarmasti ilman SQL-ongelmia
 	@Query("SELECT COUNT(a) FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus")
 	long countByKayttajaKayttajatunnus(@Param("tunnus") String tunnus);
 }

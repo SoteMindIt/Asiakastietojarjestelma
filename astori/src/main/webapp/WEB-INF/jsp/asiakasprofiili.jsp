@@ -4,6 +4,7 @@
 <%@ taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html>
 <html lang="fi">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,6 +38,7 @@ body {
 }
 </style>
 </head>
+
 <body>
 
 	<!-- YLÄPALKKI -->
@@ -127,10 +129,14 @@ body {
 					<div class="col-md-6">
 						<div class="pe-md-3">
 							<p class="mb-2">
-								<strong>📞 Puhelinnumero:</strong> ${not empty asiakas.puhelin ? asiakas.puhelin : '<span class="text-muted italic">Ei määritelty</span>'}
+								<strong>📞 Puhelinnumero:</strong> ${not empty asiakas.puhelin ?
+												asiakas.puhelin : '<span class="text-muted italic">Ei
+													määritelty</span>'}
 							</p>
 							<p class="mb-2">
-								<strong>✉️ Sähköposti:</strong> ${not empty asiakas.sahkoposti ? asiakas.sahkoposti : '<span class="text-muted italic">Ei määritelty</span>'}
+								<strong>✉️ Sähköposti:</strong> ${not empty asiakas.sahkoposti ?
+												asiakas.sahkoposti : '<span class="text-muted italic">Ei
+													määritelty</span>'}
 							</p>
 							<p class="mb-2">
 								<strong>🌐 Kotisivu:</strong>
@@ -145,17 +151,22 @@ body {
 								</c:choose>
 							</p>
 							<p class="mb-2">
-								<strong>📍 Katuosoite:</strong> ${not empty asiakas.katuosoite ? asiakas.katuosoite : '<span class="text-muted italic">Ei määritelty</span>'}
+								<strong>📍 Katuosoite:</strong> ${not empty asiakas.katuosoite ?
+												asiakas.katuosoite : '<span class="text-muted italic">Ei
+													määritelty</span>'}
 							</p>
 							<p class="mb-2">
-								<strong>📮 Postitoimipaikka:</strong> ${not empty asiakas.postitoimipaikka ? asiakas.postinumero += ' ' += asiakas.postitoimipaikka : '<span class="text-muted italic">Ei määritelty</span>'}
+								<strong>📮 Postitoimipaikka:</strong> ${not empty
+												asiakas.postitoimipaikka ? asiakas.postinumero += ' ' +=
+												asiakas.postitoimipaikka : '<span class="text-muted italic">Ei
+													määritelty</span>'}
 							</p>
 							<p class="mb-0">
 								<strong>🏢 Hyvinvointialue:</strong>
 								<c:choose>
 									<c:when test="${not empty asiakas.hyvinvointialue}">
-										${asiakas.hyvinvointialue.nimi}
-									</c:when>
+														${asiakas.hyvinvointialue.nimi}
+													</c:when>
 									<c:otherwise>
 										<span class="text-muted italic">Ei määritelty</span>
 									</c:otherwise>
@@ -210,6 +221,8 @@ body {
 				</div>
 			</c:if>
 
+
+
 			<!-- 💡 LOKI JA MUISTIINPANOT (Kokoontaitettava versio nuoli-indikaattorilla) -->
 			<div class="mb-4">
 				<div class="border bg-white p-3 rounded-3">
@@ -255,7 +268,9 @@ body {
 											<button type="button"
 												class="btn btn-sm btn-link text-primary py-0 px-1 text-decoration-none muokkaa-loki-btn"
 												style="font-size: 0.85em;" data-id="${k.id}"
-												data-teksti="<c:out value='${k.teksti}'/>">Muokkaa</button>
+												data-teksti="<c:out value='${k.teksti}'/>"
+												data-linkki="${not empty k.linkitetytKirjaukset ? k.linkitetytKirjaukset[0].id : ''}">
+												Muokkaa</button>
 
 											<form
 												action="${pageContext.request.contextPath}/kirjaus/poista/${k.id}"
@@ -269,7 +284,77 @@ body {
 											</form>
 										</div>
 									</div>
-									<div style="white-space: pre-line; line-height: 1.4;">${k.teksti}</div>
+									<div
+										style="white-space: pre-line; line-height: 1.4; margin-bottom: 8px;">${k.teksti}</div>
+
+									<!-- 🔗 JIRA-TYYLINEN LINKITETTYJEN MERKINTÖJEN HAITARILISTA -->
+									<c:if test="${not empty k.linkitetytKirjaukset}">
+										<div class="accordion mt-2 mb-1" id="accordionParent-${k.id}">
+											<div class="accordion-item border-0 bg-transparent">
+												<h2 class="accordion-header" id="heading-${k.id}">
+													<button
+														class="accordion-button collapsed py-1 px-2 bg-light text-secondary fw-semibold border rounded"
+														type="button" data-bs-toggle="collapse"
+														data-bs-target="#collapseLinks-${k.id}"
+														aria-expanded="false"
+														aria-controls="collapseLinks-${k.id}"
+														style="font-size: 0.75rem !important; box-shadow: none; padding-top: 2px !important; padding-bottom: 2px !important;">
+														<span style="font-size: 1.0em; margin-right: 4px;">🔗</span>
+														Linkitykset muihin kirjauksiin
+														(${k.linkitetytKirjaukset.size()})
+													</button>
+												</h2>
+												<div id="collapseLinks-${k.id}"
+													class="accordion-collapse collapse"
+													aria-labelledby="heading-${k.id}"
+													data-bs-parent="#accordionParent-${k.id}">
+													<div
+														class="accordion-body p-2 bg-white border border-top-0 rounded-bottom">
+														<div class="d-flex flex-column gap-1">
+															<c:forEach items="${k.linkitetytKirjaukset}"
+																var="linkitetty">
+																<div
+																	class="p-1 rounded bg-light border-start border-secondary border-3 d-flex justify-content-between align-items-center"
+																	style="font-size: 0.9em;">
+																	<div
+																		style="max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+																		<strong class="text-primary">${linkitetty.asiakas.nimi}:</strong>
+																		<span class="text-dark"><c:out
+																				value="${linkitetty.teksti}" /></span>
+																	</div>
+																	<div class="d-flex gap-1 align-items-center">
+																		<!-- Avaa-nappi profiiliin siirtymistä varten -->
+																		<a
+																			href="${pageContext.request.contextPath}/asiakas/${linkitetty.asiakas.id}"
+																			class="btn btn-xs btn-outline-primary py-0 px-1 text-decoration-none fw-bold"
+																			style="font-size: 0.8em; white-space: nowrap;"
+																			title="Siirry asiakkaan profiiliin"> Avaa → </a>
+
+																		<!-- 🗑️ UUSI: Roskakorinappi linkityksen poistamiseen -->
+																		<form
+																			action="${pageContext.request.contextPath}/kirjaus/${k.id}/poista-linkki/${linkitetty.id}"
+																			method="post" class="d-inline m-0"
+																			onsubmit="return confirm('Haluatko varmasti poistaa tämän sopimuslinkityksen näiden kahden asiakkaan väliltä?')">
+																			<input type="hidden" name="asiakasId"
+																				value="${asiakas.id}">
+																			<button type="submit"
+																				class="btn btn-xs btn-link text-danger py-0 px-1 text-decoration-none fw-bold"
+																				style="font-size: 0.8em; line-height: 1;"
+																				title="Poista linkitys">
+																				<i class="bi bi-trash"></i> Poista
+																			</button>
+																		</form>
+																	</div>
+																</div>
+															</c:forEach>
+														</div>
+
+													</div>
+												</div>
+											</div>
+										</div>
+									</c:if>
+
 								</div>
 							</c:forEach>
 
@@ -286,6 +371,7 @@ body {
 
 				</div>
 			</div>
+
 
 			<!-- TÄYSLEVEÄT KORTIT ALLEKKAIN (Korjaa tyhjät aukot sivuilla) -->
 			<div class="row g-4 mb-4">
@@ -362,8 +448,8 @@ body {
 													<!-- Yksikön omat yhteyshenkilöt -->
 													<div class="mt-3 pt-2 border-top">
 														<h6 class="fw-bold text-uppercase text-secondary mb-2"
-															style="font-size: 0.7em; letter-spacing: 0.5px;">Yksikön
-															vastuuhenkilöt</h6>
+															style="font-size: 0.7em; letter-spacing: 0.5px;">
+															Yksikön vastuuhenkilöt</h6>
 														<c:forEach var="yh" items="${yksikko.yhteyshenkilot}">
 															<div
 																class="p-2 bg-white rounded border shadow-sm mb-1 text-dark small">
@@ -380,8 +466,8 @@ body {
 															</div>
 														</c:forEach>
 														<c:if test="${empty yksikko.yhteyshenkilot}">
-															<div class="text-muted italic small text-center py-1">Ei
-																nimettyjä omia vastuuhenkilöitä.</div>
+															<div class="text-muted italic small text-center py-1">
+																Ei nimettyjä omia vastuuhenkilöitä.</div>
 														</c:if>
 													</div>
 
@@ -545,7 +631,8 @@ body {
 										<tbody>
 											<c:forEach var="ot" items="${ostetutTuotteet}">
 												<tr>
-													<td><span class="fw-bold text-dark">${ot.tuote.nimi}</span></td>
+													<td><span class="fw-bold text-dark">${ot.tuote.nimi}</span>
+													</td>
 													<td>${ot.maara}${ot.tuote.yksikko.lyhenne}</td>
 													<td><fmt:formatNumber value="${ot.myyntihinta}"
 															type="currency" currencySymbol="€" /></td>
@@ -603,8 +690,17 @@ body {
 			<div class="row g-4 mb-4">
 				<div class="col-12">
 					<div class="border bg-white p-3 rounded-3">
-						<h3 class="fw-bold h5 text-dark mb-3">Tallennetut tarjoukset
-							(${tarjouksetMaara})</h3>
+						<!-- 💡 KORJATTU: Otsikko ja uusi dynaaminen tarjouspainike rinnakkain -->
+						<div
+							class="d-flex justify-content-between align-items-center mb-3">
+							<h3 class="fw-bold h5 text-dark mb-0">📜 Tallennetut
+								tarjoukset (${tarjouksetMaara})</h3>
+							<a
+								href="${pageContext.request.contextPath}/asiakas/${asiakas.id}/tarjoukset"
+								class="btn btn-sm btn-success fw-bold py-1.5 px-3 rounded-pill shadow-sm">
+								➕ Luo uusi tarjouslaskelma </a>
+						</div>
+
 						<div class="table-responsive">
 							<table class="table table-sm table-hover mb-0 align-middle">
 								<thead class="table-light">
@@ -622,8 +718,8 @@ body {
 											<td><strong>${t.tarjousNumero}</strong></td>
 											<td>${t.pvm}</td>
 											<td>${t.voimassaoloPvm}</td>
-											<td class="text-end fw-bold text-success">${t.verollinenYhteensa}
-												€</td>
+											<td class="text-end fw-bold text-success">
+												${t.verollinenYhteensa} €</td>
 											<td class="text-end"><a
 												href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf"
 												class="btn btn-sm btn-outline-secondary px-2">Lataa PDF</a></td>
@@ -960,7 +1056,8 @@ body {
 								required>
 								<c:forEach var="kanta" items="${alvKannat}">
 									<option value="${kanta}"
-										${kanta == 'ALV_25_5' ? 'selected' : ''}>${kanta.nayttorivi}</option>
+										${kanta=='ALV_25_5' ? 'selected' : '' }>
+										${kanta.nayttorivi}</option>
 								</c:forEach>
 							</select>
 						</div>
@@ -1006,6 +1103,40 @@ body {
 							<textarea class="form-control" name="teksti" rows="5" required
 								placeholder="Kirjoita tähän lokimerkinnän sisältö..."></textarea>
 						</div>
+
+						<!-- 💡 UUSI: VALINTARUUTU TÄRKEILLE MERKINNÖILLE -->
+						<div
+							class="form-check form-switch p-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-3">
+							<input class="form-check-input ms-0 me-2" type="checkbox"
+								id="tarkea" name="tarkea" value="true"> <label
+								class="form-check-label fw-bold text-warning-dark small"
+								for="tarkea"> ⚠️ Merkitse tämä kirjaus tärkeäksi /
+								huomionarvoiseksi </label>
+						</div>
+
+						<!-- 🔗 JIRA-TYYLINEN LINKITYS SAMANLAISEEN MERKINTÄÄN / SOPIMUKSEEN -->
+						<div class="mb-3 mt-3">
+							<label class="form-label fw-bold text-secondary"> <i
+								class="bi bi-link-45deg"></i> Liittyykö tämä aiemmin sovittuun
+								asiaan? (Valinnainen)
+							</label> <select class="form-select" name="linkitettavaId">
+								<option value="">-- Ei linkitystä (Uusi erillinen asia)
+									--</option>
+								<c:forEach items="${kaikkiViimeisymmatKirjaukset}"
+									var="vanhaKirjaus">
+									<%-- Näytetään muiden asiakkaiden merkinnät kytkemistä varten --%>
+									<c:if test="${vanhaKirjaus.asiakas.id != asiakas.id}">
+										<option value="${vanhaKirjaus.id}">
+											${vanhaKirjaus.asiakas.nimi}: ${vanhaKirjaus.teksti.length() > 40 ? vanhaKirjaus.teksti.substring(0,40).concat('...') : vanhaKirjaus.teksti}
+										</option>
+									</c:if>
+								</c:forEach>
+							</select>
+							<div class="form-text small text-muted">Jos toisen
+								asiakkaan kanssa on sovittu tai kirjattu sama asia, voit
+								linkittää merkinnät tästä toisiinsa.</div>
+						</div>
+
 					</div>
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary"
@@ -1038,6 +1169,28 @@ body {
 							<textarea class="form-control" id="lokiTeksti" name="teksti"
 								rows="5" required></textarea>
 						</div>
+
+						<!-- 🔗 JIRA-TYYLINEN LINKITYKSEN MUOKKAUS -->
+						<div class="mb-3 mt-3">
+							<label class="form-label fw-bold text-secondary"> <i
+								class="bi bi-link-45deg"></i> Liittyykö tämä aiemmin sovittuun
+								asiaan? (Valinnainen)
+							</label> <select class="form-select" id="lokiLinkitettavaId"
+								name="linkitettavaId">
+								<option value="">-- Ei linkitystä (Uusi erillinen asia)
+									--</option>
+								<c:forEach items="${kaikkiViimeisymmatKirjaukset}"
+									var="vanhaKirjaus">
+									<%-- Estetään linkitys tämän saman asiakkaan omiin muihin riveihin --%>
+									<c:if test="${vanhaKirjaus.asiakas.id != asiakas.id}">
+										<option value="${vanhaKirjaus.id}">
+											${vanhaKirjaus.asiakas.nimi}: ${vanhaKirjaus.teksti.length() > 40 ? vanhaKirjaus.teksti.substring(0,40).concat('...') : vanhaKirjaus.teksti}
+										</option>
+									</c:if>
+								</c:forEach>
+							</select>
+						</div>
+
 					</div>
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary"
@@ -1188,7 +1341,9 @@ body {
 									<option value="">-- Valitse hyvinvointialue --</option>
 									<c:forEach var="alue" items="${hyvinvointialueet}">
 										<option value="${alue}"
-											<c:if test="${asiakas.hyvinvointialue == alue.name()}">selected</c:if>>${alue.nimi}</option>
+											<c:if
+															test="${asiakas.hyvinvointialue == alue.name()}">selected
+															</c:if>>${alue.nimi}</option>
 									</c:forEach>
 								</select>
 							</div>
@@ -1236,7 +1391,8 @@ body {
 									name="tila" required>
 									<c:forEach var="tilaVaihtoehto" items="${tilat}">
 										<option value="${tilaVaihtoehto}"
-											<c:if test="${asiakas.tila == tilaVaihtoehto}">selected</c:if>>${tilaVaihtoehto.nayttorivi}</option>
+											<c:if
+															test="${asiakas.tila == tilaVaihtoehto}">selected</c:if>>${tilaVaihtoehto.nayttorivi}</option>
 									</c:forEach>
 								</select>
 							</div>
@@ -1265,117 +1421,125 @@ body {
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 	<script>
-		const yhElement = document.getElementById('muokkaaYhModal');
-		const yhModalOlio = yhElement ? new bootstrap.Modal(yhElement) : null;
+						const yhElement = document.getElementById('muokkaaYhModal');
+						const yhModalOlio = yhElement ? new bootstrap.Modal(yhElement) : null;
 
-		const lokiElement = document.getElementById('muokkaaLokiModal');
-		const lokiModalOlio = lokiElement ? new bootstrap.Modal(lokiElement) : null;
+						const lokiElement = document.getElementById('muokkaaLokiModal');
+						const lokiModalOlio = lokiElement ? new bootstrap.Modal(lokiElement) : null;
 
-		/* 1. Yhteyshenkilön muokkaustoiminto */
-		document.querySelectorAll('.muokkaa-yh-btn').forEach(btn => {
-			btn.addEventListener('click', function() {
-				const id = this.getAttribute('data-id');
-				const nimi = this.getAttribute('data-nimi');
-				const rooli = this.getAttribute('data-rooli');
-				const email = this.getAttribute('data-email');
-				const puh = this.getAttribute('data-puh');
-				
-				const form = document.getElementById('muokkaaYhForm');
-				if (form) form.action = '${pageContext.request.contextPath}/yhteyshenkilo/muokkaa/' + id;
-				
-				if (document.getElementById('yhNimi')) document.getElementById('yhNimi').value = nimi;
-				if (document.getElementById('yhRooli')) document.getElementById('yhRooli').value = rooli;
-				if (document.getElementById('yhSahkoposti')) document.getElementById('yhSahkoposti').value = email;
-				if (document.getElementById('yhPuhelin')) document.getElementById('yhPuhelin').value = puh;
-				
-				if (yhModalOlio) yhModalOlio.show();
-			});
-		});
-		
-		/* 2. Lokimerkinnän muokkaustoiminto */
-		document.querySelectorAll('.muokkaa-loki-btn').forEach(btn => {
-			btn.addEventListener('click', function() {
-				const id = this.getAttribute('data-id');
-				const teksti = this.getAttribute('data-teksti');
-				
-				const form = document.getElementById('muokkaaLokiForm');
-				if (form) form.action = '${pageContext.request.contextPath}/kirjaus/muokkaa/' + id;
-				
-				if (document.getElementById('lokiTeksti')) document.getElementById('lokiTeksti').value = teksti;
-				
-				if (lokiModalOlio) lokiModalOlio.show();
-			});
-		});
-		
-		/* 3. Myydyn palvelun muokkaustoiminto */
-		document.querySelectorAll('.muokkaa-palvelu-painike').forEach(button => {
-			button.addEventListener('click', function() {
-				const id = this.getAttribute('data-id');
-				const tuoteNimi = this.getAttribute('data-tuote');
-				const maara = this.getAttribute('data-maara');
-				const hinta = this.getAttribute('data-hinta');
-				const pvm = this.getAttribute('data-pvm');
-				
-				const form = document.getElementById('muokkaaPalveluForm');
-				if (form) form.action = '${pageContext.request.contextPath}/palvelu/muokkaa/' + id;
-				
-				if (document.getElementById('muokkaaOtsikko')) document.getElementById('muokkaaOtsikko').innerText = "Muokkaa riviä: " + tuoteNimi;
-				if (document.getElementById('muokkaaTuoteNimi')) document.getElementById('muokkaaTuoteNimi').value = tuoteNimi;
-				if (document.getElementById('muokkaaMaara')) document.getElementById('muokkaaMaara').value = maara;
-				if (document.getElementById('muokkaaHinta')) document.getElementById('muokkaaHinta').value = hinta;
-				if (document.getElementById('muokkaaPvm')) document.getElementById('muokkaaPvm').value = pvm;
-			});
-		});
+						/* 1. Yhteyshenkilön muokkaustoiminto */
+						document.querySelectorAll('.muokkaa-yh-btn').forEach(btn => {
+							btn.addEventListener('click', function () {
+								const id = this.getAttribute('data-id');
+								const nimi = this.getAttribute('data-nimi');
+								const rooli = this.getAttribute('data-rooli');
+								const email = this.getAttribute('data-email');
+								const puh = this.getAttribute('data-puh');
 
-		/* 4. Myydyn palvelun poistotoiminto */
-		document.querySelectorAll('.avaapoistomodal').forEach(button => {
-			button.addEventListener('click', function() {
-				const id = this.getAttribute('data-id');
-				const tuoteNimi = this.getAttribute('data-tuote');
-				
-				if (document.getElementById('poistettavaTuoteNimi')) {
-					document.getElementById('poistettavaTuoteNimi').innerText = tuoteNimi;
-				}
-				
-				const poistaForm = document.getElementById('poistaPalveluForm');
-				if (poistaForm) {
-					poistaForm.action = '${pageContext.request.contextPath}/palvelu/poista/' + id;
-				}
-			});
-		});
+								const form = document.getElementById('muokkaaYhForm');
+								if (form) form.action = '${pageContext.request.contextPath}/yhteyshenkilo/muokkaa/' + id;
 
-		/* 5. Palveluyksikön muokkaustoiminto */
-		document.querySelectorAll('.muokkaa-py-btn').forEach(btn => {
-			btn.addEventListener('click', function() {
-				const id = this.getAttribute('data-id');
-				const nimi = this.getAttribute('data-nimi');
-				const alue = this.getAttribute('data-alue');
-				const katu = this.getAttribute('data-katu');
-				const pno = this.getAttribute('data-pno');
-				const ptp = this.getAttribute('data-ptp');
-				const puh = this.getAttribute('data-puh');
-				const email = this.getAttribute('data-email');
-				const kuvaus = this.getAttribute('data-kuvaus');
-				
-				const form = document.getElementById('muokkaaPyForm');
-				if (form) form.action = '${pageContext.request.contextPath}/palveluyksikko/muokkaa/' + id;
-				
-				if (document.getElementById('pyNimi')) document.getElementById('pyNimi').value = nimi;
-				if (document.getElementById('pyHyvinvointialue')) document.getElementById('pyHyvinvointialue').value = alue;
-				if (document.getElementById('pyKatuosoite')) document.getElementById('pyKatuosoite').value = katu;
-				if (document.getElementById('pyPostinumero')) document.getElementById('pyPostinumero').value = pno;
-				if (document.getElementById('pyPostitoimipaikka')) document.getElementById('pyPostitoimipaikka').value = ptp;
-				if (document.getElementById('pyPuhelin')) document.getElementById('pyPuhelin').value = puh;
-				if (document.getElementById('pySahkoposti')) document.getElementById('pySahkoposti').value = email;
-				if (document.getElementById('pyKuvaus')) document.getElementById('pyKuvaus').value = kuvaus;
-				
-				const modalElement = document.getElementById('muokkaaPyModal');
-				if (modalElement) {
-					const uusiModal = new bootstrap.Modal(modalElement);
-					uusiModal.show();
-				}
-			});
-		});
-	</script>
+								if (document.getElementById('yhNimi')) document.getElementById('yhNimi').value = nimi;
+								if (document.getElementById('yhRooli')) document.getElementById('yhRooli').value = rooli;
+								if (document.getElementById('yhSahkoposti')) document.getElementById('yhSahkoposti').value = email;
+								if (document.getElementById('yhPuhelin')) document.getElementById('yhPuhelin').value = puh;
+
+								if (yhModalOlio) yhModalOlio.show();
+							});
+						});
+
+						/* 2. Lokimerkinnän muokkaustoiminto */
+						document.querySelectorAll('.muokkaa-loki-btn').forEach(btn => {
+						    btn.addEventListener('click', function () {
+						        const id = this.getAttribute('data-id');
+						        const teksti = this.getAttribute('data-teksti');
+
+						        const form = document.getElementById('muokkaaLokiForm');
+						        if (form) form.action = '${pageContext.request.contextPath}/kirjaus/muokkaa/' + id;
+
+						        if (document.getElementById('lokiTeksti')) document.getElementById('lokiTeksti').value = teksti;
+
+						        // 🔗 Nollataan valikko aina tyhjäksi – roolina vain uuden linkin lisääminen!
+						        const selectElement = document.getElementById('lokiLinkitettavaId');
+						        if (selectElement) {
+						            selectElement.value = "";
+						        }
+
+						        if (lokiModalOlio) lokiModalOlio.show();
+						    });
+						});
+
+
+						/* 3. Myydyn palvelun muokkaustoiminto */
+						document.querySelectorAll('.muokkaa-palvelu-painike').forEach(button => {
+							button.addEventListener('click', function () {
+								const id = this.getAttribute('data-id');
+								const tuoteNimi = this.getAttribute('data-tuote');
+								const maara = this.getAttribute('data-maara');
+								const hinta = this.getAttribute('data-hinta');
+								const pvm = this.getAttribute('data-pvm');
+
+								const form = document.getElementById('muokkaaPalveluForm');
+								if (form) form.action = '${pageContext.request.contextPath}/palvelu/muokkaa/' + id;
+
+								if (document.getElementById('muokkaaOtsikko')) document.getElementById('muokkaaOtsikko').innerText = "Muokkaa riviä: " + tuoteNimi;
+								if (document.getElementById('muokkaaTuoteNimi')) document.getElementById('muokkaaTuoteNimi').value = tuoteNimi;
+								if (document.getElementById('muokkaaMaara')) document.getElementById('muokkaaMaara').value = maara;
+								if (document.getElementById('muokkaaHinta')) document.getElementById('muokkaaHinta').value = hinta;
+								if (document.getElementById('muokkaaPvm')) document.getElementById('muokkaaPvm').value = pvm;
+							});
+						});
+
+						/* 4. Myydyn palvelun poistotoiminto */
+						document.querySelectorAll('.avaapoistomodal').forEach(button => {
+							button.addEventListener('click', function () {
+								const id = this.getAttribute('data-id');
+								const tuoteNimi = this.getAttribute('data-tuote');
+
+								if (document.getElementById('poistettavaTuoteNimi')) {
+									document.getElementById('poistettavaTuoteNimi').innerText = tuoteNimi;
+								}
+
+								const poistaForm = document.getElementById('poistaPalveluForm');
+								if (poistaForm) {
+									poistaForm.action = '${pageContext.request.contextPath}/palvelu/poista/' + id;
+								}
+							});
+						});
+
+						/* 5. Palveluyksikön muokkaustoiminto */
+						document.querySelectorAll('.muokkaa-py-btn').forEach(btn => {
+							btn.addEventListener('click', function () {
+								const id = this.getAttribute('data-id');
+								const nimi = this.getAttribute('data-nimi');
+								const alue = this.getAttribute('data-alue');
+								const katu = this.getAttribute('data-katu');
+								const pno = this.getAttribute('data-pno');
+								const ptp = this.getAttribute('data-ptp');
+								const puh = this.getAttribute('data-puh');
+								const email = this.getAttribute('data-email');
+								const kuvaus = this.getAttribute('data-kuvaus');
+
+								const form = document.getElementById('muokkaaPyForm');
+								if (form) form.action = '${pageContext.request.contextPath}/palveluyksikko/muokkaa/' + id;
+
+								if (document.getElementById('pyNimi')) document.getElementById('pyNimi').value = nimi;
+								if (document.getElementById('pyHyvinvointialue')) document.getElementById('pyHyvinvointialue').value = alue;
+								if (document.getElementById('pyKatuosoite')) document.getElementById('pyKatuosoite').value = katu;
+								if (document.getElementById('pyPostinumero')) document.getElementById('pyPostinumero').value = pno;
+								if (document.getElementById('pyPostitoimipaikka')) document.getElementById('pyPostitoimipaikka').value = ptp;
+								if (document.getElementById('pyPuhelin')) document.getElementById('pyPuhelin').value = puh;
+								if (document.getElementById('pySahkoposti')) document.getElementById('pySahkoposti').value = email;
+								if (document.getElementById('pyKuvaus')) document.getElementById('pyKuvaus').value = kuvaus;
+
+								const modalElement = document.getElementById('muokkaaPyModal');
+								if (modalElement) {
+									const uusiModal = new bootstrap.Modal(modalElement);
+									uusiModal.show();
+								}
+							});
+						});
+					</script>
 </body>
+
 </html>

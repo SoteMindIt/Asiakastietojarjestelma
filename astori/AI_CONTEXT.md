@@ -31,7 +31,7 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 - Relaatiot: 
   - `@ManyToOne @JoinColumn(name = "kayttaja_id") Kayttaja kayttaja`
   - `@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true) List<Palveluyksikko> palveluyksikot`
-- Konstruktori: 11 argumentin standardikonstruktori.
+- Konstruktori: 11 argumentin standardkonstruktori.
 
 ### AsiakkaanTila.java (Enum)
 - Arvot: `PROSPEKTI`, `KONTAKTOITU`, `TARJOUS_JATETTY`, `AKTIIVINEN`, `PAATTYNYT`.
@@ -54,7 +54,6 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 
 ### Kayttaja.java
 - Kentät: `Long id`, `String kayttajatunnus`, `String salasana`, `String rooli`. `@OneToMany` suhde `Asiakas`-listaan.
-
 ### Tuote.java
 - Kentät: `Long id`, `String nimi`, `String kuvaus`, `BigDecimal hinta`. `@Enumerated(EnumType.STRING) TuoteYksikko yksikko`.
 
@@ -72,8 +71,13 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
   - `getAlvOsuus()` -> Laskee ALV:n osuuden euroina käyttäen enumin prosenttia.
   - `getVerollinenKokonaishinta()` -> Laskee lopullisen verollisen hinnan (Veroton + ALV).
 
-### Kirjaus.java
-- Kentät: `Long id`, `String teksti` (columnDefinition = "TEXT"), `LocalDateTime luontiaika`. `@ManyToOne` kytkös `Asiakas`-malliin.
+### Kirjaus.java (Asiakkaan päiväkirjaukset / sovitut asiat)
+- Kentät: `Long id`, `String teksti` (columnDefinition = "TEXT"), `LocalDateTime luontiaika`, `boolean tarkea` (merkintä tärkeäksi / huomionarvoiseksi, oletussarake tietokannassa `DEFAULT false`).
+- Relaatiot:
+  - `@ManyToOne @JoinColumn(name = "asiakas_id", nullable = false) Asiakas asiakas`.
+  - `@ManyToMany` (Self-referencing): `List<Kirjaus> linkitetytKirjaukset` -> Jira-tyylinen molemminpuolinen linkitys toisiin sovittuihin asioihin. Liitostaulu tietokannassa: `public.kirjaus_linkitykset` (`kirjaus_id`, `linkitetty_kirjaus_id`).
+  - Sisältää apumetodin `linkitäKirjaukseen(Kirjaus toinenKirjaus)`.
+
 ### TapahtumaTyyppi.java
 - Kentät: `Long id` (Identity), `String nimi` (nullable=false, unique=true), `String vari` (nullable=false, columnDefinition="VARCHAR(255) DEFAULT '#0d6efd'").
 - Värivalinnat (esim. `#0d6efd`, `#dc3545`) tallennetaan suoraan tietokantaan dynaamista FullCalendar-väritystä varten.
@@ -106,22 +110,23 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 - `List<TapahtumaTyyppi> findAll()`
 
 ### KirjausRepository.java
-- `Page<Kirjaus> findByLuontiaikaBetweenOrderByLuontiaikaDesc(LocalDateTime alku, LocalDateTime loppu, Pageable pageable)` -> Hakee dynaamisesti 20 kirjausta per sivu tietokantatasolla.
+- `List<Kirjaus> findByAsiakasIdOrderByLuontiaikaDesc(Long asiakasId)` -> Asiakkaan omat profiilirivit.
+- `Page<Kirjaus> findByLuontiaikaBetweenOrderByLuontiaikaDesc(LocalDateTime alku, LocalDateTime loppu, Pageable pageable)` -> Hakee dynaamisesti 20 kirjausta per sivu tietokantatasolla raportteihin.
 
 ### LokiRepository.java
 - `Page<Loki> findAllByOrderByAikaleimaDesc(Pageable pageable)` -> Haetaan kaikki lokit 100 rivin erissä uusin ensin.
 - `Page<Loki> findByAikaleimaBetweenOrderByAikaleimaDesc(LocalDateTime alku, LocalDateTime loppu, Pageable pageable)` -> Audit Trail -aikavälihaku 100 rivin sivutuksella.
 
 ---
-
 ## 🎮 4. Backend-kontrollerit (Controllers & Routes)
 
 - **`AsiakasController.java`**: 
-  - Ohjaa dashboardia, asiakaslistauksen sivutusta ja asiakasprofiilia.
+  - Ohjaa dashboardia, asiakaslistauksen sivutusta ja asiakasprofiilia (`/asiakas/{id}`).
   - Vastaanottaa asiakastietojen muokkaukset osoitteeseen `/asiakas/{id}/muokkaa` (POST) Bootstrap-modalista.
   - Kirjaa uuden asiakkaan luonnin automaattisesti järjestelmälokiin (`new Loki(istuntoTunnus, "LISÄYS", ...)`), mikä sytyttää vihreän badgen raporteissa.
   - Palveluyksikkö-reitit: `/asiakas/{asiakasId}/lisaa-palveluyksikko` (POST) sekä `/palveluyksikko/muokkaa/{id}` (POST).
   - Live Search reitti: `/asiakkaat/live-haku` (@ResponseBody).
+  - *Työn alla:* Uuden kirjauksen (`/lisaa-kirjaus`) ja muokkauksen POST-reittien sidonta siten, että ne lukevat käyttöliittymän `linkitettavaId`-alasvetomuuttujan ja tallentavat linkityksen tietokantaan asti.
 - **`RaportitController.java`**:
   - Reitti `/raportit` (GET) tarkistaa istunnon ja hoitaa sekä yleisen lokilistauksen että dynaamisen aikavälihaun.
   - Sisältää tehokkaan `LokiRepository` ja `KirjausRepository` -sivutuksen (100 riviä lokeille, 20 riviä päiväkirjauksille). 
@@ -132,6 +137,9 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
   - Tuoterekisteri, työntekijät ja tapahtumatyypit.
   - Ääkkösettömät reitit konfliktien estämiseksi: `/asetukset/lisaa-tyyppi` (POST) ja `/asetukset/muokkaa-typpia/{id}` (POST).
 - **`KalenteriController.java`**: Vastaanottaa tapahtumatyypin numeerisen ID:n reiteissä `/kalenteri/lisaa` ja `/kalenteri/paivita/{id}`.
+
+---
+
 ## 💻 5. Käyttöliittymäkerros (JSP-näkymät)
 
 - **`asiakasprofiili.jsp`**: 
@@ -139,6 +147,8 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
   - Ostetut tuotteet ja palvelut -kortti listaa erikseen **Yhteensä (Alv 0%)**, **ALV-prosentin** sekä **Yhteensä (Verollinen)**.
   - Yläreunassa näytetään allekkain siistein välein (`gap-2`) kaksi badgea: **Asiakkuuden kokonaisarvo (sis. ALV)** (vihreä) ja **Veroton myynti yhteensä (Alv 0%)** (harmaa).
   - Kaikki HTML-sulkutagit (`</div>`) on korjattu ja sovitettu siististi Generic Code Editorin mukaiseksi.
+  - *Uutta (Linkitys):* Uuden merkinnän lisäysmodalissa sekä muokkausmodalissa (`#muokkaaLokiModal`) on dynaamiset `<select>`-alasvetovalikot (`name="linkitettavaId"`), jotka näyttävät muiden asiakkaiden sovittuja asioita (`kaikkiViimeisymmatKirjaukset`). Muokkauspainike välittää olemassa olevan linkin JavaScriptille `data-linkki`-attribuutilla esitäyttöä varten.
+  - *Jatkosuunnitelma:* Linkitetyt sovitut asiat tullaan tulostamaan siistinä, kokoonpuristuvana Bootstrap Accordion (haitari) -listana kunkin kirjausrivin alapuolelle.
 
 - **`raportit.jsp`**: 
   - Sisältää dynaamisen **Bootstrap 5 -välilehtirakenteen** (Tabs), joka jakaa näkymän erillisiin alivälilehtiin: `📋 Asiakaskohtaiset päiväkirjaukset` ja `🛡️ Järjestelmän käyttöloki (Audit Trail)`.

@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Optional;
 
 import fi.sotemindit.astori.model.Asiakas;
 import fi.sotemindit.astori.model.AsiakasTuote;
@@ -20,7 +23,6 @@ import fi.sotemindit.astori.model.Hyvinvointialue;
 import fi.sotemindit.astori.model.Kirjaus;
 import fi.sotemindit.astori.model.Liitetiedosto;
 import fi.sotemindit.astori.model.Loki;
-import fi.sotemindit.astori.model.Tapahtuma;
 import fi.sotemindit.astori.model.Tarjous;
 import fi.sotemindit.astori.model.Tuote;
 import fi.sotemindit.astori.model.Yhteyshenkilo;
@@ -34,7 +36,6 @@ import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.repository.YhteyshenkiloRepository;
 import fi.sotemindit.astori.repository.LokiRepository;
 import fi.sotemindit.astori.repository.TapahtumaRepository;
-import fi.sotemindit.astori.repository.PalveluyksikkoRepository;
 
 @Controller
 public class AsiakasController {
@@ -66,34 +67,55 @@ public class AsiakasController {
 	@Autowired
 	private LokiRepository lokiRepository;
 
-	@Autowired
-	private TapahtumaRepository tapahtumaRepository;
+	// @Autowired
+	// private TapahtumaRepository tapahtumaRepository;
 
 	@Autowired
 	private fi.sotemindit.astori.repository.PalveluyksikkoRepository palveluyksikkoRepository;
 
-
-	// 1b. ASIAKKAAT OMA SIVU: Kaikki asiakkaat, haku ja sivutus siirretty tänne
+	// 1b. ASIAKKAAT OMA SIVU: Kaikki asiakkaat, haku, sivutus ja hyvinvointialue-suodatus
 	@GetMapping("/asiakkaat")
-	public String listaaAsiakkaat(jakarta.servlet.http.HttpSession session, @RequestParam(defaultValue = "0") int page,
-			@RequestParam(value = "haku", required = false) String haku, Model model) {
+	public String listaaAsiakkaat(jakarta.servlet.http.HttpSession session, 
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(value = "haku", required = false) String haku, 
+			@RequestParam(value = "alue", required = false) String alue, // 🔗 UUSI: Vastaanotetaan valittu hyvinvointialue
+			Model model) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
-		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan
-		// nousevasti
+		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan nousevasti
 		Pageable pageable = org.springframework.data.domain.PageRequest.of(page, 10,
 				org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "nimi"));
 		Page<Asiakas> asiakasSivu;
 
-		// 🔍 Tarkistetaan hakusana:
-		if (haku != null && !haku.trim().isEmpty()) {
-			String hakusana = haku.trim();
+		// Siistitään hakumuuttujat
+		String hakusana = (haku != null && !haku.trim().isEmpty()) ? haku.trim() : null;
+		
+		// Muunnetaan merkkijonona tullut alue viralliseksi Enum-muuttujaksi (jos valittu)
+		fi.sotemindit.astori.model.Hyvinvointialue valittuAlue = null;
+		if (alue != null && !alue.trim().isEmpty()) {
+			try {
+				valittuAlue = fi.sotemindit.astori.model.Hyvinvointialue.valueOf(alue.trim());
+			} catch (IllegalArgumentException e) {
+				// Jos arvo on virheellinen, jätetään se huomiotta
+			}
+		}
+
+		// 🔍 Päätetään oikea hakuvariaatio muuttujien perusteella:
+		if (hakusana != null && valittuAlue != null) {
+			// Vaihtoehto 4: Sekä teksti- että aluerajoitus käytössä
+			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHyvinvointialueAndHaku(istuntoTunnus, valittuAlue, hakusana, pageable);
+		} else if (hakusana != null) {
+			// Vaihtoehto 2: Vain tekstihaku käytössä
 			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHaku(istuntoTunnus, hakusana, pageable);
+		} else if (valittuAlue != null) {
+			// Vaihtoehto 3: Vain aluerajoitus käytössä
+			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHyvinvointialue(istuntoTunnus, valittuAlue, pageable);
 		} else {
+			// Vaihtoehto 1: Ei rajauksia, haetaan kaikki
 			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnus(istuntoTunnus, pageable);
 		}
 
@@ -102,22 +124,23 @@ public class AsiakasController {
 		model.addAttribute("currentPage", page);
 		model.addAttribute("totalPages", asiakasSivu.getTotalPages());
 		model.addAttribute("tilat", AsiakkaanTila.values());
-		model.addAttribute("haku", haku != null ? haku.trim() : "");
-		model.addAttribute("hyvinvointialueet", Hyvinvointialue.values());
+		model.addAttribute("haku", hakusana != null ? hakusana : "");
+		model.addAttribute("valittuAlue", alue != null ? alue.trim() : ""); // 🔗 UUSI: Viedään valittu alue takaisin sivulle, jotta se pysyy valittuna valikossa
+		model.addAttribute("hyvinvointialueet", fi.sotemindit.astori.model.Hyvinvointialue.values());
 
-		return "asiakkaat"; // 💡 KORJATTU: Avaa uuden asiakkaat.jsp -sivun!
+		return "asiakkaat";
 	}
+
 
 	// 2. ASIAKKAAN LISÄYS: Tallentaa uuden asiakkaan tiedot osoitteineen ja
 	// kotisivuineen
 	@PostMapping("/lisaa-asiakas")
 	public String lisaaAsiakas(jakarta.servlet.http.HttpSession session, @RequestParam String nimi,
 			@RequestParam(value = "yTunnus", required = false) String yTunnus,
-			@RequestParam(required = false) String kuvaus, 
-			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
-			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
-			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,
-			@RequestParam(required = false) String kotisivu,
+			@RequestParam(required = false) String kuvaus, @RequestParam(required = false) String sahkoposti,
+			@RequestParam(required = false) String puhelin, @RequestParam AsiakkaanTila tila,
+			@RequestParam(required = false) String katuosoite, @RequestParam(required = false) String postinumero,
+			@RequestParam(required = false) String postitoimipaikka, @RequestParam(required = false) String kotisivu,
 			@RequestParam(required = false) Hyvinvointialue hyvinvointialue) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
@@ -133,10 +156,10 @@ public class AsiakasController {
 
 		uusiAsiakas.setKayttaja(nykyinenKayttaja);
 		asiakasRepository.save(uusiAsiakas);
-		
+
 		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS",
 				"Luotu uusi asiakasorganisaatio: " + uusiAsiakas.getNimi() + " (ID: " + uusiAsiakas.getId() + ")"));
-		
+
 		return "redirect:/asiakkaat";
 	}
 
@@ -174,11 +197,15 @@ public class AsiakasController {
 		model.addAttribute("tarjoukset", tarjoukset);
 		model.addAttribute("tarjouksetMaara", tarjoukset != null ? tarjoukset.size() : 0);
 		model.addAttribute("hyvinvointialueet", Hyvinvointialue.values());
-		//viedään alv kannat profiilisivulle
+		// viedään alv kannat profiilisivulle
 		model.addAttribute("alvKannat", fi.sotemindit.astori.model.AlvKanta.values());
 		// Viedään myyntiputken tilat profiilisivulle muokkausta varten
 		model.addAttribute("tilat", AsiakkaanTila.values());
-		
+
+		// Haetaan kaikki järjestelmän merkinnät linkitys-alasvetovalikkoa varten
+		List<Kirjaus> kaikkiUusimmat = kirjausRepository.findAll();
+		model.addAttribute("kaikkiViimeisymmatKirjaukset", kaikkiUusimmat);
+
 		return "asiakasprofiili";
 	}
 
@@ -263,43 +290,43 @@ public class AsiakasController {
 	}
 
 	// 6. TUOTEMYYNNIN KIRJAUS
-		@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
-		public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId, @RequestParam Integer maara,
-				@RequestParam String alvKanta, // Vastaanotetaan valittu ALV-kanta lomakkeelta
-				jakarta.servlet.http.HttpSession session, @RequestParam(required = false) String ostopaivamaara) {
-			String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-			if (istuntoTunnus == null) {
-				return "redirect:/login";
-			}
-
-			Asiakas asiakas = asiakasRepository.findById(asiakasId)
-					.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
-			Tuote tuote = tuoteRepository.findById(tuoteId)
-					.orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt"));
-
-			fi.sotemindit.astori.model.AsiakasTuote uusiMyynti = new fi.sotemindit.astori.model.AsiakasTuote(asiakas, tuote,
-					tuote.getHinta(), maara);
-
-			// Muunnetaan merkkijono enumiksi ja asetetaan olion kenttään
-			if (alvKanta != null && !alvKanta.trim().isEmpty()) {
-				try {
-					uusiMyynti.setAlvKanta(fi.sotemindit.astori.model.AlvKanta.valueOf(alvKanta));
-				} catch (IllegalArgumentException e) {
-					uusiMyynti.setAlvKanta(fi.sotemindit.astori.model.AlvKanta.ALV_25_5); // Varmuuskopio-oletus virhetilanteessa
-				}
-			}
-
-			if (ostopaivamaara != null && !ostopaivamaara.trim().isEmpty()) {
-				uusiMyynti.setOstopaivamaara(java.time.LocalDate.parse(ostopaivamaara));
-			} else {
-				uusiMyynti.setOstopaivamaara(java.time.LocalDate.now()); // Oletus: tämä päivä
-			}
-
-			asiakasTuoteRepository.save(uusiMyynti);
-
-			return "redirect:/asiakas/" + asiakasId;
+	@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
+	public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId, @RequestParam Integer maara,
+			@RequestParam String alvKanta, // Vastaanotetaan valittu ALV-kanta lomakkeelta
+			jakarta.servlet.http.HttpSession session, @RequestParam(required = false) String ostopaivamaara) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
 		}
 
+		Asiakas asiakas = asiakasRepository.findById(asiakasId)
+				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
+		Tuote tuote = tuoteRepository.findById(tuoteId)
+				.orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt"));
+
+		fi.sotemindit.astori.model.AsiakasTuote uusiMyynti = new fi.sotemindit.astori.model.AsiakasTuote(asiakas, tuote,
+				tuote.getHinta(), maara);
+
+		// Muunnetaan merkkijono enumiksi ja asetetaan olion kenttään
+		if (alvKanta != null && !alvKanta.trim().isEmpty()) {
+			try {
+				uusiMyynti.setAlvKanta(fi.sotemindit.astori.model.AlvKanta.valueOf(alvKanta));
+			} catch (IllegalArgumentException e) {
+				uusiMyynti.setAlvKanta(fi.sotemindit.astori.model.AlvKanta.ALV_25_5); // Varmuuskopio-oletus
+																						// virhetilanteessa
+			}
+		}
+
+		if (ostopaivamaara != null && !ostopaivamaara.trim().isEmpty()) {
+			uusiMyynti.setOstopaivamaara(java.time.LocalDate.parse(ostopaivamaara));
+		} else {
+			uusiMyynti.setOstopaivamaara(java.time.LocalDate.now()); // Oletus: tämä päivä
+		}
+
+		asiakasTuoteRepository.save(uusiMyynti);
+
+		return "redirect:/asiakas/" + asiakasId;
+	}
 
 	// 7. ASIAKKAAN MUOKKAUS: Päivittää asiakkaan perustiedot, tilan, osoitteet,
 	// kotisivun ja Y-TUNNUKSEN
@@ -449,26 +476,6 @@ public class AsiakasController {
 	}
 
 	@Transactional
-	@PostMapping("/kirjaus/muokkaa/{id}")
-	public String muokkaaKirjausta(@PathVariable Long id, @RequestParam String teksti, @RequestParam Long asiakasId,
-			jakarta.servlet.http.HttpSession session) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-
-		fi.sotemindit.astori.model.Kirjaus kirjaus = kirjausRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Merkintää ei löytynyt ID-numerolla: " + id));
-
-		// Päivitetään uusi muokattu teksti
-		kirjaus.setTeksti(teksti);
-		kirjausRepository.save(kirjaus);
-
-		// Ohjataan siististi takaisin kyseisen asiakkaan profiiliin
-		return "redirect:/asiakas/" + asiakasId;
-	}
-
-	@Transactional
 	@PostMapping("/palvelu/muokkaa/{id}")
 	public String muokkaaMyytyaPalvelua(@PathVariable Long id, @RequestParam Integer maara,
 			@RequestParam java.math.BigDecimal myyntihinta, @RequestParam String ostopaivamaara,
@@ -554,38 +561,7 @@ public class AsiakasController {
 		return "redirect:/asiakas/" + asiakasId;
 	}
 
-	// Tallentaa uuden lokimerkinnän asiakkaan profiiliin
-	@PostMapping("/asiakas/{asiakasId}/lisaa-kirjaus")
-	public String lisaaKirjaus(@PathVariable Long asiakasId, @RequestParam String teksti,
-			jakarta.servlet.http.HttpSession session) {
-
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-
-		// 1. Haetaan asiakas tietokannasta ja varmistetaan olemassaolo
-		Asiakas asiakas = asiakasRepository.findById(asiakasId)
-				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + asiakasId));
-
-		// 2. Luodaan uusi kirjausolio (asettaa automaattisesti nykyhetken luontiajaksi)
-		fi.sotemindit.astori.model.Kirjaus uusiKirjaus = new fi.sotemindit.astori.model.Kirjaus();
-		uusiKirjaus.setAsiakas(asiakas);
-		uusiKirjaus.setTeksti(teksti);
-		uusiKirjaus.setLuontiaika(java.time.LocalDateTime.now());
-
-		// 3. Tallennetaan kirjaus PostgreSQL-tietokantaan (JPA hoitaa)
-		kirjausRepository.save(uusiKirjaus);
-
-		// 4. Kirjataan toiminto Audit Trailiin
-		String lokiKuvaus = "Lisätty uusi lokimerkintä asiakkaalle '" + asiakas.getNimi() + "' (ID: " + asiakasId
-				+ ").";
-		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS", lokiKuvaus));
-
-		// 5. Palataan takaisin asiakkaan profiiliin
-		return "redirect:/asiakas/" + asiakasId;
-	}
-
+	
 	// 🔌 UUSI REITTI: Poistaa lokikirjauksen ja tallentaa alkuperäisen tekstin
 	// Audit Trailiin
 	@PostMapping("/kirjaus/poista/{id}")
@@ -617,7 +593,6 @@ public class AsiakasController {
 		return "redirect:/asiakas/" + asiakasId;
 	}
 
-
 	// 2. REITTI: Poistaa tuotteen / palvelun asiakkaan kortilta kokonaan
 	@PostMapping("/palvelu/poista/{id}")
 	public String poistaAsiakasTuote(jakarta.servlet.http.HttpSession session, @PathVariable Long id) {
@@ -637,4 +612,35 @@ public class AsiakasController {
 
 		return "redirect:/asiakas/" + asiakasId + "?success=service_deleted";
 	}
+
+	@PostMapping("/kirjaus/{id}/linkita")
+	public String linkitaKirjaus(@PathVariable("id") Long kirjausId,
+			@RequestParam("linkitettavaId") Long linkitettavaId, RedirectAttributes redirectAttributes) {
+
+		// 1. Haetaan molemmat kirjaukset tietokannasta
+		Optional<Kirjaus> kirjausOpt = kirjausRepository.findById(kirjausId);
+		Optional<Kirjaus> toinenOpt = kirjausRepository.findById(linkitettavaId);
+
+		if (kirjausOpt.isPresent() && toinenOpt.isPresent()) {
+			Kirjaus kirjaus = kirjausOpt.get();
+			Kirjaus toinenKirjaus = toinenOpt.get(); // Nyt korjattu oikeaksi!
+
+			// 2. Kutsutaan tekemäämme apumetodia, joka hoitaa linkityksen molempiin
+			// suuntiin
+			kirjaus.linkitäKirjaukseen(toinenKirjaus);
+
+			// 3. Tallennetaan muutokset
+			kirjausRepository.save(kirjaus);
+			kirjausRepository.save(toinenKirjaus);
+
+			redirectAttributes.addFlashAttribute("viesti", "Kirjaukset linkitetty onnistuneesti!");
+
+			// 4. Ohjataan käyttäjä takaisin sen asiakkaan profiiliin, kenen luona oltiin
+			return "redirect:/asiakas/" + kirjaus.getAsiakas().getId();
+		}
+
+		redirectAttributes.addFlashAttribute("virhe", "Linkitys epäonnistui. Kirjausta ei löytynyt.");
+		return "redirect:/asiakkaat";
+	}
+
 }
