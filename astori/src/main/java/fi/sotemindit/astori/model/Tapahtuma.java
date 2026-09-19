@@ -6,46 +6,40 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "tapahtumat")
 public class Tapahtuma {
-
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-
 	@Column(nullable = false)
 	private String otsikko;
-
-	private String kuvaus;
-
+	private String kuvaus;// 🔌 Kenttä on valmiina, mutta vaatii getterit/setterit toimiakseen
+	private LocalDateTime loppuaika;
 	@Column(nullable = false)
 	private LocalDateTime ajankohta;
-
 	@ManyToOne
 	@JoinColumn(name = "tyyppi_id", nullable = false)
 	private TapahtumaTyyppi tyyppi;
-	
 	@ManyToOne
 	@JoinColumn(name = "asiakas_id", nullable = true)
 	private Asiakas asiakas;
-
 	@ManyToOne
 	@JoinColumn(name = "kayttaja_id", nullable = false)
 	private Kayttaja kayttaja;
 
 	public Tapahtuma() {
-	}
+	}// PÄIVITETTY KONSTRUKTORI: Sisältää nyt myös loppuajan siistejä lennosta
+		// tehtyjä luonteja varten
 
-	// KORJATTU KONSTRUKTORI: Nyt kayttaja tallentuu olioon oikein!
-	public Tapahtuma(String otsikko, String kuvaus, LocalDateTime ajankohta, TapahtumaTyyppi tyyppi, Asiakas asiakas,
-			Kayttaja kayttaja) {
+	public Tapahtuma(String otsikko, String kuvaus, LocalDateTime ajankohta, LocalDateTime loppuaika,
+			TapahtumaTyyppi tyyppi, Asiakas asiakas, Kayttaja kayttaja) {
 		this.otsikko = otsikko;
 		this.kuvaus = kuvaus;
 		this.ajankohta = ajankohta;
+		this.loppuaika = loppuaika;
 		this.tyyppi = tyyppi;
 		this.asiakas = asiakas;
-		this.kayttaja = kayttaja; // Tämä puuttui
-	}
+		this.kayttaja = kayttaja;
+	}// Getterit ja Setterit
 
-	// Getterit ja Setterit
 	public Long getId() {
 		return id;
 	}
@@ -68,6 +62,14 @@ public class Tapahtuma {
 
 	public void setKuvaus(String kuvaus) {
 		this.kuvaus = kuvaus;
+	}
+
+	public LocalDateTime getLoppuaika() {
+		return loppuaika;
+	}
+
+	public void setLoppuaika(LocalDateTime loppuaika) {
+		this.loppuaika = loppuaika;
 	}
 
 	public LocalDateTime getAjankohta() {

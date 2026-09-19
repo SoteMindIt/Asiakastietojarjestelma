@@ -26,19 +26,19 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 
 ### Asiakas.java
 - Kentät: Long id (Identity), String nimi (nullable=false), String puhelin, String sahkoposti, String katuosoite, String postinumero, String postitoimipaikka, String kotisivu, String yTunnus (length=9), String kuvaus.
+- Koordinaatit: `Double leveysaste` (Latitude) ja `Double pituusaste` (Longitude) valmiina tulevaa 100 km säteellistä kilometrihakua ja geokoodausta varten.
 - Tila: `@Enumerated(EnumType.STRING) AsiakkaanTila tila` (Oletus: PROSPEKTI).
 - Hyvinvointialue: `@Enumerated(EnumType.STRING) Hyvinvointialue hyvinvointialue` (Kytketty dynaamiseen enumiin).
-- Relaatiot: 
+- Relaatiot (Kytketty täydellä `CascadeType.ALL, orphanRemoval = true` suhteella automaattista ja turvallista asiakkaan poistamista varten): 
   - `@ManyToOne @JoinColumn(name = "kayttaja_id") Kayttaja kayttaja`
-  - `@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true) List<Palveluyksikko> palveluyksikot`
-- Konstruktori: 11 argumentin standardkonstruktori.
+  - `@OneToMany` palveluyksiköt, yhteyshenkilöt, kirjaukset ja tarjoukset.
+- Konstruktori: 11 argumentin standardikonstruktori.
 
 ### AsiakkaanTila.java (Enum)
 - Arvot: `PROSPEKTI`, `KONTAKTOITU`, `TARJOUS_JATETTY`, `AKTIIVINEN`, `PAATTYNYT`.
 
 ### Hyvinvointialue.java (Enum)
 - Arvot: 21 virallista hyvinvointialuetta (esim. `HELSINKI`, `LANSI_UUSIMAA`) + `getNimi()`-metodi selkokieliselle suomenkieliselle tulostukselle.
-
 ### Palveluyksikko.java
 - Kentät: `Long id` (Identity), `String nimi` (nullable=false), `String katuosoite`, `String postinumero`, `String postitoimipaikka`, `String puhelin`, `String sahkoposti`, `String kuvaus` (columnDefinition = "TEXT").
 - Hyvinvointialue: `@Enumerated(EnumType.STRING) Hyvinvointialue hyvinvointialue`.
@@ -54,6 +54,7 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 
 ### Kayttaja.java
 - Kentät: `Long id`, `String kayttajatunnus`, `String salasana`, `String rooli`. `@OneToMany` suhde `Asiakas`-listaan.
+
 ### Tuote.java
 - Kentät: `Long id`, `String nimi`, `String kuvaus`, `BigDecimal hinta`. `@Enumerated(EnumType.STRING) TuoteYksikko yksikko`.
 
@@ -98,68 +99,35 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 
 ### AsiakasRepository.java
 - `Page<Asiakas> findByKayttajaKayttajatunnus(String kayttajatunnus, Pageable pageable)`
-- `Page<Asiakas> findByKayttajaKayttajatunnusAndHaku(...)`
+- `findByKayttajaKayttajatunnusAndHaku` -> Vapaa tekstihaku viidelle kentälle.
+- **Päivitetty aluesuodatus (`LEFT JOIN DISTINCT`):** Hakumetodit `findByKayttajaKayttajatunnusAndHyvinvointialue` sekä `findByKayttajaKayttajatunnusAndHyvinvointialueAndHaku` kytkevät hakuun mukaan sekä asiakkaan oman että kaikkien sen palveluyksikköjen hyvinvointialueet ilman tuplarivejä.
+- `countByKayttajaKayttajatunnus` -> Korjattu ja varma laskuri.
 
-### PalveluyksikkoRepository.java
-- `List<Palveluyksikko> findByAsiakasId(Long asiakasId)`
-
-### YhteyshenkiloRepository.java
-- `List<Yhteyshenkilo> findByAsiakasId(Long asiakasId)`
-
-### TapahtumaTyyppiRepository.java
-- `List<TapahtumaTyyppi> findAll()`
-
-### KirjausRepository.java
-- `List<Kirjaus> findByAsiakasIdOrderByLuontiaikaDesc(Long asiakasId)` -> Asiakkaan omat profiilirivit.
-- `Page<Kirjaus> findByLuontiaikaBetweenOrderByLuontiaikaDesc(LocalDateTime alku, LocalDateTime loppu, Pageable pageable)` -> Hakee dynaamisesti 20 kirjausta per sivu tietokantatasolla raportteihin.
-
-### LokiRepository.java
-- `Page<Loki> findAllByOrderByAikaleimaDesc(Pageable pageable)` -> Haetaan kaikki lokit 100 rivin erissä uusin ensin.
-- `Page<Loki> findByAikaleimaBetweenOrderByAikaleimaDesc(LocalDateTime alku, LocalDateTime loppu, Pageable pageable)` -> Audit Trail -aikavälihaku 100 rivin sivutuksella.
-
----
+### KirjausRepository.java, PalveluyksikkoRepository.java, YhteyshenkiloRepository.java, TapahtumaTyyppiRepository.java, LokiRepository.java.
 ## 🎮 4. Backend-kontrollerit (Controllers & Routes)
 
 - **`AsiakasController.java`**: 
   - Ohjaa dashboardia, asiakaslistauksen sivutusta ja asiakasprofiilia (`/asiakas/{id}`).
-  - Vastaanottaa asiakastietojen muokkaukset osoitteeseen `/asiakas/{id}/muokkaa` (POST) Bootstrap-modalista.
-  - Kirjaa uuden asiakkaan luonnin automaattisesti järjestelmälokiin (`new Loki(istuntoTunnus, "LISÄYS", ...)`), mikä sytyttää vihreän badgen raporteissa.
-  - Palveluyksikkö-reitit: `/asiakas/{asiakasId}/lisaa-palveluyksikko` (POST) sekä `/palveluyksikko/muokkaa/{id}` (POST).
+  - `listaaAsiakkaat` (@GetMapping("/asiakkaat")): Ottaa vastaan `alue`- ja `haku`-parametrit ja suodattaa asiakkaat dynaamisesti neljän eri hakuvariaation mukaan (tukee uutta palveluyksikköjen alueliitosta).
+  - Vastaanottaa asiakastietojen muokkaukset osoitteeseen `/asiakas/{id}/muokkaa` (POST).
+  - `poistaAsiakas` (@PostMapping("/asiakas/{id}/poista")): Poistaa asiakkaan ja puhdistaa kaikki alirivit (yhteyshenkilöt, tarjoukset jne.) kerralla tietokannan eheyssääntöjen mukaisesti.
   - Live Search reitti: `/asiakkaat/live-haku` (@ResponseBody).
-  - *Työn alla:* Uuden kirjauksen (`/lisaa-kirjaus`) ja muokkauksen POST-reittien sidonta siten, että ne lukevat käyttöliittymän `linkitettavaId`-alasvetomuuttujan ja tallentavat linkityksen tietokantaan asti.
-- **`RaportitController.java`**:
-  - Reitti `/raportit` (GET) tarkistaa istunnon ja hoitaa sekä yleisen lokilistauksen että dynaamisen aikavälihaun.
-  - Sisältää tehokkaan `LokiRepository` ja `KirjausRepository` -sivutuksen (100 riviä lokeille, 20 riviä päiväkirjauksille). 
-  - Jos aikaväliä ei anneta, asettaa oletukseksi automaattisesti viimeiset 30 vuorokautta.
-  - Ryhmittelee sivutetut kirjaukset muistissa `Map<Long, List<Kirjaus>>` -rakenteeseen ilman tietokantaolioiden tilan sotkemista.
-- **`TarjousController.java`**: Tarjousrivit `BigDecimal`-laskennalla (uusi 25.5 % ALV-tuki) ja OpenPDF-generoinnilla.
-- **`AsetuksetController.java`**: 
-  - Tuoterekisteri, työntekijät ja tapahtumatyypit.
-  - Ääkkösettömät reitit konfliktien estämiseksi: `/asetukset/lisaa-tyyppi` (POST) ja `/asetukset/muokkaa-typpia/{id}` (POST).
-- **`KalenteriController.java`**: Vastaanottaa tapahtumatyypin numeerisen ID:n reiteissä `/kalenteri/lisaa` ja `/kalenteri/paivita/{id}`.
+- **`KirjausController.java` (UUSI - Eriytetty arkkitehtuuri)**:
+  - Vastaa puhtaasti päiväkirjauksista ja sovituista asioista (Single Responsibility Principle).
+  - Hoitaa uuden kirjauksen tallennuksen (`/lisaa-kirjaus`) ja muokkauksen (`/muokkaa/{id}`) siten, että ne tekevät molemminpuolisia Jira-tyylisiä linkityksiä ilman tietokantavirheitä (pääolio tallennetaan ensin ID:n saamiseksi).
+  - `poistaKirjausLinkki` (@PostMapping("/kirjaus/{id}/poista-linkki/{linkkiId}")): Katkaisee kahden kirjauksen välisen linkityksen molemminpuolisesti, jos kyseessä on inhimillinen virhe.
+- **`RaportitController.java`**, **`TarjousController.java`** (OpenPDF + 25.5 % ALV), **`AsetuksetController.java`** (ääkkösettömät reitit), **`KalenteriController.java`** (FullCalendar 6).
 
 ---
 
 ## 💻 5. Käyttöliittymäkerros (JSP-näkymät)
 
+- **`asiakkaat.jsp`**:
+  - **Uusi Aluesuodatustyökalu:** Hakulomake on kääritty siistiin, ryhmiteltyyn Bootstrap-laatikkoon (`bg-light shadow-sm border`), jossa vapaasanahaku, hyvinvointialueen alasvetovalikko sekä Hae- ja Nollaa-painikkeet ovat täydellisesti pystysuorassa samalla rivillä.
+  - Suurennuslasi-ikoni on korvattu selkeällä emojitekstillä `🔍 Hae` ja nollausnappi tekstillä `✖ Nollaa`, mikä takaa toimivuuden kaikissa selaimissa ilman ulkoisia ikonikirjastoja.
 - **`asiakasprofiili.jsp`**: 
-  - Asiakkaan tietojen muokkaus tapahtuu siististi **Bootstrap 5 Modal-ikkunassa** (`#muokkaaAsiakasModal`) vanhan inline-muokkauksen sijaan.
-  - Ostetut tuotteet ja palvelut -kortti listaa erikseen **Yhteensä (Alv 0%)**, **ALV-prosentin** sekä **Yhteensä (Verollinen)**.
-  - Yläreunassa näytetään allekkain siistein välein (`gap-2`) kaksi badgea: **Asiakkuuden kokonaisarvo (sis. ALV)** (vihreä) ja **Veroton myynti yhteensä (Alv 0%)** (harmaa).
-  - Kaikki HTML-sulkutagit (`</div>`) on korjattu ja sovitettu siististi Generic Code Editorin mukaiseksi.
-  - *Uutta (Linkitys):* Uuden merkinnän lisäysmodalissa sekä muokkausmodalissa (`#muokkaaLokiModal`) on dynaamiset `<select>`-alasvetovalikot (`name="linkitettavaId"`), jotka näyttävät muiden asiakkaiden sovittuja asioita (`kaikkiViimeisymmatKirjaukset`). Muokkauspainike välittää olemassa olevan linkin JavaScriptille `data-linkki`-attribuutilla esitäyttöä varten.
-  - *Jatkosuunnitelma:* Linkitetyt sovitut asiat tullaan tulostamaan siistinä, kokoonpuristuvana Bootstrap Accordion (haitari) -listana kunkin kirjausrivin alapuolelle.
-
-- **`raportit.jsp`**: 
-  - Sisältää dynaamisen **Bootstrap 5 -välilehtirakenteen** (Tabs), joka jakaa näkymän erillisiin alivälilehtiin: `📋 Asiakaskohtaiset päiväkirjaukset` ja `🛡️ Järjestelmän käyttöloki (Audit Trail)`.
-  - Hakulomakkeeseen on lisätty `tab`-piilokenttä sekä alalaidan JavaScript-kuuntelijat. Kun käyttäjä painaa haku- tai sivutuspainiketta, näkymä muistaa ja pitää automaattisesti auki sen välilehden, josta klikkaus tapahtui.
-  - Alalaidan Bootstrap 5 -sivutuspalkit säilyttävät kaikki valitut hakupäivämäärät ja välilehtitiedot URL-osoitteessa sivujen välillä liikuttaessa.
-
-- **`asetukset.jsp`**: 
-  - Tapahtumatyypit listataan ID:n ja nimen mukaan. Muokkausmodal (`#muokkaaTyyppiModal`) lähettää muuttujan `name="nimi"` JavaScriptillä dynaamisesti päivitettyyn polkuun `/asetukset/muokkaa-typpia/{id}`.
-
-- **`kalenteri.jsp`**: 
-  - Alustaa FullCalendar 6 -kuukausinäkymän, jossa tapahtumat värjätään suoraan tietokannasta luetulla dynaamisella `vari`-sarakkeella.
-  - Kalenteriruudukko näyttää vain kellonajan, tyypin nimen sekä dynaamisesti katkaistun asiakasnimen (jos yli 10 merkkiä, esim. `Puhelu, Palvelutal...`). Alkuperäinen aihe on piilotettu ruudukosta.
-  - Kursoria elementin päälle vietäessä aukeaa interaktiivinen Bootstrap 5 Tooltip, joka näyttää tyypin, puhtaan alkuperäisen otsikon, täyden asiakasnimen sekä lisätiedot omilla riveillään HTML-muotoiltuna.
-  - Klikattaessa muokkauslomake (`eventClick`) lukee puhtaan aiheen suoraan `extendedProps.alkuperainenOtsikko` -muuttujasta, jolloin aihe-kenttä ei sotkeudu dynaamisista liitteistä.
+  - Asiakkaan tietojen muokkaus tapahtuu Bootstrap 5 Modal-ikkunassa (`#muokkaaAsiakasModal`).
+  - **Toimintapainikkeet:** Yläreunassa on ammattimainen pillerinappirivi (`rounded-pill`), jonka jatkoksi on lisätty punainen, varmistuksella varustettu `❌ Poista asiakkuus` -lomakepainike.
+  - **Jira-tyylinen haitarilista:** Linkitetyt sovitut asiat tulostetaan kunkin lokirivin alle erittäin matalana ja siistinä Bootstrap Accordion (haitari) -listana (`font-size: 0.75rem !important`). Haitarin sisältä löytyy linkitetyn asiakkaan nimi, katkaistu teksti sekä suora loikkaustoiminto (`Avaa →`) toisen asiakkaan profiiliin.
+  - Muokkausmodalin alasvetovalikko nollautuu aina tyhjäksi, ja sen rooli on puhtaasti uuden linkityksen luominen ilman olemassa olevan haitaridatan ylikirjoitusta.
+- **`raportit.jsp`** (Välilehtirakenne muistilla), **`asetukset.jsp`**, **`kalenteri.jsp`** (Rich HTML Tooltipit).

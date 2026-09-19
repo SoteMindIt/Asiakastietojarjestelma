@@ -73,12 +73,13 @@ public class AsiakasController {
 	@Autowired
 	private fi.sotemindit.astori.repository.PalveluyksikkoRepository palveluyksikkoRepository;
 
-	// 1b. ASIAKKAAT OMA SIVU: Kaikki asiakkaat, haku, sivutus ja hyvinvointialue-suodatus
+	// 1b. ASIAKKAAT OMA SIVU: Kaikki asiakkaat, haku, sivutus ja
+	// hyvinvointialue-suodatus
 	@GetMapping("/asiakkaat")
-	public String listaaAsiakkaat(jakarta.servlet.http.HttpSession session, 
-			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(value = "haku", required = false) String haku, 
-			@RequestParam(value = "alue", required = false) String alue, // 🔗 UUSI: Vastaanotetaan valittu hyvinvointialue
+	public String listaaAsiakkaat(jakarta.servlet.http.HttpSession session, @RequestParam(defaultValue = "0") int page,
+			@RequestParam(value = "haku", required = false) String haku,
+			@RequestParam(value = "alue", required = false) String alue, // 🔗 UUSI: Vastaanotetaan valittu
+																			// hyvinvointialue
 			Model model) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -86,15 +87,17 @@ public class AsiakasController {
 			return "redirect:/login";
 		}
 
-		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan nousevasti
+		// Luodaan sivutuspyyntö: 10 alkiota per sivu, järjestetty nimen mukaan
+		// nousevasti
 		Pageable pageable = org.springframework.data.domain.PageRequest.of(page, 10,
 				org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "nimi"));
 		Page<Asiakas> asiakasSivu;
 
 		// Siistitään hakumuuttujat
 		String hakusana = (haku != null && !haku.trim().isEmpty()) ? haku.trim() : null;
-		
-		// Muunnetaan merkkijonona tullut alue viralliseksi Enum-muuttujaksi (jos valittu)
+
+		// Muunnetaan merkkijonona tullut alue viralliseksi Enum-muuttujaksi (jos
+		// valittu)
 		fi.sotemindit.astori.model.Hyvinvointialue valittuAlue = null;
 		if (alue != null && !alue.trim().isEmpty()) {
 			try {
@@ -107,13 +110,15 @@ public class AsiakasController {
 		// 🔍 Päätetään oikea hakuvariaatio muuttujien perusteella:
 		if (hakusana != null && valittuAlue != null) {
 			// Vaihtoehto 4: Sekä teksti- että aluerajoitus käytössä
-			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHyvinvointialueAndHaku(istuntoTunnus, valittuAlue, hakusana, pageable);
+			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHyvinvointialueAndHaku(istuntoTunnus,
+					valittuAlue, hakusana, pageable);
 		} else if (hakusana != null) {
 			// Vaihtoehto 2: Vain tekstihaku käytössä
 			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHaku(istuntoTunnus, hakusana, pageable);
 		} else if (valittuAlue != null) {
 			// Vaihtoehto 3: Vain aluerajoitus käytössä
-			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHyvinvointialue(istuntoTunnus, valittuAlue, pageable);
+			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHyvinvointialue(istuntoTunnus, valittuAlue,
+					pageable);
 		} else {
 			// Vaihtoehto 1: Ei rajauksia, haetaan kaikki
 			asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnus(istuntoTunnus, pageable);
@@ -125,12 +130,13 @@ public class AsiakasController {
 		model.addAttribute("totalPages", asiakasSivu.getTotalPages());
 		model.addAttribute("tilat", AsiakkaanTila.values());
 		model.addAttribute("haku", hakusana != null ? hakusana : "");
-		model.addAttribute("valittuAlue", alue != null ? alue.trim() : ""); // 🔗 UUSI: Viedään valittu alue takaisin sivulle, jotta se pysyy valittuna valikossa
+		model.addAttribute("valittuAlue", alue != null ? alue.trim() : ""); // 🔗 UUSI: Viedään valittu alue takaisin
+																			// sivulle, jotta se pysyy valittuna
+																			// valikossa
 		model.addAttribute("hyvinvointialueet", fi.sotemindit.astori.model.Hyvinvointialue.values());
 
 		return "asiakkaat";
 	}
-
 
 	// 2. ASIAKKAAN LISÄYS: Tallentaa uuden asiakkaan tiedot osoitteineen ja
 	// kotisivuineen
@@ -160,6 +166,40 @@ public class AsiakasController {
 		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS",
 				"Luotu uusi asiakasorganisaatio: " + uusiAsiakas.getNimi() + " (ID: " + uusiAsiakas.getId() + ")"));
 
+		return "redirect:/asiakkaat";
+	}
+
+	// ❌ UUSI: Poistaa asiakkaan ja kaikki siihen liittyvät tiedot järjestelmästä
+	@Transactional
+	@PostMapping("/asiakas/{id}/poista")
+	public String poistaAsiakas(@PathVariable Long id, jakarta.servlet.http.HttpSession session,
+			org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		// 1. Haetaan asiakas tietokannasta
+		java.util.Optional<Asiakas> asiakasOpt = asiakasRepository.findById(id);
+
+		if (asiakasOpt.isPresent()) {
+			Asiakas asiakas = asiakasOpt.get();
+			String asiakkaanNimi = asiakas.getNimi();
+
+			// 2. Poistetaan asiakas (JPA hoitaa cascade-siivoukset)
+			asiakasRepository.delete(asiakas);
+
+			// 3. KÄYTTÖLOKITUS: Audit Trail -merkintä
+			String lokiViesti = "POISTETTU ASIAKAS: '" + asiakkaanNimi + "' (ID: " + id
+					+ ") ja kaikki sen liittyvät tiedot.";
+			lokiRepository.save(new Loki(istuntoTunnus, "POISTO", lokiViesti));
+
+			redirectAttributes.addFlashAttribute("viesti", "Asiakas " + asiakkaanNimi + " poistettu onnistuneesti.");
+			return "redirect:/asiakkaat"; // Palataan onnistuneen poiston jälkeen yleiseen listaukseen
+		}
+
+		redirectAttributes.addFlashAttribute("virhe", "Asiakkaan poisto epäonnistui. Asiakasta ei löytynyt.");
 		return "redirect:/asiakkaat";
 	}
 
@@ -207,42 +247,6 @@ public class AsiakasController {
 		model.addAttribute("kaikkiViimeisymmatKirjaukset", kaikkiUusimmat);
 
 		return "asiakasprofiili";
-	}
-
-	// 4. YHTEYSHENKILÖN LISÄYS: Linkittää uuden henkilön tiettyyn asiakkaaseen
-	@PostMapping("/asiakas/{asiakasId}/lisaa-yhteyshenkilo")
-	public String lisaaYhteyshenkilo(jakarta.servlet.http.HttpSession session, @PathVariable Long asiakasId,
-			@RequestParam String nimi, @RequestParam String rooli, @RequestParam String sahkoposti,
-			@RequestParam String puhelin,
-			@RequestParam(value = "palveluyksikkoId", required = false) Long palveluyksikkoId) { // 💡 UUSI PARAMETRI
-																									// LOMAKKEELTA
-
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-		Asiakas asiakas = asiakasRepository.findById(asiakasId)
-				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
-
-		Yhteyshenkilo uusiHenkilo;
-
-		// 💡 TARKISTETAAN: Kytketäänkö henkilö tiettyyn palveluyksikköön vai onko hän
-		// yleinen kontakti
-		if (palveluyksikkoId != null) {
-			fi.sotemindit.astori.model.Palveluyksikko py = palveluyksikkoRepository.findById(palveluyksikkoId)
-					.orElseThrow(() -> new IllegalArgumentException(
-							"Palveluyksikköä ei löytynyt ID:llä: " + palveluyksikkoId));
-
-			// Käytetään uutta laajennettua konstruktoria
-			uusiHenkilo = new Yhteyshenkilo(nimi, rooli, sahkoposti, puhelin, asiakas, py);
-		} else {
-			// Käytetään vanhaa tuttua konstruktoria yleiselle kontaktille
-			uusiHenkilo = new Yhteyshenkilo(nimi, rooli, sahkoposti, puhelin, asiakas);
-		}
-
-		yhteyshenkiloRepository.save(uusiHenkilo);
-
-		return "redirect:/asiakas/" + asiakasId;
 	}
 
 	// 🔌 UUSI REITTI: Tallentaa uuden palveluyksikön sidottuna tiettyyn
@@ -368,36 +372,6 @@ public class AsiakasController {
 		return "redirect:/asiakas/" + id;
 	}
 
-	// 7b. ASIAKKAAN POISTO: Poistaa asiakkaan ja kaikki siihen liittyvät tiedot
-	// (Cascade)
-	@Transactional
-	@PostMapping("/asiakas/{id}/poista")
-	public String poistaAsiakas(@PathVariable Long id, jakarta.servlet.http.HttpSession session) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-
-		Asiakas asiakas = asiakasRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + id));
-
-		// KÄYTTÖLOKITUS: Otetaan nimi talteen ennen poistoa, jotta se saadaan lokiin
-		String kuvaus = "Poistettu asiakas '" + asiakas.getNimi() + "' (ID: " + id + ") ja kaikki sen liitostiedot.";
-		lokiRepository.save(new Loki(istuntoTunnus, "POISTO", kuvaus));
-
-		// Varmistetaan, että asiakas on olemassa ennen poistoa
-		if (!asiakasRepository.existsById(id)) {
-			throw new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + id);
-		}
-
-		// Poistetaan asiakas (CascadeType.ALL hoitaa liitostaulujen siivouksen
-		// automaattisesti)
-		asiakasRepository.deleteById(id);
-
-		// Palataan onnistuneen poiston jälkeen takaisin pääsivun asiakaslistaukseen
-		return "redirect:/asiakkaat";
-	}
-
 	// 💡 LISÄTTY: Täydellinen Live Search, joka palauttaa pelkät valmiit
 	// taulukkorivit koko kannasta
 	@org.springframework.web.bind.annotation.GetMapping("/asiakkaat/live-haku")
@@ -442,37 +416,6 @@ public class AsiakasController {
 		}
 
 		return html.toString();
-	}
-
-	// Yhteyshenkilön muokkaaminen
-	@PostMapping("/yhteyshenkilo/muokkaa/{id}")
-	public String muokkaaYhteyshenkilo(@PathVariable Long id, @RequestParam String nimi, @RequestParam String rooli,
-			@RequestParam String sahkoposti, @RequestParam String puhelin, @RequestParam Long asiakasId,
-			jakarta.servlet.http.HttpSession session) {
-
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-
-		// Haetaan olemassa oleva yhteyshenkilö
-		Yhteyshenkilo yh = yhteyshenkiloRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Yhteyshenkilöä ei löytynyt ID-numerolla: " + id));
-
-		// Päivitetään uudet tiedot
-		yh.setNimi(nimi);
-		yh.setRooli(rooli);
-		yh.setSahkoposti(sahkoposti);
-		yh.setPuhelin(puhelin);
-
-		yhteyshenkiloRepository.save(yh);
-
-		// Kirjataan muokkaus järjestelmälokiin
-		lokiRepository.save(new Loki(istuntoTunnus, "MUOKKAUS",
-				"Muokattu yhteyshenkilön tietoja: " + nimi + " (ID: " + id + ") asiakkaalle ID: " + asiakasId));
-
-		// Ohjataan takaisin asiakasprofiiliin
-		return "redirect:/asiakas/" + asiakasId;
 	}
 
 	@Transactional
@@ -561,7 +504,6 @@ public class AsiakasController {
 		return "redirect:/asiakas/" + asiakasId;
 	}
 
-	
 	// 🔌 UUSI REITTI: Poistaa lokikirjauksen ja tallentaa alkuperäisen tekstin
 	// Audit Trailiin
 	@PostMapping("/kirjaus/poista/{id}")

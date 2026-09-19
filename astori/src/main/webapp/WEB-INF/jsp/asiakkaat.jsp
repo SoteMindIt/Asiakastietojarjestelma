@@ -57,14 +57,54 @@ body {
 		</div>
 
 
+		<!-- 🔍 ASIAKKASHAKU (Yhteinen hakuperhe samalla rivillä) -->
 		<form action="${pageContext.request.contextPath}/asiakkaat"
 			method="get" class="mb-4">
-			<div class="mb-4">
-				<input type="text" class="form-control form-control-lg shadow-sm"
-					id="reaaliaikainenHaku"
-					placeholder="Kirjoita asiakkaan nimi, sähköposti tai Y-tunnus etsiäksesi koko tietokannasta...">
+			<div
+				class="row g-2 align-items-center bg-light p-3 rounded shadow-sm border">
+
+				<!-- 1. Vapaasanahaku (Leveys 5/12) -->
+				<div class="col-md-5">
+					<label class="form-label small fw-bold text-secondary mb-1">Tekstihaku</label>
+					<input type="text" name="haku" class="form-control form-control-lg"
+						id="reaaliaikainenHaku" value="${haku}"
+						placeholder="Nimi, sähköposti tai Y-tunnus...">
+				</div>
+
+				<!-- 2. Aluerajoitus (Leveys 4/12) -->
+				<div class="col-md-4">
+					<label class="form-label small fw-bold text-secondary mb-1">Hyvinvointialue</label>
+					<select name="alue" class="form-select form-select-lg">
+						<option value="">-- Kaikki alueet --</option>
+						<c:forEach items="${hyvinvointialueet}" var="alueEnum">
+							<option value="${alueEnum.name()}"
+								${alueEnum.name() == valittuAlue ? 'selected' : ''}>
+								${alueEnum.getNimi()}</option>
+						</c:forEach>
+					</select>
+				</div>
+
+				<!-- 3. Toimintapainikkeet yhteisesti molemmille (Leveys 3/12) -->
+				<div class="col-md-3">
+					<label
+						class="form-label small fw-bold text-transparent mb-1 d-none d-md-block"
+						style="color: transparent;">Toiminnot</label>
+					<div class="d-flex gap-2">
+						<button type="submit" class="btn btn-lg btn-primary fw-bold w-100">
+							🔍 Hae</button>
+						<c:if test="${not empty haku or not empty valittuAlue}">
+							<a href="${pageContext.request.contextPath}/asiakkaat"
+								class="btn btn-lg btn-outline-secondary d-flex align-items-center justify-content-center px-3 fw-bold"
+								title="Tyhjennä haku" style="white-space: nowrap;"> ✖ Nollaa
+							</a>
+						</c:if>
+					</div>
+				</div>
+
 			</div>
 		</form>
+
+
 
 		<div class="row">
 			<div class="col-12 mb-4">

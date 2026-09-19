@@ -32,25 +32,38 @@ public class Asiakas {
 	@Enumerated(EnumType.STRING)
 	private Hyvinvointialue hyvinvointialue;
 
-	// UUSI: Asiakkaan tila tallennetaan tietokantaan tekstimuodossa (esim.
-	// 'PROSPEKTI')
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
-	private AsiakkaanTila tila = AsiakkaanTila.PROSPEKTI; // Oletuksena uusi asiakas on Prospekti
+	private AsiakkaanTila tila = AsiakkaanTila.PROSPEKTI;
 
-	// Lisää tämä muiden muuttujien joukkoon (esim. tilan alapuolelle)
 	@jakarta.persistence.ManyToOne
 	@jakarta.persistence.JoinColumn(name = "kayttaja_id")
 	private Kayttaja kayttaja;
 
-	@Column(name = "y_tunnus", length = 9) // Suomalainen Y-tunnus on aina 9 merkkiä (esim. 1234567-8)
+	@Column(name = "y_tunnus", length = 9)
 	private String yTunnus;
 
-	@jakarta.persistence.Column(columnDefinition = "TEXT") // 💡 LISÄTTY: Sallii rajattoman määrän tekstiä tietokantaan
+	@jakarta.persistence.Column(columnDefinition = "TEXT")
 	private String kuvaus;
+
+	// 🛰️ UUTTA: Geokoodauksen koordinaatit kilometrihakua varten
+	private Double leveysaste; // Latitude
+	private Double pituusaste; // Longitude
+
+	// ==================== RELAATIOT (Sisältävät automaattisen siivouksen poistoissa) ====================
 
 	@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true)
 	private java.util.List<Palveluyksikko> palveluyksikot = new java.util.ArrayList<>();
+
+	@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<Yhteyshenkilo> yhteyshenkilot = new java.util.ArrayList<>();
+
+	@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<Kirjaus> kirjaukset = new java.util.ArrayList<>();
+
+	@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<Tarjous> tarjoukset = new java.util.ArrayList<>();
+
 
 	// Tyhjä konstruktori JPA:ta varten
 	public Asiakas() {
@@ -175,10 +188,27 @@ public class Asiakas {
 	}
 
 	public void setHyvinvointialue(Hyvinvointialue hyvinvointialue) {
-		// Jos lomakkeelta tulisi tyhjä arvo, se asettuu turvallisesti nulliksi
 		this.hyvinvointialue = hyvinvointialue;
 	}
 
+	// 🛰️ UUDET GETTERIT JA SETTERIT KOORDINAATEILLE
+	public Double getLeveysaste() {
+		return leveysaste;
+	}
+
+	public void setLeveysaste(Double leveysaste) {
+		this.leveysaste = leveysaste;
+	}
+
+	public Double getPituusaste() {
+		return pituusaste;
+	}
+
+	public void setPituusaste(Double pituusaste) {
+		this.pituusaste = pituusaste;
+	}
+
+	// RELAATIOIDEN GETTERIT JA SETTERIT
 	public java.util.List<Palveluyksikko> getPalveluyksikot() {
 		return palveluyksikot;
 	}
@@ -187,4 +217,27 @@ public class Asiakas {
 		this.palveluyksikot = palveluyksikot;
 	}
 
+	public java.util.List<Yhteyshenkilo> getYhteyshenkilot() {
+		return yhteyshenkilot;
+	}
+
+	public void setYhteyshenkilot(java.util.List<Yhteyshenkilo> yhteyshenkilot) {
+		this.yhteyshenkilot = yhteyshenkilot;
+	}
+
+	public java.util.List<Kirjaus> getKirjaukset() {
+		return kirjaukset;
+	}
+
+	public void setKirjaukset(java.util.List<Kirjaus> kirjaukset) {
+		this.kirjaukset = kirjaukset;
+	}
+
+	public java.util.List<Tarjous> getTarjoukset() {
+		return tarjoukset;
+	}
+
+	public void setTarjoukset(java.util.List<Tarjous> tarjoukset) {
+		this.tarjoukset = tarjoukset;
+	}
 }

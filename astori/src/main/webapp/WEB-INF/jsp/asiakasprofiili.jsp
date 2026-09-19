@@ -120,7 +120,18 @@ body {
 							class="btn btn-sm btn-primary fw-bold py-1.5 px-3 shadow-sm rounded-pill ms-md-2"
 							style="font-size: 0.85em;" data-bs-toggle="modal"
 							data-bs-target="#muokkaaAsiakasModal">✏️ Muokkaa</button>
+
+						<!-- ❌ ASIAKKAAN POISTAMINEN (Varmistuksella varustettu roskakori) -->
+						<form
+							action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/poista"
+							method="post" class="d-inline m-0"
+							onsubmit="return confirm('⚠️ VAROITUS: Haluatko varmasti poistaa asiakkaan \'${asiakas.nimi}\' ja KAIKKI siihen liittyvät kirjaukset, palveluyksiköt ja sopimukset? Tätä toimintoa ei voi perua!')">
+							<button type="submit"
+								class="btn btn-sm btn-outline-danger fw-bold py-1.5 px-3 rounded-pill"
+								style="font-size: 0.85em;">❌ Poista asiakkuus</button>
+						</form>
 					</div>
+
 				</div>
 
 				<!-- PERUSTIEDOT KAKSISARAKKEISENA -->
@@ -549,8 +560,9 @@ body {
 													class="btn btn-sm btn-outline-primary py-1 px-2 muokkaa-yh-btn"
 													data-id="${h.id}" data-nimi="${h.nimi}"
 													data-rooli="${h.rooli}" data-email="${h.sahkoposti}"
-													data-puh="${h.puhelin}" style="font-size: 0.8em;">
-													Muokkaa</button>
+													data-puh="${h.puhelin}"
+													data-palveluyksikko-id="${h.palveluyksikko != null ? h.palveluyksikko.id : ''}"
+													style="font-size: 0.8em;">Muokkaa</button>
 											</div>
 										</c:forEach>
 									</div>
@@ -1299,6 +1311,23 @@ body {
 							<input type="text" class="form-control" id="yhPuhelin"
 								name="puhelin">
 						</div>
+
+						<div class="mb-3 pt-2 border-top">
+							<label for="yhPalveluyksikko"
+								class="form-label fw-bold text-secondary small">Kohdistetaanko
+								tiettyyn palveluyksikköön?</label> <select class="form-select"
+								id="yhPalveluyksikko" name="palveluyksikkoId">
+								<option value="">-- Yleinen organisaatiotason kontakti
+									--</option>
+								<c:forEach var="yksikko" items="${asiakas.palveluyksikot}">
+									<option value="${yksikko.id}">${yksikko.nimi}</option>
+								</c:forEach>
+							</select>
+							<div class="form-text text-muted small">Voit vaihtaa
+								yksikköä tai siirtää henkilön yrityksen yleisiin yhteystietoihin
+								jättämällä valinnan tyhjäksi.</div>
+						</div>
+
 					</div>
 					<div class="modal-footer bg-light">
 						<button type="button" class="btn btn-secondary"
@@ -1435,6 +1464,9 @@ body {
 								const rooli = this.getAttribute('data-rooli');
 								const email = this.getAttribute('data-email');
 								const puh = this.getAttribute('data-puh');
+								
+								// 🔌 KORJAUS: Varmistetaan 'const' alkuun ja luetaan attribuutti turvallisesti
+								const palveluyksikkoId = this.getAttribute('data-palveluyksikko-id') || "";
 
 								const form = document.getElementById('muokkaaYhForm');
 								if (form) form.action = '${pageContext.request.contextPath}/yhteyshenkilo/muokkaa/' + id;
@@ -1443,10 +1475,17 @@ body {
 								if (document.getElementById('yhRooli')) document.getElementById('yhRooli').value = rooli;
 								if (document.getElementById('yhSahkoposti')) document.getElementById('yhSahkoposti').value = email;
 								if (document.getElementById('yhPuhelin')) document.getElementById('yhPuhelin').value = puh;
+								
+								// 🔌 Asetetaan dynaaminen select-valinta kohdalleen
+								const selectYksikko = document.getElementById('yhPalveluyksikko');
+								if (selectYksikko) {
+									selectYksikko.value = palveluyksikkoId;
+								}
 
 								if (yhModalOlio) yhModalOlio.show();
 							});
 						});
+
 
 						/* 2. Lokimerkinnän muokkaustoiminto */
 						document.querySelectorAll('.muokkaa-loki-btn').forEach(btn => {
