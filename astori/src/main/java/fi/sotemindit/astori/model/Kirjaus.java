@@ -15,10 +15,15 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
 
-
 @Entity
 @Table(name = "kirjaukset")
 public class Kirjaus {
+
+	// Yhdistetään kirjaus dynaamiseen kirjaustyyppiin
+	// (Hakuluokitukseen)
+	@ManyToOne(fetch = jakarta.persistence.FetchType.EAGER)
+	@JoinColumn(name = "kirjaustyyppi_id", nullable = true) // true varmistaa, etteivät vanhat kirjaukset hajoa
+	private Kirjaustyyppi kirjaustyyppi;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,16 +36,12 @@ public class Kirjaus {
 	// Kirjauksen voi merkitä tärkeäksi ja niitä voi hakea erikseen.
 	@Column(name = "tarkea", nullable = false)
 	private boolean tarkea = false;
-	
-	//Kirjaus pystytään kytkemään tarvittaessa toisiin kirjauksiin. Asiakkaan omiin tai toisen asiakkaan kirjauksiin.
-	@ManyToMany
-	@JoinTable(
-	    name = "kirjaus_linkitykset",
-	    joinColumns = @JoinColumn(name = "kirjaus_id"),
-	    inverseJoinColumns = @JoinColumn(name = "linkitetty_kirjaus_id")
-	)
-	private List<Kirjaus> linkitetytKirjaukset = new ArrayList<>();
 
+	// Kirjaus pystytään kytkemään tarvittaessa toisiin kirjauksiin. Asiakkaan omiin
+	// tai toisen asiakkaan kirjauksiin.
+	@ManyToMany
+	@JoinTable(name = "kirjaus_linkitykset", joinColumns = @JoinColumn(name = "kirjaus_id"), inverseJoinColumns = @JoinColumn(name = "linkitetty_kirjaus_id"))
+	private List<Kirjaus> linkitetytKirjaukset = new ArrayList<>();
 
 	// Relaatio: Monta kirjausta voi liittyä yhdelle asiakkaalle
 	@ManyToOne
@@ -49,7 +50,7 @@ public class Kirjaus {
 
 	public Kirjaus() {
 	}
-	
+
 	public Kirjaus(String teksti, Asiakas asiakas) {
 		this.teksti = teksti;
 		this.asiakas = asiakas;
@@ -96,7 +97,7 @@ public class Kirjaus {
 	public void setTarkea(boolean tarkea) {
 		this.tarkea = tarkea;
 	}
-	
+
 	public List<Kirjaus> getLinkitetytKirjaukset() {
 		return linkitetytKirjaukset;
 	}
@@ -104,15 +105,24 @@ public class Kirjaus {
 	public void setLinkitetytKirjaukset(List<Kirjaus> linkitetytKirjaukset) {
 		this.linkitetytKirjaukset = linkitetytKirjaukset;
 	}
-	
+
 	public void linkitäKirjaukseen(Kirjaus toinenKirjaus) {
-	    if (!this.linkitetytKirjaukset.contains(toinenKirjaus)) {
-	        this.linkitetytKirjaukset.add(toinenKirjaus);
-	    }
-	    if (!toinenKirjaus.getLinkitetytKirjaukset().contains(this)) {
-	        toinenKirjaus.getLinkitetytKirjaukset().add(this);
-	    }
+		if (!this.linkitetytKirjaukset.contains(toinenKirjaus)) {
+			this.linkitetytKirjaukset.add(toinenKirjaus);
+		}
+		if (!toinenKirjaus.getLinkitetytKirjaukset().contains(this)) {
+			toinenKirjaus.getLinkitetytKirjaukset().add(this);
+		}
 	}
 
+	// 🔌 Varmista, että tämä setteri löytyy Kirjaus.java -tiedostosta:
+	public void setKirjaustyyppi(fi.sotemindit.astori.model.Kirjaustyyppi kirjaustyyppi) {
+		this.kirjaustyyppi = kirjaustyyppi;
+	}
+
+	// Ja samalla tämä getteri, jotta tieto voidaan lukea myöhemmin:
+	public fi.sotemindit.astori.model.Kirjaustyyppi getKirjaustyyppi() {
+		return kirjaustyyppi;
+	}
 
 }

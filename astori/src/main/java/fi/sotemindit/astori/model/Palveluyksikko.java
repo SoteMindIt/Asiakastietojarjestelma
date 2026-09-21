@@ -36,6 +36,9 @@ public class Palveluyksikko {
 	@OneToMany(mappedBy = "palveluyksikko", cascade = CascadeType.ALL, orphanRemoval = true)
 	private java.util.List<Yhteyshenkilo> yhteyshenkilot = new java.util.ArrayList<>();
 
+	@Column(name = "y_tunnus", length = 9, nullable = true)
+	private String yTunnus;
+
 	public Palveluyksikko() {
 	}
 
@@ -140,6 +143,14 @@ public class Palveluyksikko {
 
 	public void setYhteyshenkilot(java.util.List<Yhteyshenkilo> yhteyshenkilot) {
 		this.yhteyshenkilot = yhteyshenkilot;
+	}
+
+	public String getyTunnus() {
+		return yTunnus;
+	}
+
+	public void setyTunnus(String yTunnus) {
+		this.yTunnus = yTunnus;
 	}
 
 }

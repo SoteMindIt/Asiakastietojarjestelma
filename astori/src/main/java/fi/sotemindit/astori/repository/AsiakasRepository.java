@@ -14,7 +14,7 @@ public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 	// 1. Haetaan käyttäjän asiakkaat sivutettuna ilman rajauksia
 	Page<Asiakas> findByKayttajaKayttajatunnus(String kayttajatunnus, Pageable pageable);
 
-	// 2. 🔗 UUSI: Hakee tietyn käyttäjän asiakkaat pelkän hyvinvointialueen perusteella sivutettuna
+	// 2. Hakee tietyn käyttäjän asiakkaat pelkän hyvinvointialueen perusteella sivutettuna
 	Page<Asiakas> findByKayttajaKayttajatunnusAndHyvinvointialue(String kayttajatunnus, Hyvinvointialue hyvinvointialue, Pageable pageable);
 
 	// 3. Hakutoiminto viidelle kentälle (Vapaa tekstihaku ilman aluerajausta)
@@ -29,7 +29,7 @@ public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 			@Param("haku") String haku, 
 			Pageable pageable);
 
-	// 4. 🔗 UUSI YHDISTELMÄHAKU: Hakee vapaalla hakusanalla JA rajatulla hyvinvointialueella sivutettuna
+	// 4. YHDISTELMÄHAKU: Hakee vapaalla hakusanalla JA rajatulla hyvinvointialueella sivutettuna
 	@Query("SELECT a FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus AND a.hyvinvointialue = :hyvinvointialue AND " +
 		       "(LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
 		       "LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
@@ -41,7 +41,36 @@ public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 			@Param("haku") String haku, 
 			Pageable pageable);
 
-	// 5. 📈 KORJATTU LASKURI: Käyttää Javan luokkarakennetta, toimii satavarmasti ilman SQL-ongelmia
+	// 📈 LASKURI: Käyttää Javan luokkarakennetta, toimii satavarmasti
 	@Query("SELECT COUNT(a) FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus")
 	long countByKayttajaKayttajatunnus(@Param("tunnus") String tunnus);
+
+	// 🔌 ==================== CRM-HAKUMENETELMÄT KIRJAUSTYYPEILLE ====================
+
+	// 5. Suodattaa pelkän Kirjaustyypin ID:n perusteella
+	@Query("SELECT DISTINCT a FROM Asiakas a JOIN a.kirjaukset k WHERE a.kayttaja.kayttajatunnus = :tunnus AND k.kirjaustyyppi.id = :tyyppiId")
+	Page<Asiakas> findByKayttajaKayttajatunnusAndKirjaustyyppi(@Param("tunnus") String tunnus, @Param("tyyppiId") Long tyyppiId, Pageable pageable);
+
+	// 6. Suodattaa vapaalla hakusanalla JA Kirjaustyypin ID:llä
+	@Query("SELECT DISTINCT a FROM Asiakas a JOIN a.kirjaukset k WHERE a.kayttaja.kayttajatunnus = :tunnus AND k.kirjaustyyppi.id = :tyyppiId AND " +
+		       "(LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.puhelin) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')))")
+	Page<Asiakas> findByKayttajaKayttajatunnusAndKirjaustyyppiAndHaku(
+			@Param("tunnus") String tunnus, @Param("tyyppiId") Long tyyppiId, @Param("haku") String haku, Pageable pageable);
+
+	// 7. Suodattaa hyvinvointialueella JA Kirjaustyypin ID:llä
+	@Query("SELECT DISTINCT a FROM Asiakas a JOIN a.kirjaukset k WHERE a.kayttaja.kayttajatunnus = :tunnus AND a.hyvinvointialue = :hyvinvointialue AND k.kirjaustyyppi.id = :tyyppiId")
+	Page<Asiakas> findByKayttajaKayttajatunnusAndHyvinvointialueAndKirjaustyyppi(
+			@Param("tunnus") String tunnus, @Param("hyvinvointialue") Hyvinvointialue hyvinvointialue, @Param("tyyppiId") Long tyyppiId, Pageable pageable);
+
+	// 8. Suodattaa KAIKILLA KOLMELLA (Hakusana + Hyvinvointialue + Kirjaustyyppi ID)
+	@Query("SELECT DISTINCT a FROM Asiakas a JOIN a.kirjaukset k WHERE a.kayttaja.kayttajatunnus = :tunnus AND a.hyvinvointialue = :hyvinvointialue AND k.kirjaustyyppi.id = :tyyppiId AND " +
+		       "(LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.puhelin) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+		       "LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')))")
+	Page<Asiakas> findByKayttajaKayttajatunnusAndHyvinvointialueAndKirjaustyyppiAndHaku(
+			@Param("tunnus") String tunnus, @Param("hyvinvointialue") Hyvinvointialue hyvinvointialue, @Param("tyyppiId") Long tyyppiId, @Param("haku") String haku, Pageable pageable);
 }

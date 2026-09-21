@@ -10,7 +10,7 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 
 ---
 
-## ⚙️ 1. Konfiguraatiot ja Perusrakenne
+## ⚙️ 2. Konfiguraatiot ja Perusrakenne
 
 ### pom.xml (Maven)
 - Riippuvuudet: `spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `postgresql`, `spring-security-crypto`, `openpdf` (versio 1.3.40), `tomcat-embed-jasper` ja `jakarta.servlet.jsp.jstl` (JSP/JSTL-tuki Spring Boot 3:ssa).
@@ -22,7 +22,7 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 
 ---
 
-## 🏛️ 2. Tietomallit (Entities / Models)
+## 🏛️ 3. Tietomallit (Entities / Models)
 
 ### Asiakas.java
 - Kentät: Long id (Identity), String nimi (nullable=false), String puhelin, String sahkoposti, String katuosoite, String postinumero, String postitoimipaikka, String kotisivu, String yTunnus (length=9), String kuvaus.
@@ -32,13 +32,14 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 - Relaatiot (Kytketty täydellä `CascadeType.ALL, orphanRemoval = true` suhteella automaattista ja turvallista asiakkaan poistamista varten): 
   - `@ManyToOne @JoinColumn(name = "kayttaja_id") Kayttaja kayttaja`
   - `@OneToMany` palveluyksiköt, yhteyshenkilöt, kirjaukset ja tarjoukset.
-- Konstruktori: 11 argumentin standardikonstruktori.
+- Konstruktori: 11 argumentin standardkonstruktori.
 
 ### AsiakkaanTila.java (Enum)
 - Arvot: `PROSPEKTI`, `KONTAKTOITU`, `TARJOUS_JATETTY`, `AKTIIVINEN`, `PAATTYNYT`.
 
 ### Hyvinvointialue.java (Enum)
 - Arvot: 21 virallista hyvinvointialuetta (esim. `HELSINKI`, `LANSI_UUSIMAA`) + `getNimi()`-metodi selkokieliselle suomenkieliselle tulostukselle.
+
 ### Palveluyksikko.java
 - Kentät: `Long id` (Identity), `String nimi` (nullable=false), `String katuosoite`, `String postinumero`, `String postitoimipaikka`, `String puhelin`, `String sahkoposti`, `String kuvaus` (columnDefinition = "TEXT").
 - Hyvinvointialue: `@Enumerated(EnumType.STRING) Hyvinvointialue hyvinvointialue`.
@@ -72,10 +73,15 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
   - `getAlvOsuus()` -> Laskee ALV:n osuuden euroina käyttäen enumin prosenttia.
   - `getVerollinenKokonaishinta()` -> Laskee lopullisen verollisen hinnan (Veroton + ALV).
 
+### Kirjaustyyppi.java (UUSI - Dynaamiset CRM-hakuluokitukset)
+- Kentät: `Long id` (Identity), `String nimi` (nullable=false), `String vari` (nullable=false, pituus=7).
+- Käyttö: Tallentaa dynaamiset kirjausten aiheluokitukset (esim. *Koulutuskysely*, *Laitehuolto*) ja niihin kytketyt badge Hex-värit (esim. `#0d6efd`) vapaiden CRM-hakuehtojen muodostamiseksi.
+
 ### Kirjaus.java (Asiakkaan päiväkirjaukset / sovitut asiat)
 - Kentät: `Long id`, `String teksti` (columnDefinition = "TEXT"), `LocalDateTime luontiaika`, `boolean tarkea` (merkintä tärkeäksi / huomionarvoiseksi, oletussarake tietokannassa `DEFAULT false`).
 - Relaatiot:
   - `@ManyToOne @JoinColumn(name = "asiakas_id", nullable = false) Asiakas asiakas`.
+  - `@ManyToOne @JoinColumn(name = "kirjaustyyppi_id", nullable = true) Kirjaustyyppi kirjaustyyppi` (Kytkentä dynaamiseen hakuluokitukseen. Nullable=true takaa taaksepäinYhteensopivuuden vanhoille riveille).
   - `@ManyToMany` (Self-referencing): `List<Kirjaus> linkitetytKirjaukset` -> Jira-tyylinen molemminpuolinen linkitys toisiin sovittuihin asioihin. Liitostaulu tietokannassa: `public.kirjaus_linkitykset` (`kirjaus_id`, `linkitetty_kirjaus_id`).
   - Sisältää apumetodin `linkitäKirjaukseen(Kirjaus toinenKirjaus)`.
 
@@ -92,42 +98,49 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 
 ### Muut mallit
 - `Tarjous.java`, `TarjousRivi.java`, `Yritystiedot.java` (ID 1L), `Liitetiedosto.java`.
-
 ---
 
-## 🔌 3. Repository-rajapinnat (Repositories)
+## 🔌 4. Repository-rajapinnat (Repositories)
 
 ### AsiakasRepository.java
 - `Page<Asiakas> findByKayttajaKayttajatunnus(String kayttajatunnus, Pageable pageable)`
 - `findByKayttajaKayttajatunnusAndHaku` -> Vapaa tekstihaku viidelle kentälle.
 - **Päivitetty aluesuodatus (`LEFT JOIN DISTINCT`):** Hakumetodit `findByKayttajaKayttajatunnusAndHyvinvointialue` sekä `findByKayttajaKayttajatunnusAndHyvinvointialueAndHaku` kytkevät hakuun mukaan sekä asiakkaan oman että kaikkien sen palveluyksikköjen hyvinvointialueet ilman tuplarivejä.
+- **Uudet dynaamiset CRM-hakumetodit kirjaustyypeille (`JOIN DISTINCT`):**
+  - `findByKayttajaKayttajatunnusAndKirjaustyyppi` -> Suodattaa pelkän kirjaustyypin mukaan.
+  - `findByKayttajaKayttajatunnusAndKirjaustyyppiAndHaku` -> Tekstihaku + Kirjaustyyppi.
+  - `findByKayttajaKayttajatunnusAndHyvinvointialueAndKirjaustyyppi` -> Hyvinvointialue + Kirjaustyyppi.
+  - `findByKayttajaKayttajatunnusAndHyvinvointialueAndKirjaustyyppiAndHaku` -> Jättihaku kaikilla kolmella ehdolla ristiin.
 - `countByKayttajaKayttajatunnus` -> Korjattu ja varma laskuri.
 
-### KirjausRepository.java, PalveluyksikkoRepository.java, YhteyshenkiloRepository.java, TapahtumaTyyppiRepository.java, LokiRepository.java.
-## 🎮 4. Backend-kontrollerit (Controllers & Routes)
+### KirjaustyyppiRepository.java (UUSI)
+- Standardi `JpaRepository<Kirjaustyyppi, Long>` -rajapinta dynaamisten hakuluokitusten hallintaan.
 
-- **`AsiakasController.java`**: 
-  - Ohjaa dashboardia, asiakaslistauksen sivutusta ja asiakasprofiilia (`/asiakas/{id}`).
-  - `listaaAsiakkaat` (@GetMapping("/asiakkaat")): Ottaa vastaan `alue`- ja `haku`-parametrit ja suodattaa asiakkaat dynaamisesti neljän eri hakuvariaation mukaan (tukee uutta palveluyksikköjen alueliitosta).
-  - Vastaanottaa asiakastietojen muokkaukset osoitteeseen `/asiakas/{id}/muokkaa` (POST).
-  - `poistaAsiakas` (@PostMapping("/asiakas/{id}/poista")): Poistaa asiakkaan ja puhdistaa kaikki alirivit (yhteyshenkilöt, tarjoukset jne.) kerralla tietokannan eheyssääntöjen mukaisesti.
-  - Live Search reitti: `/asiakkaat/live-haku` (@ResponseBody).
-- **`KirjausController.java` (UUSI - Eriytetty arkkitehtuuri)**:
-  - Vastaa puhtaasti päiväkirjauksista ja sovituista asioista (Single Responsibility Principle).
-  - Hoitaa uuden kirjauksen tallennuksen (`/lisaa-kirjaus`) ja muokkauksen (`/muokkaa/{id}`) siten, että ne tekevät molemminpuolisia Jira-tyylisiä linkityksiä ilman tietokantavirheitä (pääolio tallennetaan ensin ID:n saamiseksi).
-  - `poistaKirjausLinkki` (@PostMapping("/kirjaus/{id}/poista-linkki/{linkkiId}")): Katkaisee kahden kirjauksen välisen linkityksen molemminpuolisesti, jos kyseessä on inhimillinen virhe.
-- **`RaportitController.java`**, **`TarjousController.java`** (OpenPDF + 25.5 % ALV), **`AsetuksetController.java`** (ääkkösettömät reitit), **`KalenteriController.java`** (FullCalendar 6).
+### KirjausRepository.java, PalveluyksikkoRepository.java, YhteyshenkiloRepository.java, TapahtumaTyyppiRepository.java, LokiRepository.java.
 
 ---
 
-## 💻 5. Käyttöliittymäkerros (JSP-näkymät)
+## 🎮 5. Backend-kontrollerit (Controllers & Routes)
 
-- **`asiakkaat.jsp`**:
-  - **Uusi Aluesuodatustyökalu:** Hakulomake on kääritty siistiin, ryhmiteltyyn Bootstrap-laatikkoon (`bg-light shadow-sm border`), jossa vapaasanahaku, hyvinvointialueen alasvetovalikko sekä Hae- ja Nollaa-painikkeet ovat täydellisesti pystysuorassa samalla rivillä.
-  - Suurennuslasi-ikoni on korvattu selkeällä emojitekstillä `🔍 Hae` ja nollausnappi tekstillä `✖ Nollaa`, mikä takaa toimivuuden kaikissa selaimissa ilman ulkoisia ikonikirjastoja.
-- **`asiakasprofiili.jsp`**: 
-  - Asiakkaan tietojen muokkaus tapahtuu Bootstrap 5 Modal-ikkunassa (`#muokkaaAsiakasModal`).
-  - **Toimintapainikkeet:** Yläreunassa on ammattimainen pillerinappirivi (`rounded-pill`), jonka jatkoksi on lisätty punainen, varmistuksella varustettu `❌ Poista asiakkuus` -lomakepainike.
-  - **Jira-tyylinen haitarilista:** Linkitetyt sovitut asiat tulostetaan kunkin lokirivin alle erittäin matalana ja siistinä Bootstrap Accordion (haitari) -listana (`font-size: 0.75rem !important`). Haitarin sisältä löytyy linkitetyn asiakkaan nimi, katkaistu teksti sekä suora loikkaustoiminto (`Avaa →`) toisen asiakkaan profiiliin.
-  - Muokkausmodalin alasvetovalikko nollautuu aina tyhjäksi, ja sen rooli on puhtaasti uuden linkityksen luominen ilman olemassa olevan haitaridatan ylikirjoitusta.
-- **`raportit.jsp`** (Välilehtirakenne muistilla), **`asetukset.jsp`**, **`kalenteri.jsp`** (Rich HTML Tooltipit).
+### AsiakasController.java
+- Ohjaa dashboardia, asiakaslistauksen sivutusta ja asiakasprofiilia (`/asiakas/{id}`).
+- `listaaAsiakkaat` (@GetMapping("/asiakkaat")): Ottaa vastaan `alue`-, `haku`- ja uuden `tyyppi` (kirjaustyyppi ID) -parametrit. Suodattaa asiakkaat dynaamisesti **8 eri hakuvariaation** mukaan lennosta. Vuo viedään myös asiakasprofiiliin valintalistoja varten.
+- Vastaanottaa asiakastietojen muokkaukset osoitteeseen `/asiakas/{id}/muokkaa` (POST).
+- `poistaAsiakas` (@PostMapping("/asiakas/{id}/poista")): Poistaa asiakkaan ja puhdistaa kaikki alirivit (yhteyshenkilöt, tarjoukset jne.) kerralla tietokannan eheyssääntöjen mukaisesti.
+- Live Search reitti: `/asiakkaat/live-haku` (@ResponseBody).
+
+### KirjaustyyppiController.java (UUSI)
+- Käsittelee dynaamisten asiakaskirjausten aiheluokitusten hallinnan (Single Responsibility Principle).
+- Reitit: `/asetukset/lisaa-kirjaustyyppi` (POST) ja `/asetukset/muokkaa-kirjaustyyppia/{id}` (POST) tunnusvärien ja aihenimien tallennukseen.
+
+### KirjausController.java
+- Vastaa puhtaasti päiväkirjauksista ja sovituista asioista (Single Responsibility Principle).
+- Laajennettu ottamaan vastaan `@RequestParam(value = "kirjaustyyppiId", required = false) Long kirjaustyyppiId` sekä uuden kirjauksen (`/lisaa-kirjaus`) että muokkauksen (`/muokkaa/{id}`) yhteydessä, kytkien luokituksen turvallisesti olioon.
+- `poistaKirjausLinkki` (@PostMapping("/kirjaus/{id}/poista-linkki/{linkkiId}")): Katkaisee kahden kirjauksen välisen linkityksen molemminpuolisesti, jos kyseessä on inhimillinen virhe.
+
+### RaportitController.java
+- Hoitaa aikavälirajaukset, Auditin ja dynaamiset myyntilaskennat (ALV-erittelyt ja 0% KM-korvausten erottamiset).
+- Ohjaa `@GetMapping("/raportit")` -reitillä suodatettua kirjaushakua, joka ryhmittelee dynaamiset kirjaustyypit kronologisesti asiakkaittain, ja palauttaa ne käyttöliittymän haitarirakenteeseen.
+
+### Muut kontrollerit
+- `TarjousController.java` (25.5 % ALV), `AsetuksetController.java` (ääkkösettömät reitit suojatuilla suljetuilla haitareilla ja itsenäisellä varmuuskopiokortilla), `KalenteriController.java` (FullCalendar 6).

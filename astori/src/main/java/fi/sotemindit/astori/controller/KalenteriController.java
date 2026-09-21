@@ -44,7 +44,7 @@ public class KalenteriController {
 	@GetMapping("/kalenteri")
 	public String naytaKalenteri(
 			@RequestParam(required = false) Long asiakasId,
-			@RequestParam(required = false) Long tyyppiId, // 💡 MUUTETTU: Suodatetaan suoraan ID-numerolla
+			@RequestParam(required = false) Long tyyppiId,
 			@RequestParam(required = false) String alkuStr,
 			@RequestParam(required = false) String loppuStr,
 			HttpSession session, 
@@ -55,11 +55,10 @@ public class KalenteriController {
 			return "redirect:/login";
 		}
 
-		// Haetaan suodatustyyppi suoraan ID:n perusteella
 		TapahtumaTyyppi tyyppi = null;
 		if (tyyppiId != null) {
-	        tyyppi = tapahtumaTyyppiRepository.findById(tyyppiId).orElse(null);
-	    }
+			tyyppi = tapahtumaTyyppiRepository.findById(tyyppiId).orElse(null);
+		}
 
 		LocalDateTime alkuPvm = null;
 		if (alkuStr != null && !alkuStr.trim().isEmpty()) {
@@ -71,17 +70,14 @@ public class KalenteriController {
 			loppuPvm = java.time.LocalDate.parse(loppuStr).atTime(23, 59, 59);
 		}
 
-		// Haetaan suodatetut tapahtumat tietokannasta dynaamisella kyselyllä
 		List<Tapahtuma> tapahtumat = tapahtumaRepository.haeKalenteriSuodattimilla(
 				istuntoTunnus, asiakasId, tyyppi, alkuPvm, loppuPvm
 		);
 		model.addAttribute("tapahtumat", tapahtumat);
 
-		// Viedään kaikki dynaamiset asiakkaat ja tyypit hakulomakkeen pudotusvalikoita varten
 		model.addAttribute("kaikkiAsiakkaat", asiakasRepository.findAll());
 		model.addAttribute("tapahtumaTyypit", tapahtumaTyyppiRepository.findAll());
 
-		// Laitetaan tehdyt valinnat takaisin modeliin lomakkeen muistia varten
 		model.addAttribute("valittuAsiakasId", asiakasId);
 		model.addAttribute("valittuTyyppiId", tyyppiId);
 		model.addAttribute("valittuAlku", alkuStr);
@@ -90,7 +86,7 @@ public class KalenteriController {
 		return "kalenteri";
 	}
 
-	// 📅 2. REITTI: Avaa kalenteritapahtuman erillisen muokkaussivun (jos käytössä)
+	// 📅 2. REITTI: Avaa kalenteritapahtuman erillisen muokkaussivun
 	@GetMapping("/kalenteri/muokkaa/{id}")
 	public String naytaTapahtumanMuokkaus(@PathVariable Long id, Model model, HttpSession session) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -108,14 +104,16 @@ public class KalenteriController {
 		return "muokkaa-tapahtumaa";
 	}
 
-	// 💾 3. REITTI: Vastaanottaa muokkausmodalin/lomakkeen tiedot ja päivittää tapahtuman
+	// 💾 3. REITTI: Vastaanottaa muokkausmodalin tiedot ja päivittää tapahtuman keston
 	@PostMapping("/kalenteri/paivita/{id}")
 	public String paivitaTapahtuma(
 			@PathVariable Long id, 
 			@RequestParam String otsikko, 
 			@RequestParam String kuvaus,
-			@RequestParam String ajankohtaStr, 
-			@RequestParam("tyyppi") Long tyyppiId, // 💡 KORJATTU: Otetaan vastaan ID numerona
+			@RequestParam String paivaStr,      
+			@RequestParam String alkuAikaStr,  
+			@RequestParam String loppuAikaStr, 
+			@RequestParam("tyyppi") Long tyyppiId, 
 			@RequestParam(value = "asiakasId", required = false) Long asiakasId,
 			@RequestParam(value = "lahde", required = false) String lahde,
 			HttpSession session) {
@@ -128,18 +126,24 @@ public class KalenteriController {
 		Tapahtuma tapahtuma = tapahtumaRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Tapahtumaa ei löytynyt id-numerolla: " + id));
 
-		// 💡 KORJATTU: Haetaan oikea tapahtumatyyppi-olio tietokannasta lähetetyn ID:n perusteella
 		TapahtumaTyyppi dynaaminenTyyppi = tapahtumaTyyppiRepository.findById(tyyppiId)
 				.orElseThrow(() -> new IllegalArgumentException("Tapahtumatyyppiä ei löytynyt ID-numerolla: " + tyyppiId));
 
 		tapahtuma.setOtsikko(otsikko);
 		tapahtuma.setKuvaus(kuvaus);
-		tapahtuma.setAjankohta(LocalDateTime.parse(ajankohtaStr));
-		tapahtuma.setTyyppi(dynaaminenTyyppi); // Asetetaan haettu olio tapahtumalle
+		
+		// Yhdistetään päivä ja kelloajat valmiiksi LocalDateTime-olioiksi
+		tapahtuma.setAjankohta(LocalDateTime.parse(paivaStr + "T" + alkuAikaStr));
+		if (loppuAikaStr != null && !loppuAikaStr.trim().isEmpty()) {
+			tapahtuma.setLoppuaika(LocalDateTime.parse(paivaStr + "T" + loppuAikaStr));
+		} else {
+			tapahtuma.setLoppuaika(null);
+		}
+		
+		tapahtuma.setTyyppi(dynaaminenTyyppi);
 
 		if (asiakasId != null) {
-			fi.sotemindit.astori.model.Asiakas asiakas = asiakasRepository.findById(asiakasId)
-					.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
+			fi.sotemindit.astori.model.Asiakas asiakas = asiakasRepository.findById(asiakasId).orElse(null);
 			tapahtuma.setAsiakas(asiakas);
 		} else {
 			tapahtuma.setAsiakas(null);
@@ -156,13 +160,15 @@ public class KalenteriController {
 		return "redirect:/";
 	}
 
-	// 📅 4. REITTI: Tallentaa kokonaan uuden kalenterimerkinnän
+	// 📅 4. REITTI: Tallentaa kokonaan uuden kalenterimerkinnän erillisellä kestolla
 	@PostMapping("/kalenteri/lisaa")
 	public String lisaaKalenteriTapahtuma(
 			@RequestParam String otsikko, 
 			@RequestParam String kuvaus,
-			@RequestParam String ajankohtaStr, 
-			@RequestParam("tyyppi") Long tyyppiId, // 💡 KORJATTU: Otetaan vastaan ID numerona
+			@RequestParam String paivaStr,      
+			@RequestParam String alkuAikaStr,  
+			@RequestParam String loppuAikaStr, 
+			@RequestParam("tyyppi") Long tyyppiId, 
 			@RequestParam(value = "asiakasId", required = false) Long asiakasId, 
 			HttpSession session) {
 
@@ -171,24 +177,27 @@ public class KalenteriController {
 			return "redirect:/login";
 		}
 
-		LocalDateTime ajankohta = LocalDateTime.parse(ajankohtaStr);
 		Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
 				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löytynyt"));
 
-		// 💡 KORJATTU: Haetaan oikea tapahtumatyyppi-olio tietokannasta lähetetyn ID:n perusteella
 		TapahtumaTyyppi dynaaminenTyyppi = tapahtumaTyyppiRepository.findById(tyyppiId)
 				.orElseThrow(() -> new IllegalArgumentException("Tapahtumatyyppiä ei löytynyt ID-numerolla: " + tyyppiId));
 
 		Tapahtuma uusiTapahtuma = new Tapahtuma();
 		uusiTapahtuma.setOtsikko(otsikko);
 		uusiTapahtuma.setKuvaus(kuvaus);
-		uusiTapahtuma.setAjankohta(ajankohta);
-		uusiTapahtuma.setTyyppi(dynaaminenTyyppi); // Asetetaan haettu olio uudelle tapahtumalle
+		
+		// Yhdistetään päivä ja kelloajat valmiiksi LocalDateTime-olioiksi
+		uusiTapahtuma.setAjankohta(LocalDateTime.parse(paivaStr + "T" + alkuAikaStr));
+		if (loppuAikaStr != null && !loppuAikaStr.trim().isEmpty()) {
+			uusiTapahtuma.setLoppuaika(LocalDateTime.parse(paivaStr + "T" + loppuAikaStr));
+		}
+		
+		uusiTapahtuma.setTyyppi(dynaaminenTyyppi);
 		uusiTapahtuma.setKayttaja(nykyinenKayttaja);
 
 		if (asiakasId != null) {
-			fi.sotemindit.astori.model.Asiakas asiakas = asiakasRepository.findById(asiakasId)
-					.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
+			fi.sotemindit.astori.model.Asiakas asiakas = asiakasRepository.findById(asiakasId).orElse(null);
 			uusiTapahtuma.setAsiakas(asiakas);
 			lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS",
 					"Luotu uusi kalenteritapahtuma: '" + otsikko + "' asiakkaalle ID: " + asiakasId));

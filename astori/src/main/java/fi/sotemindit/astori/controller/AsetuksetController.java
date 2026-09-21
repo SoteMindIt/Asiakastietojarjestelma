@@ -6,6 +6,7 @@ import fi.sotemindit.astori.model.TuoteYksikko;
 import fi.sotemindit.astori.model.AlvKanta;
 import fi.sotemindit.astori.model.Yritystiedot;
 import fi.sotemindit.astori.repository.KayttajaRepository;
+import fi.sotemindit.astori.repository.KirjaustyyppiRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.model.TapahtumaTyyppi;
 import fi.sotemindit.astori.repository.TapahtumaTyyppiRepository;
@@ -35,6 +36,9 @@ public class AsetuksetController {
 
 	@Autowired
 	private TapahtumaTyyppiRepository tapahtumaTyyppiRepository;
+	
+	@Autowired
+	private KirjaustyyppiRepository kirjaustyyppiRepository;
 
 	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat
 	// tiedot
@@ -67,6 +71,9 @@ public class AsetuksetController {
 		model.addAttribute("alvKannat", AlvKanta.values());
 		// Viedään kaikki tapahtumatyypit
 		model.addAttribute("kaikkiTapahtumaTyypit", tapahtumaTyyppiRepository.findAll());
+		
+		// Viedään kirjaustyypit asetussivulle
+		model.addAttribute("kaikkiKirjaustyypit", kirjaustyyppiRepository.findAll());
 
 		return "asetukset"; // Avaa asetukset.jsp
 	}

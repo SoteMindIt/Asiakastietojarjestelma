@@ -9,18 +9,25 @@ public class Tapahtuma {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
+	
 	@Column(nullable = false)
 	private String otsikko;
-	private String kuvaus;// 🔌 Kenttä on valmiina, mutta vaatii getterit/setterit toimiakseen
+	
+	private String kuvaus;
+	
 	private LocalDateTime loppuaika;
+	
 	@Column(nullable = false)
 	private LocalDateTime ajankohta;
+	
 	@ManyToOne
 	@JoinColumn(name = "tyyppi_id", nullable = false)
 	private TapahtumaTyyppi tyyppi;
+	
 	@ManyToOne
 	@JoinColumn(name = "asiakas_id", nullable = true)
 	private Asiakas asiakas;
+	
 	@ManyToOne
 	@JoinColumn(name = "kayttaja_id", nullable = false)
 	private Kayttaja kayttaja;
