@@ -189,7 +189,8 @@ body {
 				</div>
 			</div>
 			<!-- /Käyttäjähallinta päättyy -->
-			<!-- 📦 2. LAATIKKO: TUOTEREKISTERI JA PALVELUT (Oletuksena suljettu haitari) -->
+
+			<!-- 📦 2. LAATIKKO: TUOTEREKISTERI JA PALVELUT (Haitari korjattu painikkeineen) -->
 			<div class="col-md-12">
 				<div
 					class="accordion shadow-sm border rounded-3 overflow-hidden bg-white mb-4"
@@ -205,43 +206,65 @@ body {
 								tuoterekisterin hinnasto</button>
 						</h2>
 
-						<!-- Koko hinnastotaulukko (Oletuksena piilossa ilman 'show'-luokkaa) -->
-						<div id="tuotePaneeliRunko"
-							class="accordion-collapse collapse border-0 p-0 m-0 w-100"
+						<!-- Koko hinnastorunko (Oletuksena piilossa) -->
+						<div id="tuotePaneeliRunko" class="accordion-collapse collapse"
 							aria-labelledby="tuotePaaotsikko"
 							data-bs-parent="#tuoteYleishaitari">
-							<div class="table-responsive p-0 m-0 w-100 border-0">
-								<table class="table table-hover align-middle mb-0 w-100">
-									<thead class="table-light">
-										<tr>
-											<th>Nimi</th>
-											<th>Kuvaus</th>
-											<th>Yksikkö</th>
-											<th class="text-end">Hinta (ALV 0%)</th>
-											<th class="text-end">ALV-kanta</th>
-											<th class="text-end">Hinta (Sis. ALV)</th>
-											<th class="text-end">Toiminnot</th>
-										</tr>
-									</thead>
-									<tbody>
-										<c:forEach var="tuote" items="${tuotteet}">
+							<div class="accordion-body p-4 bg-light">
+
+								<!-- 🔌 PALAUTETTU LISÄYSPAINIKE: Sijoitettu kauniisti listauksen ylälaitaan -->
+								<div
+									class="d-flex justify-content-between align-items-center mb-3">
+									<h5 class="text-secondary mb-0 fw-bold h6">Tuotteet ja
+										palvelut hinnastossa</h5>
+									<button type="button"
+										class="btn btn-success fw-bold btn-sm px-3 shadow-sm"
+										data-bs-toggle="modal" data-bs-target="#lisaaTuoteModal">
+										+ Lisää uusi tuote / palvelu</button>
+								</div>
+
+								<div class="table-responsive border rounded bg-white p-0">
+									<table class="table table-hover align-middle mb-0 w-100">
+										<thead class="table-light text-secondary">
 											<tr>
-												<td><strong>${tuote.nimi}</strong></td>
-												<td class="text-secondary small">${tuote.kuvaus}</td>
-												<td><span class="badge bg-light text-dark border">${tuote.yksikko.lyhenne}</span></td>
-												<td class="text-end fw-bold text-dark">${tuote.hinta}€</td>
-												<td class="text-end text-secondary">${tuote.alvKanta.prosenttiStr}%</td>
-												<td class="text-end fw-bold text-primary">${tuote.verollinenHinta}€</td>
-												<td class="text-end">
-													<button type="button"
-														class="btn btn-sm btn-outline-primary rounded-pill px-3"
-														data-bs-toggle="modal"
-														data-bs-target="#muokkaaTuoteModal${tuote.id}">Muokkaa</button>
-												</td>
+												<th>Nimi</th>
+												<th>Kuvaus</th>
+												<th>Yksikkö</th>
+												<th class="text-end">Hinta (ALV 0%)</th>
+												<th class="text-end">ALV-kanta</th>
+												<th class="text-end">Hinta (Sis. ALV)</th>
+												<th class="text-end">Toiminnot</th>
 											</tr>
-										</c:forEach>
-									</tbody>
-								</table>
+										</thead>
+										<tbody>
+											<c:forEach var="tuote" items="${tuotteet}">
+												<tr>
+													<td><strong>${tuote.nimi}</strong></td>
+													<td class="text-secondary small">${tuote.kuvaus}</td>
+													<td><span class="badge bg-light text-dark border">${tuote.yksikko.lyhenne}</span></td>
+													<td class="text-end fw-bold text-dark">${tuote.hinta}€</td>
+													<td class="text-end text-secondary">${tuote.alvKanta.prosenttiStr}%</td>
+													<td class="text-end fw-bold text-primary">${tuote.verollinenHinta}€</td>
+													<td class="text-end">
+														<!-- 🔌 KORJATTU LINKITYS: Avaa dynaamisesti juuri tämän tuotteen muokkausikkunan -->
+														<button type="button"
+															class="btn btn-sm btn-outline-primary rounded-pill px-3"
+															data-bs-toggle="modal"
+															data-bs-target="#muokkaaTuoteModal${tuote.id}">
+															Muokkaa</button>
+													</td>
+												</tr>
+											</c:forEach>
+											<c:if test="${empty tuotteet}">
+												<tr>
+													<td colspan="7" class="text-center text-muted py-3 italic">Tuoterekisteriin
+														ei ole vielä syötetty tuotteita tai palveluita.</td>
+												</tr>
+											</c:if>
+										</tbody>
+									</table>
+								</div>
+
 							</div>
 						</div>
 
@@ -249,6 +272,7 @@ body {
 				</div>
 			</div>
 			<!-- /Tuoterekisteri päättyy -->
+
 
 			<!-- 📝 3. LAATIKKO: ASIAKASKIRJAUSTEN TYYPIT / HAKULUOKITTELUT (Oletuksena suljettu haitari) -->
 			<div class="col-md-12">
@@ -691,7 +715,144 @@ body {
 		</div>
 	</div>
 
-	<!-- BOOTSTRAP 5 CORE SCRIPT -->
+	<!-- 🔌 UUSI: POP-UP MODAL UUDEN TUOTTEEN LISÄYKSELLE -->
+	<div class="modal fade" id="lisaaTuoteModal" tabindex="-1"
+		aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content border-0 shadow-lg">
+				<div class="modal-header bg-success text-white">
+					<h5 class="modal-title fw-bold">Lisää uusi tuote / palvelu</h5>
+					<button type="button" class="btn-close btn-close-white"
+						data-bs-dismiss="modal"></button>
+				</div>
+				<!-- Kytketty suoraan uuteen TuoteControlleriin -->
+				<form
+					action="${pageContext.request.contextPath}/asetukset/lisaa-tuote"
+					method="post">
+					<div class="modal-body p-4 text-start">
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary small">Tuotteen
+								/ Palvelun nimi *</label> <input type="text" class="form-control"
+								name="nimi" required placeholder="esim. Sote-konsultaatio">
+						</div>
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary small">Kuvaus</label>
+							<textarea class="form-control" name="kuvaus" rows="3"
+								placeholder="Kirjoita lyhyt kuvaus tuotteesta..."></textarea>
+						</div>
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-semibold text-secondary small">Yksikköhinta
+									(ALV 0%) *</label>
+								<div class="input-group">
+									<input type="number" step="0.01" class="form-control"
+										name="hinta" required placeholder="0.00"> <span
+										class="input-group-text">€</span>
+								</div>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label fw-semibold text-secondary small">Yksikkö
+									*</label> <select class="form-select" name="yksikko" required>
+									<c:forEach var="yks" items="${yksikot}">
+										<option value="${yks.name()}">${yks.lyhenne}</option>
+									</c:forEach>
+								</select>
+							</div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label fw-semibold text-secondary small">ALV-kanta
+								*</label> <select class="form-select" name="alvKanta" required>
+								<c:forEach var="alv" items="${alvKannat}">
+									<!-- 🔌 KORJAUS: Hyödynnetään enumin virallista getNayttorivi()-metodia -->
+									<option value="${alv.name()}"
+										${alv.name() == 'ALV_25_5' ? 'selected' : ''}>${alv.nayttorivi}</option>
+								</c:forEach>
+							</select>
+						</div>
+					</div>
+					<div class="modal-footer bg-light">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">Peruuta</button>
+						<button type="submit" class="btn btn-success px-4 fw-bold">Tallenna
+							tuote</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<!-- 🔌 UUSI: POP-UP MODALIT OLEMASSA OLEVIEN TUOTTEIDEN MUOKKAUKSELLE -->
+	<c:forEach var="t" items="${tuotteet}">
+		<div class="modal fade" id="muokkaaTuoteModal${t.id}" tabindex="-1"
+			aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content border-0 shadow-lg">
+					<div class="modal-header bg-dark text-white">
+						<h5 class="modal-title fw-bold">Muokkaa tuotteen tietoja</h5>
+						<button type="button" class="btn-close btn-close-white"
+							data-bs-dismiss="modal"></button>
+					</div>
+					<!-- Kytketty dynaamisella ID:llä uuteen TuoteControlleriin -->
+					<form
+						action="${pageContext.request.contextPath}/asetukset/muokkaa-tuotetta/${t.id}"
+						method="post">
+						<div class="modal-body p-4 text-start">
+							<div class="mb-3">
+								<label class="form-label fw-semibold text-secondary small">Tuotteen
+									/ Palvelun nimi *</label> <input type="text" class="form-control"
+									name="nimi" value="${t.nimi}" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label fw-semibold text-secondary small">Kuvaus</label>
+								<textarea class="form-control" name="kuvaus" rows="3"><c:out
+										value="${t.kuvaus}" /></textarea>
+							</div>
+							<div class="row">
+								<div class="col-md-6 mb-3">
+									<label class="form-label fw-semibold text-secondary small">Yksikköhinta
+										(ALV 0%) *</label>
+									<div class="input-group">
+										<input type="number" step="0.01" class="form-control"
+											name="hinta" value="${t.hinta}" required> <span
+											class="input-group-text">€</span>
+									</div>
+								</div>
+								<div class="col-md-6 mb-3">
+									<label class="form-label fw-semibold text-secondary small">Yksikkö
+										*</label> <select class="form-select" name="yksikko" required>
+										<c:forEach var="yks" items="${yksikot}">
+											<option value="${yks.name()}"
+												${yks.name() == t.yksikko.name() ? 'selected' : ''}>${yks.lyhenne}</option>
+										</c:forEach>
+									</select>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label fw-semibold text-secondary small">ALV-kanta
+									*</label> <select class="form-select" name="alvKanta" required>
+									<c:forEach var="alv" items="${alvKannat}">
+										<!-- 🔌 KORJAUS: Hyödynnetään enumin virallista getNayttorivi()-metodia -->
+										<option value="${alv.name()}"
+											${alv.name() == t.alvKanta.name() ? 'selected' : ''}>${alv.nayttorivi}</option>
+									</c:forEach>
+								</select>
+							</div>
+						</div>
+						<div class="modal-footer bg-light d-flex justify-content-between">
+							<button type="button"
+								class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+								data-bs-dismiss="modal">Peruuta</button>
+							<button type="submit"
+								class="btn btn-sm btn-success rounded-pill px-4 fw-bold">Tallenna
+								muutokset</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</c:forEach>
+
+	<!-- GLOBAALI BOOTSTRAP 5 SIVUSKRIPTI (Lataa haitarit ja popupit) -->
 	<script
 		src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 
@@ -726,5 +887,6 @@ body {
 			muokkaaModal.show();
 		}
 	</script>
+
 </body>
 </html>

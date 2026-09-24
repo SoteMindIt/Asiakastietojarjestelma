@@ -40,8 +40,7 @@ public class AsetuksetController {
 	@Autowired
 	private KirjaustyyppiRepository kirjaustyyppiRepository;
 
-	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat
-	// tiedot
+	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat tiedot
 	@GetMapping("/asetukset")
 	public String naytaAsetukset(HttpSession session, Model model) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -146,89 +145,7 @@ public class AsetuksetController {
 		return "redirect:/asetukset?success=user_updated";
 	}
 
-	// 4. REITTI: Näyttää uuden tuotteen lisäyslomakkeen (lisaa-tuote.jsp)
-	@GetMapping("/asetukset/lisaa-tuote")
-	public String naytaUusiTuoteLomake(HttpSession session, Model model) {
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-
-		// Viedään ALV-kannat myös erilliselle lisäyssivulle varmuuden vuoksi
-		model.addAttribute("alvKannat", AlvKanta.values());
-		model.addAttribute("yksikot", TuoteYksikko.values());
-
-		return "lisaa-tuote";
-	}
-
-	// 5. REITTI: Ottaa vastaan lomakkeen tiedot sisältäen yksikön ja ALV-kannan
-	@PostMapping("/asetukset/lisaa-tuote")
-	public String tallennaUusiTuote(HttpSession session, @RequestParam String nimi, @RequestParam String kuvaus,
-			@RequestParam java.math.BigDecimal hinta, @RequestParam String yksikko, @RequestParam String alvKanta) {
-
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-
-		Tuote uusiTuote = new Tuote();
-		uusiTuote.setNimi(nimi);
-		uusiTuote.setKuvaus(kuvaus);
-		uusiTuote.setHinta(hinta);
-
-		// Muunnetaan yksikkö enumiin
-		try {
-			uusiTuote.setYksikko(TuoteYksikko.valueOf(yksikko));
-		} catch (IllegalArgumentException e) {
-			// Virhetilanteessa pidetään mallin oletus (KPL)
-		}
-
-		// UUSI: Muunnetaan valittu ALV-kanta enumiin
-		try {
-			uusiTuote.setAlvKanta(AlvKanta.valueOf(alvKanta));
-		} catch (IllegalArgumentException e) {
-			// Virhetilanteessa pidetään mallin oletus (ALV_25_5)
-		}
-
-		tuoteRepository.save(uusiTuote);
-		return "redirect:/asetukset?success=product_created";
-	}
-
-	// 6. REITTI: Muokkaa olemassa olevan tuotteen tietoja ja ALV-kantaa
-	@PostMapping("/asetukset/muokkaa-tuotetta/{id}")
-	public String muokkaaTuotetta(HttpSession session, @PathVariable Long id, @RequestParam String nimi,
-			@RequestParam String kuvaus, @RequestParam java.math.BigDecimal hinta, @RequestParam String yksikko,
-			@RequestParam String alvKanta) {
-
-		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null) {
-			return "redirect:/login";
-		}
-
-		Tuote muokattava = tuoteRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt ID-numerolla: " + id));
-
-		muokattava.setNimi(nimi);
-		muokattava.setKuvaus(kuvaus);
-		muokattava.setHinta(hinta);
-
-		try {
-			muokattava.setYksikko(TuoteYksikko.valueOf(yksikko));
-		} catch (IllegalArgumentException e) {
-			// Virheen sattuessa pidetään vanha yksikkö
-		}
-
-		// UUSI: Päivitetään muokattavan tuotteen ALV-kanta
-		try {
-			muokattava.setAlvKanta(AlvKanta.valueOf(alvKanta));
-		} catch (IllegalArgumentException e) {
-			// Virheen sattuessa pidetään vanha ALV-kanta
-		}
-
-		tuoteRepository.save(muokattava);
-		return "redirect:/asetukset?success=product_updated";
-	}
-
+	// 4. REITTI: Tallenna oman yrityksen tiedot tarjouspohjaa varten
 	@PostMapping("/asetukset/tallenna-yritys")
 	public String tallennaYrityksenTiedot(HttpSession session, @RequestParam String nimi, @RequestParam String yTunnus,
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
@@ -255,6 +172,7 @@ public class AsetuksetController {
 		return "redirect:/asetukset?success=company_updated";
 	}
 
+	// 5. REITTI: Generoi PostgreSQL-tietokannan varmuuskopiot .sql tiedostona
 	@GetMapping("/asetukset/varmuuskopio")
 	public void otaVarmuuskopio(HttpSession session, HttpServletResponse response) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -301,18 +219,19 @@ public class AsetuksetController {
 		}
 	}
 
-	// 2. UUDEN TAPAHTUMATYYPIN LISÄYS
+	// 6. REITTI: Kalenterin dynaamisten tapahtumatyyppien luonti
 	@PostMapping("/asetukset/lisaa-tyyppi")
 	public String lisaaTapahtumaTyyppi(@RequestParam("nimi") String nimi, @RequestParam("vari") String vari) {
 
 		TapahtumaTyyppi uusiTyyppi = new TapahtumaTyyppi();
 		uusiTyyppi.setNimi(nimi);
-		uusiTyyppi.setVari(vari); // Asetetaan valittu väri koodina
+		uusiTyyppi.setVari(vari);
 
 		tapahtumaTyyppiRepository.save(uusiTyyppi);
 		return "redirect:/asetukset";
 	}
 
+	// 7. REITTI: Kalenterin dynaamisten tapahtumatyyppien muokkaus
 	@PostMapping("/asetukset/muokkaa-typpia/{id}")
 	public String muokkaaTapahtumaTyyppi(@PathVariable Long id, @RequestParam("nimi") String uusiNimi,
 			@RequestParam("vari") String vari) {
@@ -320,7 +239,7 @@ public class AsetuksetController {
 		TapahtumaTyyppi tyyppi = tapahtumaTyyppiRepository.findById(id).orElse(null);
 		if (tyyppi != null) {
 			tyyppi.setNimi(uusiNimi);
-			tyyppi.setVari(vari); // Päivitetään väri
+			tyyppi.setVari(vari);
 			tapahtumaTyyppiRepository.save(tyyppi);
 		}
 		return "redirect:/asetukset";

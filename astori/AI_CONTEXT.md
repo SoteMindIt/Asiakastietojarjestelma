@@ -141,6 +141,7 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 ### RaportitController.java
 - Hoitaa aikavälirajaukset, Auditin ja dynaamiset myyntilaskennat (ALV-erittelyt ja 0% KM-korvausten erottamiset).
 - Ohjaa `@GetMapping("/raportit")` -reitillä suodatettua kirjaushakua, joka ryhmittelee dynaamiset kirjaustyypit kronologisesti asiakkaittain, ja palauttaa ne käyttöliittymän haitarirakenteeseen.
+- **Itsenäinen hakulomake-arkkitehtuuri:** Lomakkeet ja haut on eriytetty ja upotettu suoraan kunkin käyttöliittymän dynaamisen välilehden (tab-pane) sisäpuolelle. Tämä poistaa globaalit JavaScript-kuuntelijaongelmat ja estää sovelluksen tarpeettoman hidastumisen, sillä suodatettu haku ja kirjaustyyppi-pudotusvalikko ladataan ja ajetaan luonnostaan vain silloin, kun joko *Asiakaskohtaiset päiväkirjaukset* tai *Tärkeät huomiot* on avattuna.
 
 ### Muut kontrollerit
 - `TarjousController.java` (25.5 % ALV), `AsetuksetController.java` (ääkkösettömät reitit suojatuilla suljetuilla haitareilla ja itsenäisellä varmuuskopiokortilla), `KalenteriController.java` (FullCalendar 6).

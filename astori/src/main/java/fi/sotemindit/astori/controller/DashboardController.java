@@ -9,7 +9,7 @@ import fi.sotemindit.astori.model.Tapahtuma;
 import fi.sotemindit.astori.model.TapahtumaTyyppi;
 import fi.sotemindit.astori.repository.AsiakasRepository;
 import fi.sotemindit.astori.repository.TapahtumaRepository;
-import fi.sotemindit.astori.repository.TarjousRepository; 
+import fi.sotemindit.astori.repository.TarjousRepository;
 import fi.sotemindit.astori.repository.TapahtumaTyyppiRepository;
 import jakarta.servlet.http.HttpSession;
 
@@ -24,10 +24,12 @@ public class DashboardController {
 
 	@Autowired
 	private TarjousRepository tarjousRepository;
-	
-	// 💡 KORJATTU: Vaihdettu oikea TapahtumaTyyppiRepository TarjousRepositoryn tilalle
+
 	@Autowired
 	private TapahtumaTyyppiRepository tapahtumaTyyppiRepository;
+
+	@Autowired
+	private fi.sotemindit.astori.repository.MuistiinpanoRepository muistiinpanoRepository;
 
 	@GetMapping("/")
 	public String naytaEtusivu(HttpSession session, Model model) {
@@ -40,16 +42,15 @@ public class DashboardController {
 		// 2. Haetaan laskuritietorivit dashboard-kortteja varten
 		long asiakkaatLaskuri = asiakasRepository.count();
 		long tarjouksetLaskuri = tarjousRepository.count();
-		//long tehtavatLaskuri = tapahtumaRepository.count(); 
-		
+		// long tehtavatLaskuri = tapahtumaRepository.count();
+
 		java.time.ZoneId suomenAika = java.time.ZoneId.of("Europe/Helsinki");
 		java.time.LocalDateTime tamanPaivanAlku = java.time.LocalDate.now(suomenAika).atStartOfDay();
 		java.time.LocalDateTime tamanPaivanLoppu = java.time.LocalDate.now(suomenAika).atTime(23, 59, 59);
 
-		long tehtavatLaskuri = tapahtumaRepository.countByKayttajaKayttajatunnusAndAjankohtaBetween(
-		        istuntoTunnus, tamanPaivanAlku, tamanPaivanLoppu
-		);
-		
+		long tehtavatLaskuri = tapahtumaRepository.countByKayttajaKayttajatunnusAndAjankohtaBetween(istuntoTunnus,
+				tamanPaivanAlku, tamanPaivanLoppu);
+
 		// 3. Haetaan tulevat kalenterimerkinnät etusivun koosteeseen
 		java.time.LocalDateTime nyt = java.time.LocalDateTime.now();
 		List<Tapahtuma> tulevatTapahtumat = tapahtumaRepository
@@ -61,9 +62,14 @@ public class DashboardController {
 		model.addAttribute("tehtavatLaskuri", tehtavatLaskuri);
 		model.addAttribute("tulevatTapahtumat", tulevatTapahtumat);
 
-		// 5. 💡 KORJATTU: Viedään dynaamiset listat täsmälleen samoilla nimillä kuin dashboard.jsp:n modal-ikkuna niitä odottaa
+		// 5.Viedään dynaamiset listat täsmälleen samoilla nimillä kuin dashboard.jsp:n
+		// modal-ikkuna niitä odottaa
 		model.addAttribute("kaikkiAsiakkaat", asiakasRepository.findAll()); // JSP odottaa: kaikkiAsiakkaat
 		model.addAttribute("tapahtumaTyypit", tapahtumaTyyppiRepository.findAll()); // JSP odottaa: tapahtumaTyypit
+
+		// 6.Haetaan kirjautuneen työntekijän yleiset muistiinpanot etusivulle
+		model.addAttribute("yleisetMuistiinpanot",
+				muistiinpanoRepository.findByKayttajatunnusOrderByLuontiaikaDesc(istuntoTunnus));
 
 		return "dashboard"; // Avaa dashboard.jsp
 	}

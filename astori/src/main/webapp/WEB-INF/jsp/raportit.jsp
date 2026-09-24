@@ -110,46 +110,8 @@
 							</div>
 						</div>
 
-						<!-- HAKU- JA SUODATUSLOMAKE (Automaattisesti mukautuva JSTL-versio) -->
-						<div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
-							<form action="${pageContext.request.contextPath}/raportit" method="get"
-								class="row g-2 align-items-end">
-								<!-- Nollataan molemmat sivunumerot aina uutta hakua tehdessä -->
-								<input type="hidden" name="sivu" value="0">
-								<input type="hidden" name="kSivu" value="0">
-								<input type="hidden" id="aktiivinenTabInput" name="tab"
-									value="${not empty param.tab ? param.tab : 'kirjaukset'}">
 
-								<!-- 1. Alkupäivämäärä -->
-								<div class="col-md-3 col-sm-6">
-									<label for="alkuPvm"
-										class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
-									<input type="date" id="alkuPvm" name="alkuPvm" class="form-control form-control-sm"
-										value="${alkuPvm}">
-								</div>
-
-								<!-- 2. Loppupäivämäärä -->
-								<div class="col-md-3 col-sm-6">
-									<label for="loppuPvm"
-										class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
-									<input type="date" id="loppuPvm" name="loppuPvm"
-										class="form-control form-control-sm" value="${loppuPvm}">
-								</div>
-
-								<!-- 🔌 PÄIVITETTY: Lisätty luokka 'vain-kirjaukset-tabille' automaattista CSS-piilotusta varten -->
-								<div class="col-md-3 col-12 vain-kirjaukset-tabille">
-									<label for="suodatinTyyppi"
-										class="form-label small fw-bold text-secondary">Kirjaustyyppi / Luokitus</label>
-									<select name="tyyppi" id="suodatinTyyppi" class="form-select form-select-sm">
-										<option value="">-- Kaikki kirjaukset (Ei rajoitusta) --</option>
-										<c:forEach items="${kirjaustyypit}" var="kt">
-											<option value="${kt.id}" ${kt.id==valittuTyyppiId ? 'selected' : '' }>
-												${kt.nimi}</option>
-										</c:forEach>
-									</select>
-								</div>
-							</form>
-						</div>
+						<!--Tässä kohdassa oli hakuehot olivat aiemmin. Olivat silloin yhteiset kaikilla välilehdille-->
 
 
 						<!-- 💡 UUSI: VÄLILEHTIEN PAINIKKEET (Säilyttää sivuston asettelun siistinä) -->
@@ -179,24 +141,73 @@
 									aria-selected="false">
 									🛡️ Järjestelmän käyttöloki (Audit Trail)</button>
 							</li>
-
-
 						</ul>
+
+						<!-- 🔌 KORJAUS: Palautetaan globaali piilokenttä välilehtien JavaScript-kuuntelijoita varten -->
+						<input type="hidden" id="aktiivinenTabInput" name="tab"
+							value="${not empty param.tab ? param.tab : 'kirjaukset'}">
 
 						<!-- VÄLILEHTIEN SISÄLLÖT -->
 						<div class="tab-content" id="raporttiTabsSisalto">
 
 							<!-- ==================== ALIVÄLILEHTI 1: ASIAKASKIRJAUKSET ==================== -->
-
 							<div class="tab-pane fade show active" id="kirjaukset-pane" role="tabpanel"
 								aria-labelledby="kirjaukset-tab">
+
+								<!-- 🔍 ITSENÄINEN HAKULOMAKE VAIN PÄIVÄKIRJAUKSILLE (Sisältää kirjaustyypin) -->
+								<div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
+									<form action="${pageContext.request.contextPath}/raportit" method="get"
+										class="row g-2 align-items-end">
+										<input type="hidden" name="sivu" value="0">
+										<input type="hidden" name="kSivu" value="0">
+										<input type="hidden" name="tab" value="kirjaukset">
+
+										<div class="col-md-3 col-sm-6 text-start">
+											<label for="alkuPvm_k"
+												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
+											<input type="date" id="alkuPvm_k" name="alkuPvm"
+												class="form-control form-control-sm" value="${alkuPvm}">
+										</div>
+
+										<div class="col-md-3 col-sm-6 text-start">
+											<label for="loppuPvm_k"
+												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
+											<input type="date" id="loppuPvm_k" name="loppuPvm"
+												class="form-control form-control-sm" value="${loppuPvm}">
+										</div>
+
+										<div class="col-md-3 col-12 text-start">
+											<label for="suodatinTyyppi_k"
+												class="form-label small fw-bold text-secondary">Kirjaustyyppi /
+												Luokitus</label>
+											<select name="tyyppi" id="suodatinTyyppi_k"
+												class="form-select form-select-sm">
+												<option value="">-- Kaikki kirjaukset (Ei rajoitusta) --</option>
+												<c:forEach items="${kirjaustyypit}" var="kt">
+													<option value="${kt.id}" ${kt.id==valittuTyyppiId ? 'selected' : ''
+														}>${kt.nimi}</option>
+												</c:forEach>
+											</select>
+										</div>
+
+										<div class="col-md-3 col-12 d-flex gap-2">
+											<button type="submit"
+												class="btn btn-sm btn-primary fw-bold px-3 w-100 rounded-pill">🔍 Hae /
+												Suodata</button>
+											<a href="${pageContext.request.contextPath}/raportit?tab=kirjaukset"
+												class="btn btn-sm btn-outline-secondary px-3 w-100 rounded-pill">Nollaa</a>
+										</div>
+									</form>
+								</div>
+
 								<div class="d-flex justify-content-between align-items-center mb-3">
-									<h5 class="text-secondary mb-0 small fw-bold">Asiakkuuksiin
-										liitetyt päiväkirjaukset kronologisesti</h5>
+									<h5 class="text-secondary mb-0 small fw-bold">Asiakkuuksiin liitetyt päiväkirjaukset
+										kronologisesti</h5>
 									<c:if test="${kaytossaOletus30Pv}">
 										<span
 											class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1 rounded-pill small fw-bold">
-											Näytetään automaattisesti viimeiset 30 vuorokautta </span>
+											Näytetään automaattisesti viimeiset 30 vuorokautta
+										</span>
 									</c:if>
 								</div>
 
@@ -208,7 +219,6 @@
 										<c:set var="tämänSivunKirjaukset" value="${kirjauksetKartta[as.id]}" />
 										<c:if test="${not empty tämänSivunKirjaukset}">
 
-											<!-- 🔌 KORJAUS: Tarkistetaan oikeilla suluilla, löytyykö tältä asiakkaalta yhtään hakuehdon mukaista kirjausta tällä sivulla -->
 											<c:set var="asiakkaallaOnSopiviaKirjauksia" value="false" />
 											<c:forEach var="testKj" items="${tämänSivunKirjaukset}">
 												<c:if
@@ -217,12 +227,10 @@
 												</c:if>
 											</c:forEach>
 
-											<!-- Tulostetaan asiakkaan haitari vain jos suodatus täsmää -->
 											<c:if test="${asiakkaallaOnSopiviaKirjauksia}">
 												<c:set var="naytettiinYhtaan" value="true" />
 												<div class="accordion-item border-0 border-bottom">
 													<h2 class="accordion-header" id="heading-${as.id}">
-														<!-- 💡 Oletuksena kiinni (collapsed) -->
 														<button
 															class="accordion-button collapsed fw-bold text-dark bg-light bg-opacity-50 py-3"
 															type="button" data-bs-toggle="collapse"
@@ -238,14 +246,11 @@
 															</div>
 														</button>
 													</h2>
-													<!-- 💡 Oletuksena suljettu (collapse ilman show-luokkaa) -->
 													<div id="collapse-${as.id}" class="accordion-collapse collapse"
 														data-bs-parent="#asiakasKirjausHaitari">
 														<div class="accordion-body bg-white p-4">
 															<div class="list-group list-group-flush mx-n3 my-n3">
 																<c:forEach var="kj" items="${tämänSivunKirjaukset}">
-
-																	<!-- 🔌 Listataan vain hakuehtoon täsmäävät kirjaukset -->
 																	<c:if
 																		test="${empty valittuTyyppiId or (kj.kirjaustyyppi != null and kj.kirjaustyyppi.id == valittuTyyppiId)}">
 																		<div
@@ -257,8 +262,6 @@
 																					${kj.luontiaika.toString().replace('T',
 																					' ').substring(0, 16)}
 																				</small>
-
-																				<!-- 🔌 UUSI: Näytetään kirjaustyypin badge dynaamisella värillä -->
 																				<c:if
 																					test="${kj.kirjaustyyppi != null}">
 																					<span
@@ -274,7 +277,6 @@
 																			</p>
 																		</div>
 																	</c:if>
-
 																</c:forEach>
 															</div>
 														</div>
@@ -292,7 +294,7 @@
 									</c:if>
 								</div>
 
-								<!-- HAITARIKIRJAUSTEN OMA ERILLINEN SIVUTUSPALLKI (Linkitetty dynaamiseen suodattimeen) -->
+								<!-- SIVUTUSPALLKI 1 -->
 								<c:if test="${kirjausKokonaissivut > 1}">
 									<nav aria-label="Kirjausten sivutus" class="d-flex justify-content-center mb-3">
 										<ul class="pagination pagination-sm mb-0">
@@ -317,15 +319,47 @@
 										</ul>
 									</nav>
 								</c:if>
-							</div>
+							</div> <!-- /tab-pane 1 -->
 
 
-							<!-- /tab-pane 1 -->
 							<!-- ==================== ALIVÄLILEHTI 2: KÄYTTÖLOKI (AUDIT TRAIL) ==================== -->
 							<div class="tab-pane fade" id="loki-pane" role="tabpanel" aria-labelledby="loki-tab">
+
+								<!-- 🔍 ITSENÄINEN HAKULOMAKE JÄRJESTELMÄLOKILLE -->
+								<div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
+									<form action="${pageContext.request.contextPath}/raportit" method="get"
+										class="row g-2 align-items-end">
+										<input type="hidden" name="sivu" value="0">
+										<input type="hidden" name="kSivu" value="0">
+										<input type="hidden" name="tab" value="loki">
+
+										<div class="col-md-4 col-sm-6 text-start">
+											<label for="alkuPvm_l"
+												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
+											<input type="date" id="alkuPvm_l" name="alkuPvm"
+												class="form-control form-control-sm" value="${alkuPvm}">
+										</div>
+
+										<div class="col-md-4 col-sm-6 text-start">
+											<label for="loppuPvm_l"
+												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
+											<input type="date" id="loppuPvm_l" name="loppuPvm"
+												class="form-control form-control-sm" value="${loppuPvm}">
+										</div>
+
+										<div class="col-md-4 col-12 d-flex gap-2">
+											<button type="submit"
+												class="btn btn-sm btn-primary fw-bold px-3 w-100 rounded-pill">🕵️‍♂️
+												Päivitä ajanjakso</button>
+											<a href="${pageContext.request.contextPath}/raportit?tab=loki"
+												class="btn btn-sm btn-outline-secondary px-3 w-100 rounded-pill">Nollaa</a>
+										</div>
+									</form>
+								</div>
+
 								<div class="d-flex justify-content-between align-items-center mb-3">
-									<h5 class="text-secondary mb-0 small fw-bold">Auditoitavat
-										järjestelmätapahtumat ja käyttäjälokit</h5>
+									<h5 class="text-secondary mb-0 small fw-bold">Auditoitavat järjestelmätapahtumat ja
+										käyttäjälokit</h5>
 								</div>
 
 								<div class="table-responsive border rounded-3 shadow-sm bg-white">
@@ -368,26 +402,23 @@
 											</c:forEach>
 											<c:if test="${empty lokirivit}">
 												<tr>
-													<td colspan="4" class="text-center py-4 text-muted italic">
-														Lokiin ei ole vielä tallentunut yhtään tapahtumaa valitulla
-														aikavälillä.</td>
+													<td colspan="4" class="text-center py-4 text-muted italic">Lokiin ei
+														ole vielä tallentunut yhtään tapahtumaa valitulla aikavälillä.
+													</td>
 												</tr>
 											</c:if>
 										</tbody>
 									</table>
 								</div>
 
-								<!-- BOOTSTRAP 5 SIVUTUSOHJAUS KÄYTTÖLOKILLE -->
 								<c:if test="${kokonaissivut > 1}">
 									<nav aria-label="Lokin sivutus" class="d-flex justify-content-center mt-4 mb-3">
 										<ul class="pagination pagination-sm mb-0">
-											<!-- Edellinen sivu -->
 											<li class="page-item ${nykyinenSivu == 0 ? 'disabled' : ''}">
 												<a class="page-link"
 													href="${pageContext.request.contextPath}/raportit?sivu=${nykyinenSivu - 1}&kSivu=${nykyinenKirjausSivu}&alkuPvm=${alkuPvm}&loppuPvm=${loppuPvm}">&laquo;
 													Edellinen</a>
 											</li>
-											<!-- Sivunumerot -->
 											<c:forEach var="i" begin="0" end="${kokonaissivut - 1}">
 												<li class="page-item ${nykyinenSivu == i ? 'active' : ''}">
 													<a class="page-link"
@@ -395,7 +426,6 @@
 														+ 1}</a>
 												</li>
 											</c:forEach>
-											<!-- Seuraava sivu -->
 											<li
 												class="page-item ${nykyinenSivu == kokonaissivut - 1 ? 'disabled' : ''}">
 												<a class="page-link"
@@ -405,30 +435,56 @@
 										</ul>
 									</nav>
 								</c:if>
-							</div>
-							<!-- /tab-pane 2 -->
+							</div> <!-- /tab-pane 2 -->
+
 
 							<!-- ==================== ALIVÄLILEHTI 3: MYYNTIRAPORTTI ==================== -->
-							<div class="tab-pane fade p-3 bg-white border border-top-0 rounded-bottom shadow-sm"
-								id="myyntiSisalto" role="tabpanel" aria-labelledby="myynti-tab">
+							<div class="tab-pane fade" id="myyntiSisalto" role="tabpanel" aria-labelledby="myynti-tab">
+
+								<!-- 🔍 ITSENÄINEN AIKAVÄLILOMAKE MYYNTIRAPORTEILLE -->
+								<div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
+									<form action="${pageContext.request.contextPath}/raportit" method="get"
+										class="row g-2 align-items-end">
+										<input type="hidden" name="sivu" value="0">
+										<input type="hidden" name="kSivu" value="0">
+										<input type="hidden" name="tab" value="myyntiSisalto">
+
+										<div class="col-md-4 col-sm-6 text-start">
+											<label for="alkuPvm_m"
+												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
+											<input type="date" id="alkuPvm_m" name="alkuPvm"
+												class="form-control form-control-sm" value="${alkuPvm}">
+										</div>
+
+										<div class="col-md-4 col-sm-6 text-start">
+											<label for="loppuPvm_m"
+												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
+											<input type="date" id="loppuPvm_m" name="loppuPvm"
+												class="form-control form-control-sm" value="${loppuPvm}">
+										</div>
+
+										<div class="col-md-4 col-12 d-flex gap-2">
+											<button type="submit"
+												class="btn btn-sm btn-primary fw-bold px-3 w-100 rounded-pill">📊
+												Päivitä ajanjakso</button>
+											<a href="${pageContext.request.contextPath}/raportit?tab=myyntiSisalto"
+												class="btn btn-sm btn-outline-secondary px-3 w-100 rounded-pill">Nollaa</a>
+										</div>
+									</form>
+								</div>
 
 								<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
 									<div>
-										<h5 class="fw-bold text-dark mb-0">Toteutunut liikevaihto
-											ajanjaksolta</h5>
+										<h5 class="fw-bold text-dark mb-0">Toteutunut liikevaihto ajanjaksolta</h5>
 										<small class="text-muted">
 											<c:choose>
-												<c:when test="${kaytossaOletusKuluvaKk}">
-													ℹ️ Näytetään oletuksena kuluvan kuukauden myynnit.
-												</c:when>
-												<c:otherwise>
-													🔍 Hakua rajattu valitulla ajanjaksolla.
-												</c:otherwise>
+												<c:when test="${kaytossaOletusKuluvaKk}">ℹ️ Näytetään oletuksena kuluvan
+													kuukauden myynnit.</c:when>
+												<c:otherwise>🔍 Hakua rajattu valitulla ajanjaksolla.</c:otherwise>
 											</c:choose>
 										</small>
 									</div>
 
-									<!-- Yhteenvetokortit oikeassa laidassa -->
 									<div class="d-flex gap-2">
 										<div class="bg-light p-2 rounded border text-center shadow-xs"
 											style="min-width: 120px;">
@@ -460,7 +516,6 @@
 									</div>
 								</div>
 
-								<!-- Myyntirivit taulukkona -->
 								<div class="table-responsive">
 									<table class="table table-hover align-middle table-sm border small">
 										<thead class="table-light text-secondary">
@@ -513,83 +568,135 @@
 													</td>
 												</tr>
 											</c:forEach>
-
 											<c:if test="${empty myyntirivit}">
 												<tr>
-													<td colspan="9" class="text-center py-4 text-muted italic">
-														Valitulta ajanjaksolta ei löytynyt toteutuneita tuotemyyntejä.
-													</td>
+													<td colspan="9" class="text-center py-4 text-muted italic">Valitulta
+														ajanjaksolta ei löytynyt toteutuneita tuotemyyntejä.</td>
 												</tr>
 											</c:if>
 										</tbody>
 									</table>
 								</div>
-							</div>
-							<!-- 💡 TÄRKEÄ KORJAUS: Tämä sulkee nyt Myyntiraportti-välilehden siististi! -->
+							</div> <!-- /tab-pane 3 -->
 
+							<!-- Tämä sulkee nyt Myyntiraportti-välilehden siististi! -->
 
 							<!-- ==================== ALIVÄLILEHTI 4: 📌 TÄRKEÄT HUOMIOT ==================== -->
 							<div class="tab-pane fade p-3 bg-white border border-top-0 rounded-bottom shadow-sm"
 								id="tarkeatSisalto" role="tabpanel" aria-labelledby="tarkeat-tab">
 
+								<!-- 🔍 ITSENÄINEN HAKULOMAKE TÄRKEILLE HUOMIOILLE (Sisältää kirjaustyypin) -->
+								<div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
+									<form action="${pageContext.request.contextPath}/raportit" method="get"
+										class="row g-2 align-items-end">
+										<input type="hidden" name="sivu" value="0">
+										<input type="hidden" name="kSivu" value="0">
+										<input type="hidden" name="tab" value="tarkeatSisalto">
+
+										<div class="col-md-3 col-sm-6 text-start">
+											<label for="alkuPvm_t"
+												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
+											<input type="date" id="alkuPvm_t" name="alkuPvm"
+												class="form-control form-control-sm" value="${alkuPvm}">
+										</div>
+
+										<div class="col-md-3 col-sm-6 text-start">
+											<label for="loppuPvm_t"
+												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
+											<input type="date" id="loppuPvm_t" name="loppuPvm"
+												class="form-control form-control-sm" value="${loppuPvm}">
+										</div>
+
+										<div class="col-md-3 col-12 text-start">
+											<label for="suodatinTyyppi_t"
+												class="form-label small fw-bold text-secondary">Kirjaustyyppi /
+												Luokitus</label>
+											<select name="tyyppi" id="suodatinTyyppi_t"
+												class="form-select form-select-sm">
+												<option value="">-- Kaikki kirjaukset (Ei rajoitusta) --</option>
+												<c:forEach items="${kirjaustyypit}" var="kt">
+													<option value="${kt.id}" ${kt.id==valittuTyyppiId ? 'selected' : ''
+														}>${kt.nimi}</option>
+												</c:forEach>
+											</select>
+										</div>
+
+										<div class="col-md-3 col-12 d-flex gap-2">
+											<button type="submit"
+												class="btn btn-sm btn-primary fw-bold px-3 w-100 rounded-pill">🔍 Hae /
+												Suodata</button>
+											<a href="${pageContext.request.contextPath}/raportit?tab=tarkeatSisalto"
+												class="btn btn-sm btn-outline-secondary px-3 w-100 rounded-pill">Nollaa</a>
+										</div>
+									</form>
+								</div>
+
 								<div class="mb-3">
-									<h5 class="fw-bold text-danger mb-0">📌 Asiakkuuksien tärkeät
-										ja huomionarvoiset kirjaukset</h5>
-									<small class="text-muted">Näkymään nousevat kaikki ne
-										merkinnät, jotka ovat merkitty tärkeäksi</small>
+									<h5 class="fw-bold text-danger mb-0">📌 Asiakkuuksien tärkeät ja huomionarvoiset
+										kirjaukset</h5>
+									<small class="text-muted">Näkymään nousevat kaikki ne merkinnät, jotka ovat merkitty
+										tärkeäksi</small>
 								</div>
 
 								<div class="table-responsive">
-									<table class="table table-hover align-middle table-sm border small">
+									<table class="table table-hover align-middle table-sm mb-0 border small">
 										<thead class="table-dark">
 											<tr>
 												<th scope="col" style="width: 15%;">Päivämäärä</th>
 												<th scope="col" style="width: 20%;">Asiakas / Organisaatio</th>
-												<th scope="col" style="width: 65%;">Tärkeä merkintä /
-													Huomio</th>
+												<th scope="col" style="width: 65%;">Tärkeä merkintä / Huomio</th>
 											</tr>
 										</thead>
 										<tbody>
 											<c:forEach items="${tarkeatKirjaukset}" var="tk">
-												<tr class="table-danger-subtle">
-													<td class="text-muted fw-semibold">
-														<c:set var="luontiAikaStr"
-															value="${tk.luontiaika.toString().substring(0, 16)}" />
-														<fmt:parseDate value="${luontiAikaStr}"
-															pattern="yyyy-MM-dd'T'HH:mm" var="parsittuTa" />
-														<fmt:formatDate value="${parsittuTa}"
-															pattern="dd.MM.yyyy 'klo' HH:mm" />
-													</td>
-													<td><a href="${pageContext.request.contextPath}/asiakas/${tk.asiakas.id}"
-															class="text-primary fw-bold text-decoration-none">
-															<c:out value="${tk.asiakas.nimi}" />
-														</a></td>
-													<td class="text-dark py-2"
-														style="white-space: pre-line; line-height: 1.4;">
-														<c:out value="${tk.teksti}" />
-													</td>
-												</tr>
-											</c:forEach>
 
+												<!-- 🔌 Suodatetaan lennosta vain ne tärkeät, jotka vastaavat valittua kirjaustyyppiä (jos haku päällä) -->
+												<c:if
+													test="${empty valittuTyyppiId or (tk.kirjaustyyppi != null and tk.kirjaustyyppi.id == valittuTyyppiId)}">
+													<tr class="table-danger-subtle">
+														<td class="text-muted fw-semibold">
+															<c:set var="luontiAikaStr"
+																value="${tk.luontiaika.toString().substring(0, 16)}" />
+															<fmt:parseDate value="${luontiAikaStr}"
+																pattern="yyyy-MM-dd'T'HH:mm" var="parsittuTa" />
+															<fmt:formatDate value="${parsittuTa}"
+																pattern="dd.MM.yyyy 'klo' HH:mm" />
+														</td>
+														<td>
+															<a href="${pageContext.request.contextPath}/asiakas/${tk.asiakas.id}"
+																class="text-primary fw-bold text-decoration-none">
+																<c:out value="${tk.asiakas.nimi}" />
+															</a>
+															<c:if test="${tk.kirjaustyyppi != null}">
+																<br>
+																<span
+																	class="badge text-white fw-bold px-2 py-0.5 rounded-pill mt-1"
+																	style="background-color: ${tk.kirjaustyyppi.vari}; font-size: 0.7rem;">
+																	${tk.kirjaustyyppi.nimi}
+																</span>
+															</c:if>
+														</td>
+														<td class="text-dark py-2"
+															style="white-space: pre-line; line-height: 1.4;">
+															<c:out value="${tk.teksti}" />
+														</td>
+													</tr>
+												</c:if>
+
+											</c:forEach>
 											<c:if test="${empty tarkeatKirjaukset}">
 												<tr>
-													<td colspan="3" class="text-center py-4 text-muted italic">
-														Valitulta ajanjaksolta ei ole merkitty yhtään kirjausta
-														tärkeäksi.</td>
+													<td colspan="3" class="text-center py-4 text-muted italic">Valitulta
+														ajanjaksolta ei ole merkitty yhtään kirjausta tärkeäksi.</td>
 												</tr>
 											</c:if>
 										</tbody>
 									</table>
 								</div>
-							</div>
-							<!-- Sulkee Tärkeät huomiot -välilehden puhtaasti! -->
+							</div> <!-- /tab-pane 4 -->
 
-						</div>
-						<!-- Sulkee koko tab-content päälaatikon tismalleen tässä oikeassa paikassa -->
-
+						</div> <!-- /#raporttiTabsSisalto päättyy puhtaasti -->
 					</div>
-					<!-- Sulkee sivun container-pääsäiliön -->
-
 					<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->
 					<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 
