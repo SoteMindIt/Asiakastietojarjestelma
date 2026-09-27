@@ -64,6 +64,7 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 
 ### AlvKanta.java (Enum)
 - Sisältää dynaamisen ALV-laskennan prosentteina (esim. `ALV_25_5` palauttaa `25.5`).
+- Kentät: `String prosenttiStr`, `String nayttorivi` (suomenkielinen seloste dynaamisille pikalomakkeille).
 
 ### AsiakasTuote.java
 - Relaatiot: `@ManyToOne` kytkökset `Asiakas` ja `Tuote`. 
@@ -72,6 +73,10 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
   - `getKokonaishinta()` -> Palauttaa raa'an verottoman yhteishinnan (Hinta * Määrä).
   - `getAlvOsuus()` -> Laskee ALV:n osuuden euroina käyttäen enumin prosenttia.
   - `getVerollinenKokonaishinta()` -> Laskee lopullisen verollisen hinnan (Veroton + ALV).
+
+### Muustiinpano.java (UUSI - Työpöydän sisäiset muistilistat)
+- Kentät: `Long id` (Identity), `String teksti` (columnDefinition = "TEXT", nullable = false), `LocalDateTime luontiaika`, `String kayttajatunnus`.
+- Käyttö: Tallentaa organisaation tai työntekijän yleiset muistettavat asiat, ilmoitukset tai sisäiset listat, joita ei kytketä mihinkään tiettyyn asiakasorganisaatioon.
 
 ### Kirjaustyyppi.java (UUSI - Dynaamiset CRM-hakuluokitukset)
 - Kentät: `Long id` (Identity), `String nimi` (nullable=false), `String vari` (nullable=false, pituus=7).
@@ -113,6 +118,9 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
   - `findByKayttajaKayttajatunnusAndHyvinvointialueAndKirjaustyyppiAndHaku` -> Jättihaku kaikilla kolmella ehdolla ristiin.
 - `countByKayttajaKayttajatunnus` -> Korjattu ja varma laskuri.
 
+### MuistiinpanoRepository.java (UUSI)
+- `List<Muistiinpano> findByKayttajatunnusOrderByLuontiaikaDesc(String kayttajatunnus)` -> Hakee työntekijän yleiset etusivun muistilistat ja tiedotteet kronologisesti siten, että uusimmat nousevat aina listan kärkeen.
+
 ### KirjaustyyppiRepository.java (UUSI)
 - Standardi `JpaRepository<Kirjaustyyppi, Long>` -rajapinta dynaamisten hakuluokitusten hallintaan.
 
@@ -129,6 +137,14 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 - `poistaAsiakas` (@PostMapping("/asiakas/{id}/poista")): Poistaa asiakkaan ja puhdistaa kaikki alirivit (yhteyshenkilöt, tarjoukset jne.) kerralla tietokannan eheyssääntöjen mukaisesti.
 - Live Search reitti: `/asiakkaat/live-haku` (@ResponseBody).
 
+### TuoteController.java (UUSI - Eriytetty arkkitehtuuri)
+- Vastaa tuoterekisterin, hinnastojen ja ALV-kantojen tallennuksista ja inline-muokkauksista (Single Responsibility Principle).
+- Reitit: `/asetukset/lisaa-tuote` (POST) hinnaston laajentamiseen sekä dynaamisesti kytketty `/asetukset/muokkaa-tuotetta/{id}` (POST) tuoterivien nopeaan inline-päivitykseen.
+
+### MuistiinpanoController.java (UUSI - Eriytetty arkkitehtuuri)
+- Käsittelee työpöydän globaalien muistilistojen ja organisaation sisäisten tiedotteiden tallennuksen (Single Responsibility Principle).
+- Reitit: `/lisaa-muistiinpano` (POST) ottaa vastaan etusivun dynaamisesta pop-up-lomakkeesta tulleen vapaan tekstin ja kytkee sen sisäänkirjautuneen työntekijän istuntotunnukseen.
+
 ### KirjaustyyppiController.java (UUSI)
 - Käsittelee dynaamisten asiakaskirjausten aiheluokitusten hallinnan (Single Responsibility Principle).
 - Reitit: `/asetukset/lisaa-kirjaustyyppi` (POST) ja `/asetukset/muokkaa-kirjaustyyppia/{id}` (POST) tunnusvärien ja aihenimien tallennukseen.
@@ -141,7 +157,7 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 ### RaportitController.java
 - Hoitaa aikavälirajaukset, Auditin ja dynaamiset myyntilaskennat (ALV-erittelyt ja 0% KM-korvausten erottamiset).
 - Ohjaa `@GetMapping("/raportit")` -reitillä suodatettua kirjaushakua, joka ryhmittelee dynaamiset kirjaustyypit kronologisesti asiakkaittain, ja palauttaa ne käyttöliittymän haitarirakenteeseen.
-- **Itsenäinen hakulomake-arkkitehtuuri:** Lomakkeet ja haut on eriytetty ja upotettu suoraan kunkin käyttöliittymän dynaamisen välilehden (tab-pane) sisäpuolelle. Tämä poistaa globaalit JavaScript-kuuntelijaongelmat ja estää sovelluksen tarpeettoman hidastumisen, sillä suodatettu haku ja kirjaustyyppi-pudotusvalikko ladataan ja ajetaan luonnostaan vain silloin, kun joko *Asiakaskohtaiset päiväkirjaukset* tai *Tärkeät huomiot* on avattuna.
+- **Itsenäinen hakulomake-arkkitehtuuri:** Lomakkeet ja haut on eriytetty ja upotettu suoraan kunkin käyttöliittymän dynaamisen välilehden (tab-pane) sisäpuelelle. Tämä poistaa globaalit JavaScript-kuuntelijaongelmat ja estää sovelluksen tarpeettoman hidastumisen, sillä suodatettu haku ja kirjaustyyppi-pudotusvalikko ladataan ja ajetaan luonnostaan vain silloin, kun joko *Asiakaskohtaiset päiväkirjaukset* tai *Tärkeät huomiot* on avattuna.
 
 ### Muut kontrollerit
-- `TarjousController.java` (25.5 % ALV), `AsetuksetController.java` (ääkkösettömät reitit suojatuilla suljetuilla haitareilla ja itsenäisellä varmuuskopiokortilla), `KalenteriController.java` (FullCalendar 6).
+- `TarjousController.java` (25.5 % ALV), `AsetuksetController.java` (ääkkösettömät reitit suojatuilla suljetuilla haitareilla ja itsenäisellä varmuuskopiokortilla, josta tuotehallinnan reitit on poistettu), `KalenteriController.java` (FullCalendar 6).
