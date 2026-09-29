@@ -8,8 +8,11 @@ import org.springframework.data.repository.query.Param;
 
 import fi.sotemindit.astori.model.Asiakas;
 import fi.sotemindit.astori.model.Hyvinvointialue;
+import java.util.List;
 
 public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
+
+	List<Asiakas> findAllByKayttajaKayttajatunnusOrderByNimiAsc(String kayttajatunnus);
 
 	// 1. Haetaan käyttäjän asiakkaat sivutettuna ilman rajauksia
 	Page<Asiakas> findByKayttajaKayttajatunnus(String kayttajatunnus, Pageable pageable);

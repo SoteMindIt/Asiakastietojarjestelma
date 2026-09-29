@@ -7,8 +7,6 @@ import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +19,7 @@ import org.springframework.stereotype.Controller;
 
 import fi.sotemindit.astori.model.Loki;
 import fi.sotemindit.astori.model.Asiakas;
+import fi.sotemindit.astori.model.AsiakasAjo;
 import fi.sotemindit.astori.model.Kirjaus;
 import fi.sotemindit.astori.model.AsiakasTuote;
 import fi.sotemindit.astori.model.Kirjaustyyppi; 
@@ -29,6 +28,7 @@ import fi.sotemindit.astori.repository.AsiakasRepository;
 import fi.sotemindit.astori.repository.KirjausRepository;
 import fi.sotemindit.astori.repository.KirjaustyyppiRepository;
 import fi.sotemindit.astori.repository.AsiakasTuoteRepository;
+import fi.sotemindit.astori.repository.AsiakasAjoRepository;
 
 @Controller
 public class RaportitController {
@@ -48,12 +48,18 @@ public class RaportitController {
 	@Autowired
 	private AsiakasTuoteRepository asiakasTuoteRepository;
 
+	@Autowired
+	private AsiakasAjoRepository asiakasAjoRepository;
+
 	@GetMapping("/raportit")
 	public String naytaRaportit(HttpSession session, @RequestParam(value = "sivu", defaultValue = "0") int sivu,
 			@RequestParam(value = "kSivu", defaultValue = "0") int kirjausSivu,
 			@RequestParam(value = "alkuPvm", required = false) String alkuPvmStr,
 			@RequestParam(value = "loppuPvm", required = false) String loppuPvmStr,
-			@RequestParam(value = "tyyppi", required = false) Long tyyppiId, Model model) {
+			@RequestParam(value = "tyyppi", required = false) Long tyyppiId,
+			@RequestParam(value = "ajoAlku", required = false) String ajoAlkuStr,
+			@RequestParam(value = "ajoLoppu", required = false) String ajoLoppuStr,
+			@RequestParam(value = "ajoAsiakas", required = false) Long ajoAsiakasId, Model model) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
@@ -86,36 +92,24 @@ public class RaportitController {
 				lokiPageable);
 
 		Pageable kirjausPageable = PageRequest.of(kirjausSivu, 20);
-		Page<Kirjaus> haetutKirjauksetSivu = kirjausRepository.findByLuontiaikaBetweenOrderByLuontiaikaDesc(alkuAika,
-				loppuAika, kirjausPageable);
-
-		Map<Long, List<Kirjaus>> kirjauksetKartta = haetutKirjauksetSivu.getContent().stream()
-				.collect(Collectors.groupingBy(k -> k.getAsiakas().getId()));
-
-		List<Asiakas> hatariAsiakkaat = new java.util.ArrayList<>();
+		Page<Kirjaus> haetutKirjauksetSivu = kirjausRepository.findAsiakasKirjauksetAjanjaksolta(istuntoTunnus,
+				alkuAika, loppuAika, tyyppiId, kirjausPageable);
 
 		if (tyyppiId != null) {
-			List<Kirjaus> kaikkiTietynTyypinKirjaukset = kirjausRepository.findAll().stream()
-					.filter(k -> k.getKirjaustyyppi() != null && k.getKirjaustyyppi().getId().equals(tyyppiId))
-					.collect(Collectors.toList());
-
-			for (Kirjaus k : kaikkiTietynTyypinKirjaukset) {
-				Asiakas a = k.getAsiakas();
-				if (a != null && a.getKayttaja() != null && istuntoTunnus.equals(a.getKayttaja().getKayttajatunnus())) {
-					if (!hatariAsiakkaat.contains(a)) {
-						hatariAsiakkaat.add(a);
-					}
-				}
-			}
 			model.addAttribute("valittuTyyppiId", tyyppiId);
-		} else {
-			hatariAsiakkaat = asiakasRepository.findAll().stream()
-					.filter(a -> a.getKayttaja() != null && istuntoTunnus.equals(a.getKayttaja().getKayttajatunnus()))
-					.collect(Collectors.toList());
 		}
 
 		List<AsiakasTuote> myyntirivit = asiakasTuoteRepository.findMyyntiAjanjaksolta(istuntoTunnus, alkuPvm,
 				loppuPvm);
+
+		LocalDate ajoAlku = ajoAlkuStr != null && !ajoAlkuStr.isBlank() ? LocalDate.parse(ajoAlkuStr)
+				: LocalDate.now().with(TemporalAdjusters.firstDayOfMonth());
+		LocalDate ajoLoppu = ajoLoppuStr != null && !ajoLoppuStr.isBlank() ? LocalDate.parse(ajoLoppuStr)
+				: LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
+		List<AsiakasAjo> asiakasAjot = ajoAlku.isAfter(ajoLoppu) ? List.of()
+				: asiakasAjoRepository.haeAjot(istuntoTunnus, ajoAlku, ajoLoppu, ajoAsiakasId);
+		BigDecimal ajojenKilometrit = asiakasAjot.stream().map(AsiakasAjo::getKilometrit)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
 		BigDecimal kokonaisVeroton = BigDecimal.ZERO;
 		BigDecimal kokonaisAlv = BigDecimal.ZERO;
@@ -136,10 +130,17 @@ public class RaportitController {
 		model.addAttribute("kirjaustyypit", kirjaustyyppiRepository.findAll());
 		model.addAttribute("tarkeatKirjaukset", tarkeatKirjaukset);
 		model.addAttribute("asiakkaatYhteensa", asiakasRepository.count());
-		model.addAttribute("haitariAsiakkaat", hatariAsiakkaat);
-		model.addAttribute("kirjauksetKartta", kirjauksetKartta);
+		model.addAttribute("kirjausRivit", haetutKirjauksetSivu.getContent());
 
 		model.addAttribute("myyntirivit", myyntirivit);
+		model.addAttribute("asiakasAjot", asiakasAjot);
+		model.addAttribute("ajoAsiakkaat", asiakasAjoRepository.haeAsiakkaatJoillaAjoja(istuntoTunnus));
+		model.addAttribute("omatAsiakkaat", asiakasRepository.findAllByKayttajaKayttajatunnusOrderByNimiAsc(istuntoTunnus));
+		model.addAttribute("ajojenKilometrit", ajojenKilometrit);
+		model.addAttribute("ajoAlku", ajoAlku);
+		model.addAttribute("ajoLoppu", ajoLoppu);
+		model.addAttribute("valittuAjoAsiakas", ajoAsiakasId);
+		model.addAttribute("tanaan", LocalDate.now());
 		model.addAttribute("kokonaisVeroton", kokonaisVeroton);
 		model.addAttribute("kokonaisAlv", kokonaisAlv);
 		model.addAttribute("kokonaisVerollinen", kokonaisVerollinen);

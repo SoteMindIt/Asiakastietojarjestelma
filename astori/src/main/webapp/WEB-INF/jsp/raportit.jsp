@@ -38,6 +38,10 @@
 						body:has(#kirjaukset-pane:not(.active)) .vain-kirjaukset-tabille {
 							display: none !important;
 						}
+
+						body:has(#loki-pane.active) #kirjausHakuFrame {
+							display: none !important;
+						}
 					</style>
 				</head>
 
@@ -124,15 +128,20 @@
 							</li>
 
 							<li class="nav-item" role="presentation">
-								<button class="nav-link fw-bold text-danger" id="tarkeat-tab" data-bs-toggle="tab"
+								<button class="nav-link fw-bold text-dark" id="tarkeat-tab" data-bs-toggle="tab"
 									data-bs-target="#tarkeatSisalto" type="button" role="tab"
 									aria-controls="tarkeatSisalto" aria-selected="false">
 									📌 Tärkeät huomiot (${tarkeatKirjaukset.size()})</button>
 							</li>
 
 							<li class="nav-item">
-								<button class="nav-link fw-bold" id="myynti-tab" data-bs-toggle="tab"
+								<button class="nav-link fw-bold text-dark" id="myynti-tab" data-bs-toggle="tab"
 									data-bs-target="#myyntiSisalto" type="button" role="tab">💰 Myyntiraportti</button>
+							</li>
+
+							<li class="nav-item">
+								<button class="nav-link fw-bold text-dark" id="ajot-tab" data-bs-toggle="tab"
+									data-bs-target="#ajotSisalto" type="button" role="tab">Ajopäiväkirja</button>
 							</li>
 
 							<li class="nav-item" role="presentation">
@@ -147,6 +156,53 @@
 						<input type="hidden" id="aktiivinenTabInput" name="tab"
 							value="${not empty param.tab ? param.tab : 'kirjaukset'}">
 
+						<div id="kirjausHakuFrame" class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
+							<form id="raporttiHakuForm" action="${pageContext.request.contextPath}/raportit" method="get"
+								class="row g-2 align-items-end">
+								<input type="hidden" name="sivu" value="0">
+								<input type="hidden" name="kSivu" value="0">
+								<input type="hidden" id="raporttiHakuTab" name="tab" value="kirjaukset">
+
+								<div class="col-md-3 col-sm-6 text-start">
+									<label for="alkuPvm_k"
+										class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
+									<input type="text" id="alkuPvm_k" name="alkuPvm" data-finnish-date
+										placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
+										class="form-control form-control-sm" value="${alkuPvm}">
+								</div>
+
+								<div class="col-md-3 col-sm-6 text-start">
+									<label for="loppuPvm_k"
+										class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
+									<input type="text" id="loppuPvm_k" name="loppuPvm" data-finnish-date
+										placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
+										class="form-control form-control-sm" value="${loppuPvm}">
+								</div>
+
+								<div class="col-md-3 col-12 text-start">
+									<label for="suodatinTyyppi_k"
+										class="form-label small fw-bold text-secondary">Kirjaustyyppi /
+										Luokitus</label>
+									<select name="tyyppi" id="suodatinTyyppi_k"
+										class="form-select form-select-sm">
+										<option value="">-- Kaikki kirjaukset (Ei rajoitusta) --</option>
+										<c:forEach items="${kirjaustyypit}" var="kt">
+											<option value="${kt.id}" ${kt.id==valittuTyyppiId ? 'selected' : ''
+											}>${kt.nimi}</option>
+										</c:forEach>
+									</select>
+								</div>
+
+								<div class="col-md-3 col-12 d-flex gap-2">
+									<button type="submit"
+										class="btn btn-sm btn-primary fw-bold px-3 w-100 rounded-pill">🔍 Hae /
+										Suodata</button>
+									<a id="nollaaRaporttiHaku" href="${pageContext.request.contextPath}/raportit?tab=kirjaukset"
+										class="btn btn-sm btn-outline-secondary px-3 w-100 rounded-pill">Nollaa</a>
+								</div>
+							</form>
+						</div>
+
 						<!-- VÄLILEHTIEN SISÄLLÖT -->
 						<div class="tab-content" id="raporttiTabsSisalto">
 
@@ -154,55 +210,8 @@
 							<div class="tab-pane fade show active" id="kirjaukset-pane" role="tabpanel"
 								aria-labelledby="kirjaukset-tab">
 
-								<!-- 🔍 ITSENÄINEN HAKULOMAKE VAIN PÄIVÄKIRJAUKSILLE (Sisältää kirjaustyypin) -->
-								<div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
-									<form action="${pageContext.request.contextPath}/raportit" method="get"
-										class="row g-2 align-items-end">
-										<input type="hidden" name="sivu" value="0">
-										<input type="hidden" name="kSivu" value="0">
-										<input type="hidden" name="tab" value="kirjaukset">
-
-										<div class="col-md-3 col-sm-6 text-start">
-											<label for="alkuPvm_k"
-												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
-											<input type="date" id="alkuPvm_k" name="alkuPvm"
-												class="form-control form-control-sm" value="${alkuPvm}">
-										</div>
-
-										<div class="col-md-3 col-sm-6 text-start">
-											<label for="loppuPvm_k"
-												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
-											<input type="date" id="loppuPvm_k" name="loppuPvm"
-												class="form-control form-control-sm" value="${loppuPvm}">
-										</div>
-
-										<div class="col-md-3 col-12 text-start">
-											<label for="suodatinTyyppi_k"
-												class="form-label small fw-bold text-secondary">Kirjaustyyppi /
-												Luokitus</label>
-											<select name="tyyppi" id="suodatinTyyppi_k"
-												class="form-select form-select-sm">
-												<option value="">-- Kaikki kirjaukset (Ei rajoitusta) --</option>
-												<c:forEach items="${kirjaustyypit}" var="kt">
-													<option value="${kt.id}" ${kt.id==valittuTyyppiId ? 'selected' : ''
-														}>${kt.nimi}</option>
-												</c:forEach>
-											</select>
-										</div>
-
-										<div class="col-md-3 col-12 d-flex gap-2">
-											<button type="submit"
-												class="btn btn-sm btn-primary fw-bold px-3 w-100 rounded-pill">🔍 Hae /
-												Suodata</button>
-											<a href="${pageContext.request.contextPath}/raportit?tab=kirjaukset"
-												class="btn btn-sm btn-outline-secondary px-3 w-100 rounded-pill">Nollaa</a>
-										</div>
-									</form>
-								</div>
-
 								<div class="d-flex justify-content-between align-items-center mb-3">
-									<h5 class="text-secondary mb-0 small fw-bold">Asiakkuuksiin liitetyt päiväkirjaukset
-										kronologisesti</h5>
+										<h5 class="text-secondary mb-0 small fw-bold">Asiakaskohtaiset päiväkirjaukset aikajärjestyksessä, uusin ensin</h5>
 									<c:if test="${kaytossaOletus30Pv}">
 										<span
 											class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1 rounded-pill small fw-bold">
@@ -211,86 +220,21 @@
 									</c:if>
 								</div>
 
-								<!-- 🎯 HAITARILISTAUS (Oletuksena kiinni, suodattuu lennosta) -->
-								<div class="accordion shadow-sm mb-3 border rounded-3" id="asiakasKirjausHaitari">
-									<c:set var="naytettiinYhtaan" value="false" />
-
-									<c:forEach var="as" items="${haitariAsiakkaat}">
-										<c:set var="tämänSivunKirjaukset" value="${kirjauksetKartta[as.id]}" />
-										<c:if test="${not empty tämänSivunKirjaukset}">
-
-											<c:set var="asiakkaallaOnSopiviaKirjauksia" value="false" />
-											<c:forEach var="testKj" items="${tämänSivunKirjaukset}">
-												<c:if
-													test="${empty valittuTyyppiId or (testKj.kirjaustyyppi != null and testKj.kirjaustyyppi.id == valittuTyyppiId)}">
-													<c:set var="asiakkaallaOnSopiviaKirjauksia" value="true" />
+								<div class="list-group shadow-sm mb-3">
+									<c:forEach var="kj" items="${kirjausRivit}">
+										<div class="list-group-item p-3 text-start">
+											<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+												<small class="text-muted fw-semibold">${kj.luontiaika.toString().replace('T', ' ').substring(0, 16)}</small>
+												<a href="${pageContext.request.contextPath}/asiakas/${kj.asiakas.id}" class="fw-bold text-decoration-none"><c:out value="${kj.asiakas.nimi}" /></a>
+												<c:if test="${kj.kirjaustyyppi != null}">
+													<span class="badge text-white fw-bold" style="background-color: ${kj.kirjaustyyppi.vari};">${kj.kirjaustyyppi.nimi}</span>
 												</c:if>
-											</c:forEach>
-
-											<c:if test="${asiakkaallaOnSopiviaKirjauksia}">
-												<c:set var="naytettiinYhtaan" value="true" />
-												<div class="accordion-item border-0 border-bottom">
-													<h2 class="accordion-header" id="heading-${as.id}">
-														<button
-															class="accordion-button collapsed fw-bold text-dark bg-light bg-opacity-50 py-3"
-															type="button" data-bs-toggle="collapse"
-															data-bs-target="#collapse-${as.id}">
-															<div
-																class="d-flex justify-content-between w-100 align-items-center pe-3">
-																<span>🏢 ${as.nimi}</span>
-																<span
-																	class="badge bg-primary rounded-pill small fw-semibold">
-																	${fn:length(tämänSivunKirjaukset)} merkintää tällä
-																	sivulla
-																</span>
-															</div>
-														</button>
-													</h2>
-													<div id="collapse-${as.id}" class="accordion-collapse collapse"
-														data-bs-parent="#asiakasKirjausHaitari">
-														<div class="accordion-body bg-white p-4">
-															<div class="list-group list-group-flush mx-n3 my-n3">
-																<c:forEach var="kj" items="${tämänSivunKirjaukset}">
-																	<c:if
-																		test="${empty valittuTyyppiId or (kj.kirjaustyyppi != null and kj.kirjaustyyppi.id == valittuTyyppiId)}">
-																		<div
-																			class="list-group-item p-3 border-0 border-bottom border-light text-start">
-																			<div
-																				class="d-flex justify-content-between align-items-center mb-2">
-																				<small class="text-muted fw-semibold">
-																					🗓️
-																					${kj.luontiaika.toString().replace('T',
-																					' ').substring(0, 16)}
-																				</small>
-																				<c:if
-																					test="${kj.kirjaustyyppi != null}">
-																					<span
-																						class="badge text-white fw-bold px-2 py-0.5 rounded-pill"
-																						style="background-color: ${kj.kirjaustyyppi.vari}; font-size: 0.75rem;">
-																						${kj.kirjaustyyppi.nimi}
-																					</span>
-																				</c:if>
-																			</div>
-																			<p class="mb-0 text-dark small"
-																				style="white-space: pre-line; line-height: 1.5;">
-																				<c:out value="${kj.teksti}" />
-																			</p>
-																		</div>
-																	</c:if>
-																</c:forEach>
-															</div>
-														</div>
-													</div>
-												</div>
-											</c:if>
-										</c:if>
-									</c:forEach>
-
-									<c:if test="${naytettiinYhtaan == 'false'}">
-										<div
-											class="p-4 bg-white text-center text-muted border-0 rounded-3 italic small">
-											Ei kirjattuja asiakastapahtumia valitulla hakuehdolla / ajanjaksolla.
+											</div>
+											<p class="mb-0 text-dark small" style="white-space: pre-line; line-height: 1.5;"><c:out value="${kj.teksti}" /></p>
 										</div>
+									</c:forEach>
+									<c:if test="${empty kirjausRivit}">
+										<div class="p-4 bg-white text-center text-muted border rounded small">Ei kirjauksia valitulla ajanjaksolla.</div>
 									</c:if>
 								</div>
 
@@ -336,14 +280,16 @@
 										<div class="col-md-4 col-sm-6 text-start">
 											<label for="alkuPvm_l"
 												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
-											<input type="date" id="alkuPvm_l" name="alkuPvm"
+											<input type="text" id="alkuPvm_l" name="alkuPvm" data-finnish-date
+												placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
 												class="form-control form-control-sm" value="${alkuPvm}">
 										</div>
 
 										<div class="col-md-4 col-sm-6 text-start">
 											<label for="loppuPvm_l"
 												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
-											<input type="date" id="loppuPvm_l" name="loppuPvm"
+											<input type="text" id="loppuPvm_l" name="loppuPvm" data-finnish-date
+												placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
 												class="form-control form-control-sm" value="${loppuPvm}">
 										</div>
 
@@ -452,14 +398,16 @@
 										<div class="col-md-4 col-sm-6 text-start">
 											<label for="alkuPvm_m"
 												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
-											<input type="date" id="alkuPvm_m" name="alkuPvm"
+											<input type="text" id="alkuPvm_m" name="alkuPvm" data-finnish-date
+												placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
 												class="form-control form-control-sm" value="${alkuPvm}">
 										</div>
 
 										<div class="col-md-4 col-sm-6 text-start">
 											<label for="loppuPvm_m"
 												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
-											<input type="date" id="loppuPvm_m" name="loppuPvm"
+											<input type="text" id="loppuPvm_m" name="loppuPvm" data-finnish-date
+												placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
 												class="form-control form-control-sm" value="${loppuPvm}">
 										</div>
 
@@ -585,52 +533,6 @@
 							<div class="tab-pane fade p-3 bg-white border border-top-0 rounded-bottom shadow-sm"
 								id="tarkeatSisalto" role="tabpanel" aria-labelledby="tarkeat-tab">
 
-								<!-- 🔍 ITSENÄINEN HAKULOMAKE TÄRKEILLE HUOMIOILLE (Sisältää kirjaustyypin) -->
-								<div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
-									<form action="${pageContext.request.contextPath}/raportit" method="get"
-										class="row g-2 align-items-end">
-										<input type="hidden" name="sivu" value="0">
-										<input type="hidden" name="kSivu" value="0">
-										<input type="hidden" name="tab" value="tarkeatSisalto">
-
-										<div class="col-md-3 col-sm-6 text-start">
-											<label for="alkuPvm_t"
-												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
-											<input type="date" id="alkuPvm_t" name="alkuPvm"
-												class="form-control form-control-sm" value="${alkuPvm}">
-										</div>
-
-										<div class="col-md-3 col-sm-6 text-start">
-											<label for="loppuPvm_t"
-												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
-											<input type="date" id="loppuPvm_t" name="loppuPvm"
-												class="form-control form-control-sm" value="${loppuPvm}">
-										</div>
-
-										<div class="col-md-3 col-12 text-start">
-											<label for="suodatinTyyppi_t"
-												class="form-label small fw-bold text-secondary">Kirjaustyyppi /
-												Luokitus</label>
-											<select name="tyyppi" id="suodatinTyyppi_t"
-												class="form-select form-select-sm">
-												<option value="">-- Kaikki kirjaukset (Ei rajoitusta) --</option>
-												<c:forEach items="${kirjaustyypit}" var="kt">
-													<option value="${kt.id}" ${kt.id==valittuTyyppiId ? 'selected' : ''
-														}>${kt.nimi}</option>
-												</c:forEach>
-											</select>
-										</div>
-
-										<div class="col-md-3 col-12 d-flex gap-2">
-											<button type="submit"
-												class="btn btn-sm btn-primary fw-bold px-3 w-100 rounded-pill">🔍 Hae /
-												Suodata</button>
-											<a href="${pageContext.request.contextPath}/raportit?tab=tarkeatSisalto"
-												class="btn btn-sm btn-outline-secondary px-3 w-100 rounded-pill">Nollaa</a>
-										</div>
-									</form>
-								</div>
-
 								<div class="mb-3">
 									<h5 class="fw-bold text-danger mb-0">📌 Asiakkuuksien tärkeät ja huomionarvoiset
 										kirjaukset</h5>
@@ -695,10 +597,205 @@
 								</div>
 							</div> <!-- /tab-pane 4 -->
 
+							<div class="tab-pane fade" id="ajotSisalto" role="tabpanel" aria-labelledby="ajot-tab">
+								<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+									<div>
+										<h4 class="h5 fw-bold mb-1">Asiakkailta laskutettavat ajot</h4>
+										<p class="text-muted small mb-0">Kirjaa asiakasajot ja seuraa matkamittarista laskettuja kilometrejä.</p>
+									</div>
+									<div class="text-end">
+										<div class="small text-muted">Kilometrit valitulla aikavälillä</div>
+										<strong><fmt:formatNumber value="${ajojenKilometrit}" minFractionDigits="0" maxFractionDigits="2" /> km</strong>
+									</div>
+								</div>
+
+								<c:if test="${param.ajoVirhe == 'virheellinen'}">
+									<div class="alert alert-danger" role="alert">Tarkista ajon tiedot ja varmista, että loppulukema ei ole alkulukemaa pienempi.</div>
+								</c:if>
+
+								<div class="border rounded p-3 bg-white mb-4">
+									<form action="${pageContext.request.contextPath}/raportit/ajot/lisaa" method="post" class="row g-3">
+										<div class="col-md-3">
+											<label for="uusiAjoAsiakas" class="form-label">Asiakas</label>
+											<select id="uusiAjoAsiakas" name="asiakasId" class="form-select" required>
+												<option value="" selected disabled>Valitse asiakas</option>
+												<c:forEach items="${omatAsiakkaat}" var="asiakas">
+													<option value="${asiakas.id}"><c:out value="${asiakas.nimi}" /></option>
+												</c:forEach>
+											</select>
+										</div>
+										<div class="col-md-3">
+											<label for="uusiAjoPaivamaara" class="form-label">Päivämäärä</label>
+											<input id="uusiAjoPaivamaara" name="paivamaara" type="text" data-finnish-date placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off" class="form-control" value="${tanaan}" required>
+										</div>
+										<div class="col-md-3">
+											<label for="uusiAjoLahto" class="form-label">Lähtöpaikka</label>
+											<input id="uusiAjoLahto" name="lahtopaikka" maxlength="200" class="form-control" required>
+										</div>
+										<div class="col-md-3">
+											<label for="uusiAjoKohde" class="form-label">Kohde</label>
+											<input id="uusiAjoKohde" name="kohde" maxlength="200" class="form-control" required>
+										</div>
+										<div class="col-md-6">
+											<label for="uusiAjoTarkoitus" class="form-label">Ajon tarkoitus</label>
+											<input id="uusiAjoTarkoitus" name="tarkoitus" maxlength="500" class="form-control" required>
+										</div>
+										<div class="col-md-3 d-flex align-items-end">
+											<div class="form-check mb-2"><input id="uusiAjoEdestakainen" name="edestakainen" type="checkbox" class="form-check-input"><label for="uusiAjoEdestakainen" class="form-check-label">Edestakainen matka</label></div>
+										</div>
+										<div class="col-md-2">
+											<label for="uusiAjoAlku" class="form-label">Mittari alussa</label>
+											<input id="uusiAjoAlku" name="alkumatkamittari" type="number" min="0" step="0.01" class="form-control" required>
+										</div>
+										<div class="col-md-2">
+											<label for="uusiAjoLoppu" class="form-label">Mittari lopussa</label>
+											<input id="uusiAjoLoppu" name="loppumatkamittari" type="number" min="0" step="0.01" class="form-control" required>
+										</div>
+										<div class="col-md-2">
+											<label for="uusiAjoLasku" class="form-label">Laskun viite</label>
+											<input id="uusiAjoLasku" name="laskuviite" maxlength="100" class="form-control">
+										</div>
+										<div class="col-12 d-flex justify-content-end">
+											<button type="submit" class="btn btn-primary">Lisää ajo</button>
+										</div>
+									</form>
+								</div>
+
+								<form action="${pageContext.request.contextPath}/raportit" method="get" class="row g-2 align-items-end border-bottom pb-3 mb-3">
+									<input type="hidden" name="tab" value="ajotSisalto">
+									<div class="col-md-3">
+										<label for="ajoAlku" class="form-label small fw-bold">Alkupäivä</label>
+										<input id="ajoAlku" name="ajoAlku" type="text" data-finnish-date placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off" class="form-control" value="${ajoAlku}" required>
+									</div>
+									<div class="col-md-3">
+										<label for="ajoLoppu" class="form-label small fw-bold">Loppupäivä</label>
+										<input id="ajoLoppu" name="ajoLoppu" type="text" data-finnish-date placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off" class="form-control" value="${ajoLoppu}" required>
+									</div>
+									<div class="col-md-4">
+										<label for="ajoAsiakas" class="form-label small fw-bold">Asiakas</label>
+										<select id="ajoAsiakas" name="ajoAsiakas" class="form-select">
+											<option value="">Kaikki asiakkaat joilla on ajoja</option>
+											<c:forEach items="${ajoAsiakkaat}" var="asiakas">
+												<option value="${asiakas.id}" ${asiakas.id == valittuAjoAsiakas ? 'selected' : ''}><c:out value="${asiakas.nimi}" /></option>
+											</c:forEach>
+										</select>
+									</div>
+									<div class="col-md-2 d-flex gap-2">
+										<button class="btn btn-outline-primary w-100" type="submit">Hae</button>
+										<a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/raportit?tab=ajotSisalto">Tyhjennä</a>
+									</div>
+								</form>
+
+								<div class="table-responsive">
+									<table class="table table-hover align-middle mb-0">
+										<thead><tr><th>Päivä</th><th>Asiakas</th><th>Reitti</th><th>Tarkoitus / lasku</th><th>Mittarilukemat</th><th>Km</th><th></th></tr></thead>
+										<tbody>
+											<c:forEach items="${asiakasAjot}" var="ajo">
+												<tr>
+													<td><c:out value="${ajo.paivamaara}" /></td>
+													<td><c:out value="${ajo.asiakas.nimi}" /></td>
+													<td><c:out value="${ajo.lahtopaikka}" /> &rarr; <c:out value="${ajo.kohde}" /><c:if test="${ajo.edestakainen}"> &rarr; <c:out value="${ajo.lahtopaikka}" /> <span class="badge text-bg-light">meno-paluu</span></c:if></td>
+													<td><c:out value="${ajo.tarkoitus}" /><c:if test="${not empty ajo.laskuviite}"><br><small class="text-muted">Lasku: <c:out value="${ajo.laskuviite}" /></small></c:if></td>
+													<td><fmt:formatNumber value="${ajo.alkumatkamittari}" maxFractionDigits="2" /> &rarr; <fmt:formatNumber value="${ajo.loppumatkamittari}" maxFractionDigits="2" /></td>
+													<td><fmt:formatNumber value="${ajo.kilometrit}" minFractionDigits="0" maxFractionDigits="2" /></td>
+													<td class="text-end text-nowrap">
+														<button type="button" class="btn btn-sm btn-outline-primary muokkaa-ajo" data-bs-toggle="modal" data-bs-target="#muokkaaAjoModal" data-id="${ajo.id}" data-asiakas="${ajo.asiakas.id}" data-paivamaara="${ajo.paivamaara}" data-lahtopaikka="<c:out value='${ajo.lahtopaikka}'/>" data-kohde="<c:out value='${ajo.kohde}'/>" data-tarkoitus="<c:out value='${ajo.tarkoitus}'/>" data-alku="${ajo.alkumatkamittari}" data-loppu="${ajo.loppumatkamittari}" data-edestakainen="${ajo.edestakainen}" data-laskuviite="<c:out value='${ajo.laskuviite}'/>">Muokkaa</button>
+														<form action="${pageContext.request.contextPath}/raportit/ajot/poista/${ajo.id}" method="post" class="d-inline" onsubmit="return confirm('Poistetaanko tämä ajo?');"><button type="submit" class="btn btn-sm btn-outline-danger">Poista</button></form>
+													</td>
+												</tr>
+											</c:forEach>
+											<c:if test="${empty asiakasAjot}"><tr><td colspan="7" class="text-center text-muted py-4">Ei ajoja valitulla haulla.</td></tr></c:if>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
+							<div class="modal fade" id="muokkaaAjoModal" tabindex="-1" aria-hidden="true">
+								<div class="modal-dialog modal-lg modal-dialog-scrollable">
+									<div class="modal-content">
+										<form id="muokkaaAjoForm" method="post">
+											<div class="modal-header"><h5 class="modal-title">Muokkaa ajoa</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sulje"></button></div>
+											<div class="modal-body row g-3">
+												<div class="col-md-6"><label for="muokkaaAjoAsiakas" class="form-label">Asiakas</label><select id="muokkaaAjoAsiakas" name="asiakasId" class="form-select" required><c:forEach items="${omatAsiakkaat}" var="asiakas"><option value="${asiakas.id}"><c:out value="${asiakas.nimi}" /></option></c:forEach></select></div>
+												<div class="col-md-6"><label for="muokkaaAjoPaivamaara" class="form-label">Päivämäärä</label><input id="muokkaaAjoPaivamaara" name="paivamaara" type="text" data-finnish-date placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off" class="form-control" required></div>
+												<div class="col-md-6"><label for="muokkaaAjoLahto" class="form-label">Lähtöpaikka</label><input id="muokkaaAjoLahto" name="lahtopaikka" maxlength="200" class="form-control" required></div>
+												<div class="col-md-6"><label for="muokkaaAjoKohde" class="form-label">Kohde</label><input id="muokkaaAjoKohde" name="kohde" maxlength="200" class="form-control" required></div>
+												<div class="col-12"><label for="muokkaaAjoTarkoitus" class="form-label">Ajon tarkoitus</label><input id="muokkaaAjoTarkoitus" name="tarkoitus" maxlength="500" class="form-control" required></div>
+												<div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2"><input id="muokkaaAjoEdestakainen" name="edestakainen" type="checkbox" class="form-check-input"><label for="muokkaaAjoEdestakainen" class="form-check-label">Edestakainen matka</label></div></div>
+												<div class="col-md-4"><label for="muokkaaAjoAlku" class="form-label">Mittari alussa</label><input id="muokkaaAjoAlku" name="alkumatkamittari" type="number" min="0" step="0.01" class="form-control" required></div>
+												<div class="col-md-4"><label for="muokkaaAjoLoppu" class="form-label">Mittari lopussa</label><input id="muokkaaAjoLoppu" name="loppumatkamittari" type="number" min="0" step="0.01" class="form-control" required></div>
+												<div class="col-md-4"><label for="muokkaaAjoLasku" class="form-label">Laskun viite</label><input id="muokkaaAjoLasku" name="laskuviite" maxlength="100" class="form-control"></div>
+												<input type="hidden" name="ajoAlku" value="${ajoAlku}"><input type="hidden" name="ajoLoppu" value="${ajoLoppu}"><input type="hidden" name="ajoAsiakas" value="${valittuAjoAsiakas}">
+											</div>
+											<div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Peruuta</button><button type="submit" class="btn btn-primary">Tallenna</button></div>
+										</form>
+									</div>
+								</div>
+							</div>
+
 						</div> <!-- /#raporttiTabsSisalto päättyy puhtaasti -->
 					</div>
 					<!-- Lataa paikallisen Bootstrap-JavaScriptin resources-juuresta -->
 					<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
+					<script>
+						function formatFinnishDate(value) {
+							const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+							return match ? match[3] + '.' + match[2] + '.' + match[1] : value;
+						}
+
+						function parseFinnishDate(value) {
+							const match = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(value.trim());
+							if (!match) return null;
+							const day = Number(match[1]);
+							const month = Number(match[2]);
+							const year = Number(match[3]);
+							const date = new Date(Date.UTC(year, month - 1, day));
+							if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+							return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+						}
+
+						const dateForms = new Set();
+						document.querySelectorAll('[data-finnish-date]').forEach(function (input) {
+							input.value = formatFinnishDate(input.value);
+							input.addEventListener('input', function () { input.setCustomValidity(''); });
+							if (input.form && !dateForms.has(input.form)) {
+								dateForms.add(input.form);
+								input.form.addEventListener('submit', function (event) {
+									const dateInputs = Array.from(input.form.querySelectorAll('[data-finnish-date]'));
+									const isoDates = dateInputs.map(function (dateInput) {
+										return parseFinnishDate(dateInput.value);
+									});
+									const invalidIndex = isoDates.findIndex(function (isoDate) { return !isoDate; });
+									if (invalidIndex !== -1) {
+										event.preventDefault();
+										const invalidInput = dateInputs[invalidIndex];
+										invalidInput.setCustomValidity('Anna päivämäärä muodossa pp.kk.vvvv.');
+										invalidInput.reportValidity();
+										return;
+									}
+									dateInputs.forEach(function (dateInput, index) {
+										dateInput.value = isoDates[index];
+									});
+								}, true);
+							}
+						});
+
+						document.querySelectorAll('.muokkaa-ajo').forEach(function (button) {
+							button.addEventListener('click', function () {
+								const form = document.getElementById('muokkaaAjoForm');
+								form.action = '${pageContext.request.contextPath}/raportit/ajot/muokkaa/' + button.dataset.id;
+								document.getElementById('muokkaaAjoAsiakas').value = button.dataset.asiakas;
+								document.getElementById('muokkaaAjoPaivamaara').value = formatFinnishDate(button.dataset.paivamaara);
+								document.getElementById('muokkaaAjoLahto').value = button.dataset.lahtopaikka;
+								document.getElementById('muokkaaAjoKohde').value = button.dataset.kohde;
+								document.getElementById('muokkaaAjoTarkoitus').value = button.dataset.tarkoitus;
+								document.getElementById('muokkaaAjoAlku').value = button.dataset.alku;
+								document.getElementById('muokkaaAjoLoppu').value = button.dataset.loppu;
+								document.getElementById('muokkaaAjoEdestakainen').checked = button.dataset.edestakainen === 'true';
+								document.getElementById('muokkaaAjoLasku').value = button.dataset.laskuviite;
+							});
+						});
+					</script>
 
 
 					<!--SÄILYTETÄÄN AKTIIVINEN VÄLILEHTI SEKÄ SIVUTUKSEN ETTEI HAUN YLI -->
@@ -706,6 +803,17 @@
 						document.addEventListener("DOMContentLoaded", function () {
 							const urlParams = new URLSearchParams(window.location.search);
 							const tabParam = urlParams.get('tab');
+							const tabParameters = {
+								'kirjaukset-tab': 'kirjaukset',
+								'tarkeat-tab': 'tarkeatSisalto',
+								'myynti-tab': 'myyntiSisalto',
+								'ajot-tab': 'ajotSisalto',
+								'loki-tab': 'loki'
+							};
+							function aktiivinenRaporttiTab() {
+								const activeTab = document.querySelector('#raporttiTabs .nav-link.active');
+								return activeTab ? tabParameters[activeTab.id] || 'kirjaukset' : 'kirjaukset';
+							}
 
 							// 1. Avataan oikea välilehti sivun latautuessa urliin perustuen
 							if (tabParam === 'loki' || (urlParams.has('sivu') && !urlParams.has('kSivu'))) {
@@ -715,6 +823,29 @@
 									document.getElementById('aktiivinenTabInput').value = 'loki';
 								}
 							}
+							if (tabParam === 'ajotSisalto') {
+								const ajotTab = document.getElementById('ajot-tab');
+								if (ajotTab) {
+									new bootstrap.Tab(ajotTab).show();
+									document.getElementById('aktiivinenTabInput').value = 'ajotSisalto';
+								}
+							}
+							if (tabParam === 'tarkeatSisalto') {
+								const tarkeatTab = document.getElementById('tarkeat-tab');
+								if (tarkeatTab) new bootstrap.Tab(tarkeatTab).show();
+							}
+							if (tabParam === 'myyntiSisalto') {
+								const myyntiTab = document.getElementById('myynti-tab');
+								if (myyntiTab) new bootstrap.Tab(myyntiTab).show();
+							}
+
+							document.getElementById('raporttiHakuForm')?.addEventListener('submit', function () {
+								document.getElementById('raporttiHakuTab').value = aktiivinenRaporttiTab();
+							});
+							document.getElementById('nollaaRaporttiHaku')?.addEventListener('click', function (event) {
+								event.preventDefault();
+								window.location.href = '${pageContext.request.contextPath}/raportit?tab=' + aktiivinenRaporttiTab();
+							});
 
 							// 2. Kuunnellaan käyttäjän välilehtiklikkauksia ja päivitetään hakulomakkeen piilokenttää lennosta
 							document.getElementById('kirjaukset-tab')?.addEventListener('shown.bs.tab', function () {
@@ -723,6 +854,10 @@
 
 							document.getElementById('loki-tab')?.addEventListener('shown.bs.tab', function () {
 								document.getElementById('aktiivinenTabInput').value = 'loki';
+							});
+
+							document.getElementById('ajot-tab')?.addEventListener('shown.bs.tab', function () {
+								document.getElementById('aktiivinenTabInput').value = 'ajotSisalto';
 							});
 
 							// 3. Varmistetaan, että myös sivutuspalkkien linkit säilyttävät tiedon aktiivisesta välilehdestä

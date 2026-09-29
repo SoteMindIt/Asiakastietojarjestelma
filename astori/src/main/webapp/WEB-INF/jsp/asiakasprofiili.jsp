@@ -826,7 +826,7 @@
 										<div class="row">
 											<div class="col-md-6 mb-3">
 												<label class="form-label small fw-bold text-secondary">Määrä</label>
-												<input type="number" min="1" class="form-control" id="muokkaaMaara"
+												<input type="number" min="0.01" step="0.01" class="form-control" id="muokkaaMaara"
 													name="maara" required>
 											</div>
 											<div class="col-md-6 mb-3">
@@ -1126,18 +1126,7 @@
 											<label for="maara"
 												class="form-label fw-bold small text-secondary">Määrä</label> <input
 												type="number" class="form-control" id="maara" name="maara" value="1"
-												min="1" required>
-										</div>
-										<div class="mb-3">
-											<label for="alvKanta"
-												class="form-label fw-bold small text-secondary">Arvonlisäverokanta
-												(ALV)</label> <select class="form-select" id="alvKanta" name="alvKanta"
-												required>
-												<c:forEach var="kanta" items="${alvKannat}">
-													<option value="${kanta}" ${kanta=='ALV_25_5' ? 'selected' : '' }>
-														${kanta.nayttorivi}</option>
-												</c:forEach>
-											</select>
+												min="0.01" step="0.01" required>
 										</div>
 										<div class="mb-3">
 											<label for="ostopaivamaara"

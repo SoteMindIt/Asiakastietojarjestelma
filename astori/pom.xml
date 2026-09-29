@@ -87,6 +87,22 @@
 			<artifactId>openpdf</artifactId>
 			<version>1.3.40</version>
 		</dependency>
+		<!-- Pakotetaan Jakarta-yhteensopiva JSP-kääntäjä päälle -->
+		<dependency>
+			<groupId>org.apache.tomcat.embed</groupId>
+			<artifactId>tomcat-embed-jasper</artifactId>
+		</dependency>
+
+		<!-- Korjataan JSTL-tuki Spring Boot 3 / Tomcat 11 -ympäristöön -->
+		<dependency>
+			<groupId>jakarta.servlet.jsp.jstl</groupId>
+			<artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.web</groupId>
+			<artifactId>jakarta.servlet.jsp.jstl</artifactId>
+		</dependency>
+
 	</dependencies>
 	<build>
 		<plugins>

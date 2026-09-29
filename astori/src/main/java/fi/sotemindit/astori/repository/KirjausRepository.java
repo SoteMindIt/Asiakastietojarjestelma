@@ -20,6 +20,17 @@ public interface KirjausRepository extends JpaRepository<Kirjaus, Long> {
     List<Kirjaus> findByAsiakasIdOrderByLuontiaikaDesc(Long asiakasId);
     // Hakee kaikki järjestelmän kirjaukset tietyltä aikaväliltä sivutettuna (uusin ensin)
     Page<Kirjaus> findByLuontiaikaBetweenOrderByLuontiaikaDesc(LocalDateTime alku, LocalDateTime loppu, Pageable pageable);
+
+    @Query("SELECT k FROM Kirjaus k WHERE k.asiakas.kayttaja.kayttajatunnus = :tunnus " +
+          "AND k.luontiaika >= :alkuAika AND k.luontiaika <= :loppuAika " +
+          "AND (:tyyppiId IS NULL OR (k.kirjaustyyppi IS NOT NULL AND k.kirjaustyyppi.id = :tyyppiId)) " +
+          "ORDER BY k.luontiaika DESC, k.id DESC")
+    Page<Kirjaus> findAsiakasKirjauksetAjanjaksolta(
+           @Param("tunnus") String tunnus,
+           @Param("alkuAika") LocalDateTime alkuAika,
+           @Param("loppuAika") LocalDateTime loppuAika,
+           @Param("tyyppiId") Long tyyppiId,
+           Pageable pageable);
     
     //Hakee kaikki käyttäjän asiakkaiden TÄRKEÄT kirjaukset valitulta ajanjaksolta järjestettynä uusimman mukaan
     @Query("SELECT k FROM Kirjaus k WHERE k.asiakas.kayttaja.kayttajatunnus = :tunnus " +

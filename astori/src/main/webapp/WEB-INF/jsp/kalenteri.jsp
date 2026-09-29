@@ -15,13 +15,6 @@
 <script
 	src="${pageContext.request.contextPath}/resources/index.global.min.js"></script>
 
-<!-- 🔌 PAIKALLISET: Visuaalisen Clockpicker-kellotaulun kirjastot omalta palvelimelta -->
-<link
-	href="${pageContext.request.contextPath}/resources/mdtimepicker.min.css"
-	rel="stylesheet">
-<script
-	src="${pageContext.request.contextPath}/resources/mdtimepicker.min.js"></script>
-
 <style>
 body {
 	background-color: #f8f9fa;
@@ -55,9 +48,112 @@ body {
 	cursor: pointer;
 }
 
-/* 🔌 Pakotetaan kellovalitsimen popup nousemaan reilusti Bootstrap-modalien yläpuorelle */
-.mdtp__wrapper, .mdtimepicker {
-	z-index: 2050 !important;
+.clock-picker-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 2050;
+	display: grid;
+	place-items: center;
+	padding: 16px;
+	background: rgba(18, 28, 42, 0.45);
+}
+
+.clock-picker-dialog {
+	width: min(340px, 100%);
+	padding: 20px;
+	border-radius: 8px;
+	background: #fff;
+	box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
+	text-align: center;
+}
+
+.clock-picker-time {
+	margin: 0 0 14px;
+	border: 0;
+	background: transparent;
+	color: #263746;
+	font-size: 2rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.clock-picker-time button {
+	border: 0;
+	border-radius: 4px;
+	padding: 2px 5px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+}
+
+.clock-picker-time button.active {
+	background: #e7f1ff;
+	color: #0d6efd;
+}
+
+.clock-picker-face {
+	position: relative;
+	width: 260px;
+	height: 260px;
+	max-width: 100%;
+	margin: 0 auto 16px;
+	border-radius: 50%;
+	background: #edf2f6;
+}
+
+.clock-picker-hand {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 2px;
+	height: 92px;
+	transform-origin: 50% 0;
+	background: #0d6efd;
+}
+
+.clock-picker-hand::after {
+	position: absolute;
+	left: -4px;
+	bottom: -4px;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: #0d6efd;
+	content: '';
+}
+
+.clock-picker-value {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 34px;
+	height: 34px;
+	transform: translate(-50%, -50%);
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: #263746;
+	font-size: 0.85rem;
+	z-index: 1;
+}
+
+.clock-picker-value.selected {
+	background: #0d6efd;
+	color: #fff;
+}
+
+.clock-picker-adjust {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 14px;
+	margin: -7px 0 12px;
+}
+
+.clock-picker-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
 }
 </style>
 </head>
@@ -470,40 +566,136 @@ body {
 				});
 			}
 
-			// 🔌 ALUSTETAAN PAIKALLINEN ANALOGINEN CLOCKPICKER PAIKALLISESTI (KORJATTU JA TURVALLINEN SYNTAKSI)
-			if (typeof mdtimepicker !== 'undefined') {
-				mdtimepicker('.kellovalitsin', {
-					timeFormat : 'hh:mm',
-					format : 'hh:mm',
-					theme : 'blue',
-					hourPadding : false,
-					is24hour : true
+			var activeClockInput = null;
+			var clockPicker = null;
+			var selectedHour = 9;
+			var selectedMinute = 0;
+			var clockStage = 'hour';
+
+			function paddedTimePart(value) {
+				return String(value).padStart(2, '0');
+			}
+
+			function closeClockPicker() {
+				if (clockPicker) {
+					clockPicker.remove();
+					clockPicker = null;
+				}
+				if (activeClockInput) {
+					activeClockInput.focus();
+					activeClockInput = null;
+				}
+			}
+
+			function renderClockPicker() {
+				var hourButton = clockPicker.querySelector('[data-clock-part="hour"]');
+				var minuteButton = clockPicker.querySelector('[data-clock-part="minute"]');
+				var face = clockPicker.querySelector('.clock-picker-face');
+				hourButton.textContent = paddedTimePart(selectedHour);
+				minuteButton.textContent = paddedTimePart(selectedMinute);
+				hourButton.classList.toggle('active', clockStage === 'hour');
+				minuteButton.classList.toggle('active', clockStage === 'minute');
+				face.replaceChildren();
+
+				var values = clockStage === 'hour'
+						? Array.from({ length: 24 }, function(_, index) { return index; })
+						: Array.from({ length: 12 }, function(_, index) { return index * 5; });
+				var selectedValue = clockStage === 'hour' ? selectedHour : Math.floor(selectedMinute / 5) * 5;
+				var selectedIndex = clockStage === 'hour' ? selectedHour % 12 : selectedValue / 5;
+				var selectedRadius = clockStage === 'hour' && selectedHour >= 12 ? 65 : 105;
+				var hand = document.createElement('div');
+				hand.className = 'clock-picker-hand';
+				hand.style.height = selectedRadius + 'px';
+				hand.style.transform = 'rotate(' + (180 + selectedIndex * 30) + 'deg)';
+				face.appendChild(hand);
+
+				values.forEach(function(value, index) {
+					var button = document.createElement('button');
+					var position = clockStage === 'hour' ? index % 12 : index;
+					var radius = clockStage === 'hour' && value >= 12 ? 65 : 105;
+					var angle = position * Math.PI / 6 - Math.PI / 2;
+					button.type = 'button';
+					button.className = 'clock-picker-value';
+					button.textContent = paddedTimePart(value);
+					button.dataset.clockValue = value;
+					button.classList.toggle('selected', value === selectedValue);
+					button.style.left = (130 + Math.cos(angle) * radius) + 'px';
+					button.style.top = (130 + Math.sin(angle) * radius) + 'px';
+					face.appendChild(button);
+				});
+
+				clockPicker.querySelector('.clock-picker-adjust').style.display = clockStage === 'minute' ? 'flex' : 'none';
+			}
+
+			function openClockPicker(input) {
+				if (clockPicker) {
+					closeClockPicker();
+				}
+				activeClockInput = input;
+				var parts = input.value.match(/^(\d{1,2}):(\d{2})$/);
+				selectedHour = parts ? Math.min(23, parseInt(parts[1], 10)) : 9;
+				selectedMinute = parts ? Math.min(59, parseInt(parts[2], 10)) : 0;
+				clockStage = 'hour';
+				clockPicker = document.createElement('div');
+				clockPicker.className = 'clock-picker-backdrop';
+				clockPicker.innerHTML = '<section class="clock-picker-dialog" role="dialog" aria-modal="true" aria-label="Valitse kellonaika">'
+						+ '<h2 class="h6 mb-3">Valitse kellonaika</h2>'
+						+ '<div class="clock-picker-time"><button type="button" data-clock-part="hour" aria-label="Valitse tunti"></button>'
+						+ '<span>:</span><button type="button" data-clock-part="minute" aria-label="Valitse minuutit"></button></div>'
+						+ '<div class="clock-picker-face" aria-label="Kellotaulu"></div>'
+						+ '<div class="clock-picker-adjust"><button type="button" class="btn btn-sm btn-outline-secondary" data-minute-adjust="-1" aria-label="Vähennä minuutti">−</button>'
+						+ '<span class="small text-secondary">Tarkka minuutti</span><button type="button" class="btn btn-sm btn-outline-secondary" data-minute-adjust="1" aria-label="Lisää minuutti">+</button></div>'
+						+ '<div class="clock-picker-actions"><button type="button" class="btn btn-light" data-clock-action="cancel">Peruuta</button>'
+						+ '<button type="button" class="btn btn-primary" data-clock-action="select">Valitse</button></div></section>';
+				document.body.appendChild(clockPicker);
+				renderClockPicker();
+
+				clockPicker.addEventListener('click', function(event) {
+					if (event.target === clockPicker || event.target.closest('[data-clock-action="cancel"]')) {
+						closeClockPicker();
+						return;
+					}
+					if (event.target.closest('[data-clock-action="select"]')) {
+						activeClockInput.value = paddedTimePart(selectedHour) + ':' + paddedTimePart(selectedMinute);
+						closeClockPicker();
+						return;
+					}
+					var partButton = event.target.closest('[data-clock-part]');
+					if (partButton) {
+						clockStage = partButton.dataset.clockPart;
+						renderClockPicker();
+						return;
+					}
+					var valueButton = event.target.closest('[data-clock-value]');
+					if (valueButton) {
+						if (clockStage === 'hour') {
+							selectedHour = parseInt(valueButton.dataset.clockValue, 10);
+							clockStage = 'minute';
+						} else {
+						selectedMinute = parseInt(valueButton.dataset.clockValue, 10);
+						}
+						renderClockPicker();
+						return;
+					}
+					var adjustButton = event.target.closest('[data-minute-adjust]');
+					if (adjustButton) {
+						selectedMinute = (selectedMinute + parseInt(adjustButton.dataset.minuteAdjust, 10) + 60) % 60;
+						renderClockPicker();
+					}
 				});
 			}
 
-			// 🔌 Pakotetaan kellovalitsimen popup nousemaan kauniisti Bootstrap-modalien eteen aina klikatessa ja estetään haamukuvat
-			document.querySelectorAll('.kellovalitsin').forEach(function(el) {
-				el.addEventListener('click', function() {
-					setTimeout(function() {
-						var wrapper = document.querySelector('.mdtp__wrapper') || document.querySelector('.mdtimepicker');
-						if (wrapper) {
-							wrapper.style.setProperty('z-index', '99999', 'important');
-							var parentModal = el.closest('.modal');
-							if (parentModal) {
-								parentModal.appendChild(wrapper);
-							}
-						}
-					}, 50);
+			document.querySelectorAll('.kellovalitsin').forEach(function(input) {
+				input.setAttribute('aria-haspopup', 'dialog');
+				input.addEventListener('click', function() {
+					openClockPicker(input);
 				});
 			});
 
-			// Siivotaan orvot valitsimet jos ikkuna suljetaan
-			document.querySelectorAll('.modal').forEach(function(modalEl) {
-				modalEl.addEventListener('hidden.bs.modal', function () {
-					document.querySelectorAll('.mdtp__wrapper, .mdtimepicker').forEach(function(w) {
-						w.remove();
-					});
-				});
+			document.addEventListener('keydown', function(event) {
+				if (clockPicker && event.key === 'Escape') {
+					closeClockPicker();
+				}
 			});
 		});
 	</script>

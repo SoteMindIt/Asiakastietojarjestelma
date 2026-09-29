@@ -29,7 +29,7 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 - Koordinaatit: `Double leveysaste` (Latitude) ja `Double pituusaste` (Longitude) valmiina tulevaa 100 km säteellistä kilometrihakua ja geokoodausta varten.
 - Tila: `@Enumerated(EnumType.STRING) AsiakkaanTila tila` (Oletus: PROSPEKTI).
 - Hyvinvointialue: `@Enumerated(EnumType.STRING) Hyvinvointialue hyvinvointialue` (Kytketty dynaamiseen enumiin).
-- Relaatiot (Kytketty täydellä `CascadeType.ALL, orphanRemoval = true` suhteella automaattista ja turvallista asiakkaan poistamista varten): 
+- Relaatiot (Kytketty täydellä `CascadeType.ALL, orphanRemoval = true` suhteella automaattista ja turvallista asiakkaan poistamista varten):
   - `@ManyToOne @JoinColumn(name = "kayttaja_id") Kayttaja kayttaja`
   - `@OneToMany` palveluyksiköt, yhteyshenkilöt, kirjaukset ja tarjoukset.
 - Konstruktori: 11 argumentin standardkonstruktori.
@@ -67,12 +67,19 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 - Kentät: `String prosenttiStr`, `String nayttorivi` (suomenkielinen seloste dynaamisille pikalomakkeille).
 
 ### AsiakasTuote.java
-- Relaatiot: `@ManyToOne` kytkökset `Asiakas` ja `Tuote`. 
-- Kentät: `BigDecimal myyntihinta`, `Integer maara`, `@Enumerated(EnumType.STRING) AlvKanta alvKanta`.
+- Relaatiot: `@ManyToOne` kytkökset `Asiakas` ja `Tuote`.
+- Kentät: `BigDecimal myyntihinta`, `BigDecimal maara`, `@Enumerated(EnumType.STRING) AlvKanta alvKanta`.
 - Matemaattiset metodit:
   - `getKokonaishinta()` -> Palauttaa raa'an verottoman yhteishinnan (Hinta * Määrä).
   - `getAlvOsuus()` -> Laskee ALV:n osuuden euroina käyttäen enumin prosenttia.
   - `getVerollinenKokonaishinta()` -> Laskee lopullisen verollisen hinnan (Veroton + ALV).
+
+### AsiakasAjo.java (Asiakkaalta laskutettavien ajojen seuranta)
+- Taulu `asiakasajot`; pakollinen `@ManyToOne Asiakas`-linkki asiakkaaseen.
+- Kentät: `LocalDate paivamaara`, lähtöpaikka, kohde, tarkoitus, `BigDecimal`-alku- ja loppumatkamittari, `boolean edestakainen` ja vapaaehtoinen laskuviite.
+- `getKilometrit()` laskee loppu- ja alkumatkamittarin erotuksen. Edestakaisuutta ei kerrota erikseen kahdella, koska mittarilukemat kattavat koko ajetun matkan.
+- Asiakkaalla on `@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)` -suhde ajoihinsa; asiakkaan poisto poistaa myös ajot.
+- Tämä on omaa asiakaskohtaista ajoseurantaa varten. Se ei kirjaa yksityisajoja eikä laske kilometrikorvauksia.
 
 ### Muustiinpano.java (UUSI - Työpöydän sisäiset muistilistat)
 - Kentät: `Long id` (Identity), `String teksti` (columnDefinition = "TEXT", nullable = false), `LocalDateTime luontiaika`, `String kayttajatunnus`.
@@ -126,6 +133,13 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 
 ### KirjausRepository.java, PalveluyksikkoRepository.java, YhteyshenkiloRepository.java, TapahtumaTyyppiRepository.java, LokiRepository.java.
 
+### AsiakasAjoRepository.java
+- `haeAjot(tunnus, alku, loppu, asiakasId)` hakee aikavälin ajot kirjautuneen käyttäjän omilta asiakkailta, vapaaehtoisella asiakassuodattimella, uusin ensin.
+- `haeAsiakkaatJoillaAjoja(tunnus)` palauttaa vain ne kirjautuneen käyttäjän asiakkaat, joille on jo kirjattu ajo.
+
+### KirjausRepository.java (Raporttihaku)
+- `findAsiakasKirjauksetAjanjaksolta(...)` hakee kirjautuneen käyttäjän asiakkaiden merkinnät aikaväliltä, valinnaisella kirjaustyyppisuodattimella ja aikajärjestyksessä uusimmasta vanhimpaan. Sivutus tapahtuu kyselyn jälkeen.
+
 ---
 
 ## 🎮 5. Backend-kontrollerit (Controllers & Routes)
@@ -156,8 +170,13 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 
 ### RaportitController.java
 - Hoitaa aikavälirajaukset, Auditin ja dynaamiset myyntilaskennat (ALV-erittelyt ja 0% KM-korvausten erottamiset).
-- Ohjaa `@GetMapping("/raportit")` -reitillä suodatettua kirjaushakua, joka ryhmittelee dynaamiset kirjaustyypit kronologisesti asiakkaittain, ja palauttaa ne käyttöliittymän haitarirakenteeseen.
-- **Itsenäinen hakulomake-arkkitehtuuri:** Lomakkeet ja haut on eriytetty ja upotettu suoraan kunkin käyttöliittymän dynaamisen välilehden (tab-pane) sisäpuelelle. Tämä poistaa globaalit JavaScript-kuuntelijaongelmat ja estää sovelluksen tarpeettoman hidastumisen, sillä suodatettu haku ja kirjaustyyppi-pudotusvalikko ladataan ja ajetaan luonnostaan vain silloin, kun joko *Asiakaskohtaiset päiväkirjaukset* tai *Tärkeät huomiot* on avattuna.
+- Ohjaa `@GetMapping("/raportit")` -reitillä asiakaskirjaukset yhteen aikajärjestyksessä (uusin ensin) esitettävään listaan. Haku rajaa kirjaukset tietokantakyselyssä kirjautuneen käyttäjän asiakkaisiin ennen sivutusta.
+- Raporttisivun yhteinen päivämäärä- ja kirjaustyyppisuodatin sijaitsee välilehtien yläpuolella ja säilyttää aktiivisen välilehden haussa. Audit Trail -välilehdellä yhteinen kirjaussuodatin piilotetaan; Audit Traililla on oma päivämäärähaku. Myyntiraportilla ja Ajopäiväkirjalla on omat suodattimensa.
+- Päivämäärät syötetään raporttinäkymässä suomalaisessa `pp.kk.vvvv`-muodossa ja muunnetaan selaimessa palvelimelle ISO-muotoon (`yyyy-MM-dd`).
+
+### AsiakasAjoController.java
+- Reitit: `POST /raportit/ajot/lisaa`, `POST /raportit/ajot/muokkaa/{id}` ja `POST /raportit/ajot/poista/{id}`.
+- Varmistaa, että lisättävä asiakas ja käsiteltävä ajo kuuluvat kirjautuneelle käyttäjälle. Lisäykset, muokkaukset ja poistot kirjataan `Loki`-audit trailiin.
 
 ### Muut kontrollerit
 - `TarjousController.java` (25.5 % ALV), `AsetuksetController.java` (ääkkösettömät reitit suojatuilla suljetuilla haitareilla ja itsenäisellä varmuuskopiokortilla, josta tuotehallinnan reitit on poistettu), `KalenteriController.java` (FullCalendar 6).

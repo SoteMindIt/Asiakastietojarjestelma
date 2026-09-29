@@ -64,6 +64,9 @@ public class Asiakas {
 	@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true)
 	private java.util.List<Tarjous> tarjoukset = new java.util.ArrayList<>();
 
+	@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<AsiakasAjo> asiakasAjot = new java.util.ArrayList<>();
+
 
 	// Tyhjä konstruktori JPA:ta varten
 	public Asiakas() {

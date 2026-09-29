@@ -25,7 +25,7 @@ public class AsiakasTuote {
 	private BigDecimal myyntihinta; // Yksikköhinta myyntihetkellä
 
 	@Column(nullable = false)
-	private Integer maara = 1; // Myyty määrä (oletus 1)
+	private BigDecimal maara = BigDecimal.ONE; // Myyty määrä (oletus 1)
 
 	// Kytketään luomasi AlvKanta-enum tietokantaan merkkijonona. Oletus: ALV_25_5
 	@Enumerated(EnumType.STRING)
@@ -40,7 +40,7 @@ public class AsiakasTuote {
 	public AsiakasTuote() {
 	}
 
-	public AsiakasTuote(Asiakas asiakas, Tuote tuote, BigDecimal myyntihinta, Integer maara) {
+	public AsiakasTuote(Asiakas asiakas, Tuote tuote, BigDecimal myyntihinta, BigDecimal maara) {
 		this.asiakas = asiakas;
 		this.tuote = tuote;
 		this.myyntihinta = myyntihinta;
@@ -52,7 +52,7 @@ public class AsiakasTuote {
 	// Alkuperäinen apumetodi palauttaa verottoman yhteishinnan
 	public BigDecimal getKokonaishinta() {
 		if (this.myyntihinta == null || this.maara == null) return BigDecimal.ZERO;
-		return this.myyntihinta.multiply(new BigDecimal(this.maara)).setScale(2, RoundingMode.HALF_UP);
+		return this.myyntihinta.multiply(this.maara).setScale(2, RoundingMode.HALF_UP);
 	}
 
 	// --- LASKENTAMETODIT ENUM-POHJAiselle ALVILLESelle ---
@@ -112,11 +112,11 @@ public class AsiakasTuote {
 		this.myyntihinta = myyntihinta;
 	}
 
-	public Integer getMaara() {
+	public BigDecimal getMaara() {
 		return maara;
 	}
 
-	public void setMaara(Integer maara) {
+	public void setMaara(BigDecimal maara) {
 		this.maara = maara;
 	}
 

@@ -248,8 +248,6 @@ public class AsiakasController {
 		model.addAttribute("tarjoukset", tarjoukset);
 		model.addAttribute("tarjouksetMaara", tarjoukset != null ? tarjoukset.size() : 0);
 		model.addAttribute("hyvinvointialueet", Hyvinvointialue.values());
-		// viedään alv kannat profiilisivulle
-		model.addAttribute("alvKannat", fi.sotemindit.astori.model.AlvKanta.values());
 		// Viedään myyntiputken tilat profiilisivulle muokkausta varten
 		model.addAttribute("tilat", AsiakkaanTila.values());
 
@@ -264,8 +262,8 @@ public class AsiakasController {
 
 	// 6. TUOTTEEN LISAAMINEN ASIAKKAALLE
 	@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
-	public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId, @RequestParam Integer maara,
-			@RequestParam String alvKanta, // Vastaanotetaan valittu ALV-kanta lomakkeelta
+	public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId,
+			@RequestParam java.math.BigDecimal maara,
 			jakarta.servlet.http.HttpSession session, @RequestParam(required = false) String ostopaivamaara) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
@@ -279,16 +277,6 @@ public class AsiakasController {
 
 		fi.sotemindit.astori.model.AsiakasTuote uusiMyynti = new fi.sotemindit.astori.model.AsiakasTuote(asiakas, tuote,
 				tuote.getHinta(), maara);
-
-		// Muunnetaan merkkijono enumiksi ja asetetaan olion kenttään
-		if (alvKanta != null && !alvKanta.trim().isEmpty()) {
-			try {
-				uusiMyynti.setAlvKanta(fi.sotemindit.astori.model.AlvKanta.valueOf(alvKanta));
-			} catch (IllegalArgumentException e) {
-				uusiMyynti.setAlvKanta(fi.sotemindit.astori.model.AlvKanta.ALV_25_5); // Varmuuskopio-oletus
-																						// virhetilanteessa
-			}
-		}
 
 		if (ostopaivamaara != null && !ostopaivamaara.trim().isEmpty()) {
 			uusiMyynti.setOstopaivamaara(java.time.LocalDate.parse(ostopaivamaara));
@@ -389,7 +377,7 @@ public class AsiakasController {
 
 	@Transactional
 	@PostMapping("/palvelu/muokkaa/{id}")
-	public String muokkaaMyytyaPalvelua(@PathVariable Long id, @RequestParam Integer maara,
+	public String muokkaaMyytyaPalvelua(@PathVariable Long id, @RequestParam java.math.BigDecimal maara,
 			@RequestParam java.math.BigDecimal myyntihinta, @RequestParam String ostopaivamaara,
 			@RequestParam Long asiakasId, jakarta.servlet.http.HttpSession session) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
