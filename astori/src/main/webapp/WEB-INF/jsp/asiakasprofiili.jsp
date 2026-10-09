@@ -1173,15 +1173,15 @@
 										<!-- 🔌 UUSI: ALASVETOVALIKKO HAKULUOKITTELUILLE / KIRJAUSTYYPEILLE -->
 										<div class="mb-3">
 											<label class="form-label fw-bold text-secondary">Kirjaustyyppi /
-												Hakuluokitus</label>
-											<select class="form-select" name="kirjaustyyppiId">
-												<option value="">-- Ei tyyppiä (Normaali muistiinpano) --</option>
+												Hakuluokitus *</label>
+											<select class="form-select" name="kirjaustyyppiId" required>
+												<option value="">-- Valitse tyyppi --</option>
 												<c:forEach items="${kirjaustyypit}" var="kt">
 													<option value="${kt.id}">${kt.nimi}</option>
 												</c:forEach>
 											</select>
-											<div class="form-text small text-muted">Valitse tyyppi, jos haluat käyttää
-												tätä kirjausta myöhemmin hakuehtona asiakashauissa.</div>
+											<div class="form-text small text-muted">Tyyppi on pakollinen.
+												Valitse kirjaustyyppi ennen tallennusta.</div>
 										</div>
 
 										<!-- 💡 VALINTARUUTU TÄRKEILLE MERKINNÖILLE -->
@@ -1256,9 +1256,9 @@
 										<!-- 🔌 UUSI: ALASVETOVALIKKO HAKULUOKITTELUILLE / KIRJAUSTYYPEILLE -->
 										<div class="mb-3">
 											<label class="form-label fw-bold text-secondary">Kirjaustyyppi /
-												Hakuluokitus</label>
-											<select class="form-select" id="lokiKirjaustyyppiId" name="kirjaustyyppiId">
-												<option value="">-- Ei tyyppiä (Normaali muistiinpano) --</option>
+												Hakuluokitus *</label>
+											<select class="form-select" id="lokiKirjaustyyppiId" name="kirjaustyyppiId" required>
+												<option value="">-- Valitse tyyppi --</option>
 												<c:forEach items="${kirjaustyypit}" var="kt">
 													<option value="${kt.id}">${kt.nimi}</option>
 												</c:forEach>

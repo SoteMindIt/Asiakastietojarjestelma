@@ -187,10 +187,34 @@ body {
 	<div class="container py-2">
 		<div class="d-flex justify-content-between align-items-center mb-4">
 			<h2 class="text-dark fw-bold mb-0">Kalenteri</h2>
-			<button type="button" class="btn btn-primary fw-bold shadow-sm"
-				data-bs-toggle="modal" data-bs-target="#lisaaTapahtumaModal">
-				+ Uusi kalenterivaraus</button>
+			<div class="d-flex flex-wrap gap-2">
+				<form method="post" action="${pageContext.request.contextPath}/asetukset/google-kalenteri/sync">
+					<button type="submit" class="btn btn-outline-primary fw-bold">Synkronoi Google-kalenteri</button>
+				</form>
+				<button type="button" class="btn btn-primary fw-bold shadow-sm"
+					data-bs-toggle="modal" data-bs-target="#lisaaTapahtumaModal">
+					+ Uusi kalenterivaraus</button>
 		</div>
+		</div>
+
+		<c:if test="${param.success == 'google_calendar_synced'}">
+			<div class="alert alert-success alert-dismissible fade show fw-bold" role="alert">
+				Google-kalenteri synkronoitu. Tuotu ${param.count} uutta tapahtumaa.
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+		</c:if>
+		<c:if test="${param.error == 'google_calendar_missing_credentials'}">
+			<div class="alert alert-warning alert-dismissible fade show fw-bold" role="alert">
+				Google-kalenterin synkronointi vaatii access tokenin tai API-avaimen.
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+		</c:if>
+		<c:if test="${param.error == 'google_calendar_token_expired'}">
+			<div class="alert alert-warning alert-dismissible fade show fw-bold" role="alert">
+				Google-kalenterin access token on vanhentunut tai virheellinen. Aseta uusi token ympäristömuuttujaan GOOGLE_CALENDAR_ACCESS_TOKEN ja käynnistä sovellus uudelleen.
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+		</c:if>
 
 		<!-- KALENTERIN RUUDUKKO -->
 		<div class="calendar-card border mb-5">

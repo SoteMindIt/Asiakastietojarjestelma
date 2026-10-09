@@ -166,16 +166,14 @@
 								<div class="col-md-3 col-sm-6 text-start">
 									<label for="alkuPvm_k"
 										class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
-									<input type="text" id="alkuPvm_k" name="alkuPvm" data-finnish-date
-										placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
+										<input type="date" id="alkuPvm_k" name="alkuPvm"
 										class="form-control form-control-sm" value="${alkuPvm}">
 								</div>
 
 								<div class="col-md-3 col-sm-6 text-start">
 									<label for="loppuPvm_k"
 										class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
-									<input type="text" id="loppuPvm_k" name="loppuPvm" data-finnish-date
-										placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
+										<input type="date" id="loppuPvm_k" name="loppuPvm"
 										class="form-control form-control-sm" value="${loppuPvm}">
 								</div>
 
@@ -280,16 +278,14 @@
 										<div class="col-md-4 col-sm-6 text-start">
 											<label for="alkuPvm_l"
 												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
-											<input type="text" id="alkuPvm_l" name="alkuPvm" data-finnish-date
-												placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
+											<input type="date" id="alkuPvm_l" name="alkuPvm"
 												class="form-control form-control-sm" value="${alkuPvm}">
 										</div>
 
 										<div class="col-md-4 col-sm-6 text-start">
 											<label for="loppuPvm_l"
 												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
-											<input type="text" id="loppuPvm_l" name="loppuPvm" data-finnish-date
-												placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
+											<input type="date" id="loppuPvm_l" name="loppuPvm"
 												class="form-control form-control-sm" value="${loppuPvm}">
 										</div>
 
@@ -398,16 +394,14 @@
 										<div class="col-md-4 col-sm-6 text-start">
 											<label for="alkuPvm_m"
 												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
-											<input type="text" id="alkuPvm_m" name="alkuPvm" data-finnish-date
-												placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
+											<input type="date" id="alkuPvm_m" name="alkuPvm"
 												class="form-control form-control-sm" value="${alkuPvm}">
 										</div>
 
 										<div class="col-md-4 col-sm-6 text-start">
 											<label for="loppuPvm_m"
 												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
-											<input type="text" id="loppuPvm_m" name="loppuPvm" data-finnish-date
-												placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off"
+											<input type="date" id="loppuPvm_m" name="loppuPvm"
 												class="form-control form-control-sm" value="${loppuPvm}">
 										</div>
 

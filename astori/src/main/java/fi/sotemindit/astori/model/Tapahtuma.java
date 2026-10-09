@@ -10,9 +10,10 @@ public class Tapahtuma {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	
-	@Column(nullable = false)
+	@Column(columnDefinition = "TEXT", nullable = false)
 	private String otsikko;
 	
+	@Column(columnDefinition = "TEXT")
 	private String kuvaus;
 	
 	private LocalDateTime loppuaika;

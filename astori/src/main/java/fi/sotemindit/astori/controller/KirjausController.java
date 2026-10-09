@@ -38,26 +38,35 @@ public class KirjausController {
 	public String lisaaKirjaus(@PathVariable Long asiakasId, @RequestParam String teksti,
 			@RequestParam(value = "tarkea", defaultValue = "false") boolean tarkea,
 			@RequestParam(value = "linkitettavaId", required = false) Long linkitettavaId,
-			@RequestParam(value = "kirjaustyyppiId", required = false) Long kirjaustyyppiId, HttpSession session) { // 🔌 UUSI PARAMETRI
+			@RequestParam(value = "kirjaustyyppiId", required = false) Long kirjaustyyppiId,
+			HttpSession session, org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
 		}
 
+		if (kirjaustyyppiId == null || kirjaustyyppiId <= 0) {
+			redirectAttributes.addFlashAttribute("virhe", "Kirjaustyyppi on pakollinen.");
+			return "redirect:/asiakas/" + asiakasId;
+		}
+
 		Asiakas asiakas = asiakasRepository.findById(asiakasId)
 				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + asiakasId));
+
+		Kirjaustyyppi kirjaustyyppi = kirjaustyyppiRepository.findById(kirjaustyyppiId)
+				.orElse(null);
+		if (kirjaustyyppi == null) {
+			redirectAttributes.addFlashAttribute("virhe", "Valittua kirjaustyyppiä ei löytynyt.");
+			return "redirect:/asiakas/" + asiakasId;
+		}
 
 		Kirjaus uusiKirjaus = new Kirjaus();
 		uusiKirjaus.setAsiakas(asiakas);
 		uusiKirjaus.setTeksti(teksti);
 		uusiKirjaus.setTarkea(tarkea);
+		uusiKirjaus.setKirjaustyyppi(kirjaustyyppi);
 		uusiKirjaus.setLuontiaika(LocalDateTime.now());
-
-		// 🔌 UUSI: Kytketään valittu dynaaminen kirjaustyyppi / hakuluokitus jos se valittiin
-		if (kirjaustyyppiId != null) {
-			kirjaustyyppiRepository.findById(kirjaustyyppiId).ifPresent(uusiKirjaus::setKirjaustyyppi);
-		}
 
 		// Tallennetaan ensin, jotta saadaan ID
 		uusiKirjaus = kirjausRepository.save(uusiKirjaus);
@@ -92,11 +101,17 @@ public class KirjausController {
 	@PostMapping("/kirjaus/muokkaa/{id}")
 	public String muokkaaKirjausta(@PathVariable Long id, @RequestParam String teksti, @RequestParam Long asiakasId,
 			@RequestParam(value = "linkitettavaId", required = false) Long linkitettavaId,
-			@RequestParam(value = "kirjaustyyppiId", required = false) Long kirjaustyyppiId, HttpSession session) { // 🔌 UUSI PARAMETRI
+			@RequestParam(value = "kirjaustyyppiId", required = false) Long kirjaustyyppiId,
+			HttpSession session, org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
+		}
+
+		if (kirjaustyyppiId == null || kirjaustyyppiId <= 0) {
+			redirectAttributes.addFlashAttribute("virhe", "Kirjaustyyppi on pakollinen.");
+			return "redirect:/asiakas/" + asiakasId;
 		}
 
 		Kirjaus kirjaus = kirjausRepository.findById(id)
@@ -104,13 +119,12 @@ public class KirjausController {
 
 		kirjaus.setTeksti(teksti);
 
-		// 🔌 UUSI: Päivitetään dynaaminen kirjaustyyppi / hakuluokitus muokkauksen yhteydessä
-		if (kirjaustyyppiId != null) {
-			Kirjaustyyppi tyyppi = kirjaustyyppiRepository.findById(kirjaustyyppiId).orElse(null);
-			kirjaus.setKirjaustyyppi(tyyppi);
-		} else {
-			kirjaus.setKirjaustyyppi(null); // Nollataan jos tyyppi poistettiin valinnasta
+		Kirjaustyyppi tyyppi = kirjaustyyppiRepository.findById(kirjaustyyppiId).orElse(null);
+		if (tyyppi == null) {
+			redirectAttributes.addFlashAttribute("virhe", "Valittua kirjaustyyppiä ei löytynyt.");
+			return "redirect:/asiakas/" + asiakasId;
 		}
+		kirjaus.setKirjaustyyppi(tyyppi);
 
 		// Jos valittiin uusi kohde, lisätään se muiden jatkoksi (haitari säilyy)
 		if (linkitettavaId != null) {

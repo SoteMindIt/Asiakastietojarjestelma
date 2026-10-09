@@ -9,15 +9,19 @@ import fi.sotemindit.astori.repository.KayttajaRepository;
 import fi.sotemindit.astori.repository.KirjaustyyppiRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.model.TapahtumaTyyppi;
+import fi.sotemindit.astori.repository.TapahtumaRepository;
 import fi.sotemindit.astori.repository.TapahtumaTyyppiRepository;
+import fi.sotemindit.astori.service.GoogleCalendarSyncService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 
 @Controller
 public class AsetuksetController {
@@ -39,6 +43,24 @@ public class AsetuksetController {
 	
 	@Autowired
 	private KirjaustyyppiRepository kirjaustyyppiRepository;
+
+	@Autowired
+	private TapahtumaRepository tapahtumaRepository;
+
+	@Autowired
+	private GoogleCalendarSyncService googleCalendarSyncService;
+
+	@Value("${google.calendar.calendar-id:primary}")
+	private String googleCalendarId;
+
+	@Value("${google.calendar.api-key:}")
+	private String googleCalendarApiKey;
+
+	@Value("${google.calendar.access-token:}")
+	private String googleCalendarAccessToken;
+
+	@Value("${google.calendar.default-tyyppi-nimi:Google}")
+	private String googleCalendarDefaultTyyppiNimi;
 
 	// 1. REITTI: Näyttää järjestelmän asetussivun ja lataa kaikki tarvittavat tiedot
 	@GetMapping("/asetukset")
@@ -219,7 +241,48 @@ public class AsetuksetController {
 		}
 	}
 
-	// 6. REITTI: Kalenterin dynaamisten tapahtumatyyppien luonti
+	// 6. REITTI: Synkronoi Googlen kalenteritapahtumat omaan järjestelmän kalenteriin (one-way sync)
+	@PostMapping("/asetukset/google-kalenteri/sync")
+	public String synkronoiGoogleKalenteri(HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		boolean credentialsMissing = (googleCalendarAccessToken == null || googleCalendarAccessToken.isBlank())
+				&& (googleCalendarApiKey == null || googleCalendarApiKey.isBlank());
+		if (credentialsMissing) {
+			return "redirect:/kalenteri?error=google_calendar_missing_credentials";
+		}
+
+		Kayttaja kayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
+
+		TapahtumaTyyppi googleTyyppi = tapahtumaTyyppiRepository.findByNimiIgnoreCase(googleCalendarDefaultTyyppiNimi)
+				.orElseGet(() -> {
+					TapahtumaTyyppi uusi = new TapahtumaTyyppi();
+					uusi.setNimi(googleCalendarDefaultTyyppiNimi);
+					uusi.setVari("#4285F4");
+					return tapahtumaTyyppiRepository.save(uusi);
+				});
+
+		int imported;
+		try {
+			imported = googleCalendarSyncService.syncGoogleCalendarToApp(
+					googleCalendarId,
+					googleCalendarApiKey,
+					googleCalendarAccessToken,
+					kayttaja,
+					googleTyyppi,
+					tapahtumaRepository);
+		} catch (HttpClientErrorException.Unauthorized e) {
+			return "redirect:/kalenteri?error=google_calendar_token_expired";
+		}
+
+		return "redirect:/kalenteri?success=google_calendar_synced&count=" + imported;
+	}
+
+	// 7. REITTI: Kalenterin dynaamisten tapahtumatyyppien luonti
 	@PostMapping("/asetukset/lisaa-tyyppi")
 	public String lisaaTapahtumaTyyppi(@RequestParam("nimi") String nimi, @RequestParam("vari") String vari) {
 
@@ -231,7 +294,7 @@ public class AsetuksetController {
 		return "redirect:/asetukset";
 	}
 
-	// 7. REITTI: Kalenterin dynaamisten tapahtumatyyppien muokkaus
+	// 8. REITTI: Kalenterin dynaamisten tapahtumatyyppien muokkaus
 	@PostMapping("/asetukset/muokkaa-typpia/{id}")
 	public String muokkaaTapahtumaTyyppi(@PathVariable Long id, @RequestParam("nimi") String uusiNimi,
 			@RequestParam("vari") String vari) {

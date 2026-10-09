@@ -54,7 +54,9 @@ body {
 	</nav>
 
 	<div class="container py-2">
-		<h2 class="text-dark fw-bold mb-4">Järjestelmän asetukset</h2>
+		<div class="d-flex justify-content-between align-items-center mb-4">
+			<h2 class="text-dark fw-bold mb-0">Järjestelmän asetukset</h2>
+		</div>
 
 		<!-- ILMOITUKSET -->
 		<c:if test="${param.virhe == 'tunnus_varattu'}">

@@ -22,7 +22,7 @@ public class Kirjaus {
 	// Yhdistetään kirjaus dynaamiseen kirjaustyyppiin
 	// (Hakuluokitukseen)
 	@ManyToOne(fetch = jakarta.persistence.FetchType.EAGER)
-	@JoinColumn(name = "kirjaustyyppi_id", nullable = true) // true varmistaa, etteivät vanhat kirjaukset hajoa
+	@JoinColumn(name = "kirjaustyyppi_id", nullable = true)
 	private Kirjaustyyppi kirjaustyyppi;
 
 	@Id

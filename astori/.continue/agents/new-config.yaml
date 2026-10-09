@@ -1,0 +1,23 @@
+name: Local AI Config
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Llama 3.1 8B (Agent)
+    provider: ollama
+    model: llama3.1:8b
+    roles:
+      - chat
+      - edit
+      - apply
+    capabilities:
+      - tool_use
+
+  - name: Qwen2.5-Coder
+    provider: ollama
+    model: qwen2.5-coder
+    roles:
+      - chat
+      - edit
+      - apply
+      - autocomplete
