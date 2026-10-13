@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import fi.sotemindit.astori.model.Asiakas;
+import fi.sotemindit.astori.model.AsiakkaanTila;
 import fi.sotemindit.astori.model.Hyvinvointialue;
 import java.util.List;
 
@@ -76,4 +77,23 @@ public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 		       "LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')))")
 	Page<Asiakas> findByKayttajaKayttajatunnusAndHyvinvointialueAndKirjaustyyppiAndHaku(
 			@Param("tunnus") String tunnus, @Param("hyvinvointialue") Hyvinvointialue hyvinvointialue, @Param("tyyppiId") Long tyyppiId, @Param("haku") String haku, Pageable pageable);
+
+	@Query("SELECT DISTINCT a FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus " +
+			"AND (:tila IS NULL OR a.tila = :tila) " +
+			"AND (:hyvinvointialue IS NULL OR a.hyvinvointialue = :hyvinvointialue) " +
+			"AND (:tyyppiId IS NULL OR EXISTS (SELECT k.id FROM Kirjaus k WHERE k.asiakas = a AND k.kirjaustyyppi.id = :tyyppiId)) " +
+			"AND (:haku IS NULL OR " +
+			"LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+			"LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+			"LOWER(a.puhelin) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+			"LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
+			"(:haeHyvinvointialueenNimella = true AND LOWER(a.hyvinvointialue) LIKE LOWER(CONCAT('%', :haku, '%'))))")
+	Page<Asiakas> haeSuodattimilla(
+			@Param("tunnus") String tunnus,
+			@Param("tila") AsiakkaanTila tila,
+			@Param("hyvinvointialue") Hyvinvointialue hyvinvointialue,
+			@Param("tyyppiId") Long tyyppiId,
+			@Param("haku") String haku,
+			@Param("haeHyvinvointialueenNimella") boolean haeHyvinvointialueenNimella,
+			Pageable pageable);
 }

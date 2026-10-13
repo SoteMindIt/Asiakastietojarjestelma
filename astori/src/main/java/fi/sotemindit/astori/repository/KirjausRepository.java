@@ -36,7 +36,7 @@ public interface KirjausRepository extends JpaRepository<Kirjaus, Long> {
     @Query("SELECT k FROM Kirjaus k WHERE k.asiakas.kayttaja.kayttajatunnus = :tunnus " +
            "AND k.tarkea = true " +
            "AND k.luontiaika >= :alkuAika AND k.luontiaika <= :loppuAika " +
-           "ORDER BY k.luontiaika DESC")
+           "ORDER BY k.luontiaika DESC, k.id DESC")
     List<Kirjaus> findTarkeatKirjauksetAjanjaksolta(
             @Param("tunnus") String tunnus, 
             @Param("alkuAika") LocalDateTime alkuAika, 

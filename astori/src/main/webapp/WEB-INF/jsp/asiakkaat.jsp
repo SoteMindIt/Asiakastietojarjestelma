@@ -60,14 +60,14 @@
 					<div class="row g-2 align-items-center bg-light p-3 rounded shadow-sm border">
 
 						<!-- 1. Vapaasanahaku (Leveys 4/12) -->
-						<div class="col-md-4">
+						<div class="col-md-3">
 							<label class="form-label small fw-bold text-secondary mb-1">Tekstihaku</label>
 							<input type="text" name="haku" class="form-control form-control-lg" id="reaaliaikainenHaku"
 								value="${haku}" placeholder="Nimi, sähköposti tai Y-tunnus...">
 						</div>
 
 						<!-- 2. Aluerajoitus (Leveys 3/12) -->
-						<div class="col-md-3">
+						<div class="col-md-2">
 							<label class="form-label small fw-bold text-secondary mb-1">Hyvinvointialue</label>
 							<select name="alue" class="form-select form-select-lg">
 								<option value="">-- Kaikki alueet --</option>
@@ -80,7 +80,7 @@
 						</div>
 
 						<!-- 🔌 3. UUSI: Kirjaustyyppisuodatus (Leveys 3/12) -->
-						<div class="col-md-3">
+						<div class="col-md-2">
 							<label class="form-label small fw-bold text-secondary mb-1">Kirjaustyyppi / Luokitus</label>
 							<select name="tyyppi" class="form-select form-select-lg">
 								<option value="">-- Kaikki kirjaukset --</option>
@@ -92,14 +92,26 @@
 							</select>
 						</div>
 
-						<!-- 4. Toimintapainikkeet yhteisesti kaikille (Leveys 2/12) -->
 						<div class="col-md-2">
+							<label class="form-label small fw-bold text-secondary mb-1">Asiakkuuden tila</label>
+							<select name="tila" class="form-select form-select-lg">
+								<option value="">-- Kaikki tilat --</option>
+								<c:forEach items="${tilat}" var="tilaEnum">
+									<option value="${tilaEnum.name()}" ${tilaEnum.name()==valittuTila ? 'selected' : ''}>
+										${tilaEnum.nayttorivi}
+									</option>
+								</c:forEach>
+							</select>
+						</div>
+
+						<!-- Toimintapainikkeet yhteisesti kaikille -->
+						<div class="col-md-3">
 							<label class="form-label small fw-bold text-transparent mb-1 d-none d-md-block"
 								style="color: transparent;">Toiminnot</label>
 							<div class="d-flex gap-2">
 								<button type="submit" class="btn btn-lg btn-primary fw-bold w-100">
 									🔍 Hae</button>
-								<c:if test="${not empty haku or not empty valittuAlue or not empty valittuTyyppi}">
+								<c:if test="${not empty haku or not empty valittuAlue or not empty valittuTyyppi or not empty valittuTila}">
 									<a href="${pageContext.request.contextPath}/asiakkaat"
 										class="btn btn-lg btn-outline-secondary d-flex align-items-center justify-content-center px-3 fw-bold"
 										title="Tyhjennä haku" style="white-space: nowrap;"> ✖
@@ -189,16 +201,16 @@
 								class="d-flex justify-content-center mt-4">
 								<ul class="pagination shadow-sm">
 									<li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
-										<a class="page-link" href="?page=${currentPage - 1}&haku=${haku}">&laquo;
+										<a class="page-link" href="?page=${currentPage - 1}&haku=${haku}&alue=${valittuAlue}&tyyppi=${valittuTyyppi}&tila=${valittuTila}">&laquo;
 											Edellinen</a>
 									</li>
 									<c:forEach var="i" begin="0" end="${totalPages - 1}">
 										<li class="page-item ${currentPage == i ? 'active' : ''}">
-											<a class="page-link" href="?page=${i}&haku=${haku}">${i + 1}</a>
+											<a class="page-link" href="?page=${i}&haku=${haku}&alue=${valittuAlue}&tyyppi=${valittuTyyppi}&tila=${valittuTila}">${i + 1}</a>
 										</li>
 									</c:forEach>
 									<li class="page-item ${currentPage >= totalPages - 1 ? 'disabled' : ''}">
-										<a class="page-link" href="?page=${currentPage + 1}&haku=${haku}">Seuraava
+										<a class="page-link" href="?page=${currentPage + 1}&haku=${haku}&alue=${valittuAlue}&tyyppi=${valittuTyyppi}&tila=${valittuTila}">Seuraava
 											&raquo;</a>
 									</li>
 								</ul>
@@ -328,6 +340,16 @@
 					if (hakukentta && taulukkoRunko) {
 						hakukentta.addEventListener('input', function (e) {
 							var hakusana = e.target.value.trim()
+							var valittujaSuodattimia = document.querySelectorAll(
+								'select[name="alue"], select[name="tyyppi"], select[name="tila"]'
+							)
+							var suodatinKaytossa = Array.prototype.some.call(valittujaSuodattimia, function (suodatin) {
+								return suodatin.value !== ''
+							})
+
+							if (suodatinKaytossa) {
+								return
+							}
 
 							// Jos hakukenttä tyhjennetään, palautetaan alkuperäinen sivutettu lista
 							if (hakusana.length === 0) {

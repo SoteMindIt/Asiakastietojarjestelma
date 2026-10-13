@@ -73,7 +73,8 @@ public class AsiakasController {
 		public String listaaAsiakkaat(jakarta.servlet.http.HttpSession session, @RequestParam(defaultValue = "0") int page,
 				@RequestParam(value = "haku", required = false) String haku,
 				@RequestParam(value = "alue", required = false) String alue,
-				@RequestParam(value = "tyyppi", required = false) Long tyyppiId, // 🔌 UUSI: Vastaanotetaan valittu kirjaustyyppi ID
+				@RequestParam(value = "tyyppi", required = false) Long tyyppiId,
+				@RequestParam(value = "tila", required = false) String tila,
 				Model model) {
 
 			String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -89,46 +90,26 @@ public class AsiakasController {
 			// Siistitään hakumuuttujat
 			String hakusana = (haku != null && !haku.trim().isEmpty()) ? haku.trim() : null;
 
-			// Muunnetaan merkkijonona tullut alue viralliseksi Enum-muuttujaksi (jos valittu)
-			fi.sotemindit.astori.model.Hyvinvointialue valittuAlue = null;
+			Hyvinvointialue valittuAlue = null;
 			if (alue != null && !alue.trim().isEmpty()) {
 				try {
-					valittuAlue = fi.sotemindit.astori.model.Hyvinvointialue.valueOf(alue.trim());
+					valittuAlue = Hyvinvointialue.valueOf(alue.trim());
 				} catch (IllegalArgumentException e) {
-					// Jos arvo on virheellinen, jätetään se huomiotta
+					valittuAlue = null;
 				}
 			}
 
-			// 🔍 PÄÄTETÄÄN OIKEA HAKUVARIAATIO (Nyt 8 eri vaihtoehtoa dynaamisen kirjaustyypin vuoksi)
-			if (hakusana != null && valittuAlue != null && tyyppiId != null) {
-				// Vaihtoehto 8: Kaikki kolme rajausta käytössä
-				asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHyvinvointialueAndKirjaustyyppiAndHaku(
-						istuntoTunnus, valittuAlue, tyyppiId, hakusana, pageable);
-			} else if (hakusana != null && valittuAlue != null) {
-				// Vaihtoehto 4: Tekstihaku + Aluerajoitus
-				asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHyvinvointialueAndHaku(
-						istuntoTunnus, valittuAlue, hakusana, pageable);
-			} else if (hakusana != null && tyyppiId != null) {
-				// Vaihtoehto 6: Tekstihaku + Kirjaustyyppirajoitus
-				asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndKirjaustyyppiAndHaku(
-						istuntoTunnus, tyyppiId, hakusana, pageable);
-			} else if (valittuAlue != null && tyyppiId != null) {
-				// Vaihtoehto 7: Aluerajoitus + Kirjaustyyppirajoitus
-				asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHyvinvointialueAndKirjaustyyppi(
-						istuntoTunnus, valittuAlue, tyyppiId, pageable);
-			} else if (hakusana != null) {
-				// Vaihtoehto 2: Vain tekstihaku
-				asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHaku(istuntoTunnus, hakusana, pageable);
-			} else if (valittuAlue != null) {
-				// Vaihtoehto 3: Vain aluerajoitus
-				asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndHyvinvointialue(istuntoTunnus, valittuAlue, pageable);
-			} else if (tyyppiId != null) {
-				// Vaihtoehto 5: Vain kirjaustyyppirajoitus
-				asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnusAndKirjaustyyppi(istuntoTunnus, tyyppiId, pageable);
-			} else {
-				// Vaihtoehto 1: Ei mitään rajauksia, haetaan kaikki oman työntekijän asiakkaat
-				asiakasSivu = asiakasRepository.findByKayttajaKayttajatunnus(istuntoTunnus, pageable);
+			AsiakkaanTila valittuTila = null;
+			if (tila != null && !tila.trim().isEmpty()) {
+				try {
+					valittuTila = AsiakkaanTila.valueOf(tila.trim());
+				} catch (IllegalArgumentException e) {
+					valittuTila = null;
+				}
 			}
+
+			asiakasSivu = asiakasRepository.haeSuodattimilla(istuntoTunnus, valittuTila, valittuAlue, tyyppiId,
+					hakusana, valittuAlue == null && tyyppiId == null, pageable);
 
 			// Viedään tiedot asiakkaat.jsp-sivulle
 			model.addAttribute("asiakkaat", asiakasSivu.getContent());
@@ -136,7 +117,8 @@ public class AsiakasController {
 			model.addAttribute("totalPages", asiakasSivu.getTotalPages());
 			model.addAttribute("tilat", AsiakkaanTila.values());
 			model.addAttribute("haku", hakusana != null ? hakusana : "");
-			model.addAttribute("valittuAlue", alue != null ? alue.trim() : "");
+			model.addAttribute("valittuAlue", valittuAlue != null ? valittuAlue.name() : "");
+			model.addAttribute("valittuTila", valittuTila != null ? valittuTila.name() : "");
 			
 			// 🔌 UUSI: Viedään valittu kirjaustyyppi ID takaisin sivulle, jotta se pysyy valittuna suodatuspalkissa
 			model.addAttribute("valittuTyyppi", tyyppiId != null ? tyyppiId : "");
