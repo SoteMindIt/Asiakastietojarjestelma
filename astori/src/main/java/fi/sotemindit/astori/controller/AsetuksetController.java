@@ -136,7 +136,8 @@ public class AsetuksetController {
 
 	// 3. REITTI: Muokkaa olemassa olevan käyttäjän tietoja ja roolia (Vain Admin)
 	@PostMapping("/asetukset/muokkaa-kayttajaa/{id}")
-	public String muokkaaKayttajaa(HttpSession session, @PathVariable Long id, @RequestParam String etunimi,
+	public String muokkaaKayttajaa(HttpSession session, @PathVariable Long id, @RequestParam String tunnus,
+			@RequestParam(required = false) String salasana, @RequestParam String etunimi,
 			@RequestParam String sukunimi, @RequestParam String sahkoposti, @RequestParam String puhelin,
 			@RequestParam String rooli) {
 
@@ -156,7 +157,23 @@ public class AsetuksetController {
 		Kayttaja muokattava = kayttajaRepository.findById(id).orElseThrow(
 				() -> new IllegalArgumentException("Muokattavaa käyttäjää ei löytynyt ID-numerolla: " + id));
 
+		String uusiTunnus = tunnus.trim();
+		if (uusiTunnus.isEmpty()) {
+			return "redirect:/asetukset?virhe=tunnus_tyhja";
+		}
+		if (kayttajaRepository.findByKayttajatunnus(uusiTunnus)
+				.filter(olemassaOleva -> !olemassaOleva.getId().equals(muokattava.getId()))
+				.isPresent()) {
+			return "redirect:/asetukset?virhe=tunnus_varattu";
+		}
+
+		boolean muokkaaOmaaKayttajaa = tekija.getId().equals(muokattava.getId());
+
 		// Päivitetään muuttuneet perustiedot ja rooli
+		muokattava.setKayttajatunnus(uusiTunnus);
+		if (salasana != null && !salasana.isEmpty()) {
+			muokattava.setSalasana(passwordEncoder.encode(salasana));
+		}
 		muokattava.setEtunimi(etunimi);
 		muokattava.setSukunimi(sukunimi);
 		muokattava.setSahkoposti(sahkoposti);
@@ -164,6 +181,9 @@ public class AsetuksetController {
 		muokattava.setRooli(rooli);
 
 		kayttajaRepository.save(muokattava);
+		if (muokkaaOmaaKayttajaa) {
+			session.setAttribute("kirjautunutKayttaja", uusiTunnus);
+		}
 		return "redirect:/asetukset?success=user_updated";
 	}
 

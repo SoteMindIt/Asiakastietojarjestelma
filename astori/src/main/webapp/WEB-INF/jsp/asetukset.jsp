@@ -67,6 +67,14 @@ body {
 					aria-label="Close"></button>
 			</div>
 		</c:if>
+		<c:if test="${param.virhe == 'tunnus_tyhja'}">
+			<div class="alert alert-danger alert-dismissible fade show fw-bold"
+				role="alert">
+				Virhe: Käyttäjätunnus ei voi olla tyhjä.
+				<button type="button" class="btn-close" data-bs-dismiss="alert"
+					aria-label="Close"></button>
+			</div>
+		</c:if>
 		<c:if test="${param.success == 'company_updated'}">
 			<div class="alert alert-success alert-dismissible fade show fw-bold"
 				role="alert">
@@ -86,7 +94,7 @@ body {
 		<c:if test="${param.success == 'user_updated'}">
 			<div class="alert alert-success alert-dismissible fade show fw-bold"
 				role="alert">
-				✓ Käyttäjän tiedot ja käyttöoikeustaso päivitetty!
+				✓ Käyttäjän tiedot päivitetty onnistuneesti!
 				<button type="button" class="btn-close" data-bs-dismiss="alert"
 					aria-label="Close"></button>
 			</div>
@@ -191,6 +199,69 @@ body {
 				</div>
 			</div>
 			<!-- /Käyttäjähallinta päättyy -->
+
+			<c:forEach var="k" items="${kayttajat}">
+				<div class="modal fade" id="muokkaaKayttajaModal${k.id}" tabindex="-1" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered">
+						<div class="modal-content border-0 shadow-lg">
+							<div class="modal-header bg-primary text-white">
+								<h5 class="modal-title fw-bold">Muokkaa käyttäjän tietoja</h5>
+								<button type="button" class="btn-close btn-close-white"
+									data-bs-dismiss="modal" aria-label="Sulje"></button>
+							</div>
+							<form action="${pageContext.request.contextPath}/asetukset/muokkaa-kayttajaa/${k.id}"
+								method="post">
+								<div class="modal-body p-4">
+									<div class="mb-3">
+										<label class="form-label fw-semibold text-secondary small">Käyttäjätunnus</label>
+										<input type="text" class="form-control" name="tunnus"
+											value="${fn:escapeXml(k.kayttajatunnus)}" required>
+									</div>
+									<div class="mb-3">
+										<label class="form-label fw-semibold text-secondary small">Uusi salasana</label>
+										<input type="password" class="form-control" name="salasana"
+											autocomplete="new-password">
+										<div class="form-text">Jätä tyhjäksi, jos salasanaa ei vaihdeta.</div>
+									</div>
+									<div class="row">
+										<div class="col-md-6 mb-3">
+											<label class="form-label fw-semibold text-secondary small">Etunimi</label>
+											<input type="text" class="form-control" name="etunimi"
+												value="${fn:escapeXml(k.etunimi)}" required>
+										</div>
+										<div class="col-md-6 mb-3">
+											<label class="form-label fw-semibold text-secondary small">Sukunimi</label>
+											<input type="text" class="form-control" name="sukunimi"
+												value="${fn:escapeXml(k.sukunimi)}" required>
+										</div>
+									</div>
+									<div class="mb-3">
+										<label class="form-label fw-semibold text-secondary small">Sähköposti</label>
+										<input type="email" class="form-control" name="sahkoposti"
+											value="${fn:escapeXml(k.sahkoposti)}" required>
+									</div>
+									<div class="mb-3">
+										<label class="form-label fw-semibold text-secondary small">Puhelin</label>
+										<input type="text" class="form-control" name="puhelin"
+											value="${fn:escapeXml(k.puhelin)}" required>
+									</div>
+									<div class="mb-3">
+										<label class="form-label fw-semibold text-secondary small">Käyttöoikeustaso</label>
+										<select class="form-select" name="rooli" required>
+											<option value="USER" ${k.rooli == 'USER' ? 'selected' : ''}>Työntekijä (USER)</option>
+											<option value="ADMIN" ${k.rooli == 'ADMIN' ? 'selected' : ''}>Pääkäyttäjä (ADMIN)</option>
+										</select>
+									</div>
+								</div>
+								<div class="modal-footer bg-light">
+									<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Peruuta</button>
+									<button type="submit" class="btn btn-primary px-4 fw-bold">Tallenna muutokset</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</c:forEach>
 
 			<!-- 📦 2. LAATIKKO: TUOTEREKISTERI JA PALVELUT (Haitari korjattu painikkeineen) -->
 			<div class="col-md-12">

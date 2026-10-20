@@ -203,11 +203,6 @@
 							</div>
 
 							<div class="d-flex justify-content-between align-items-start mt-3">
-								<button type="button" class="btn btn-outline-primary fw-bold" onclick="lisaaRivi()">+
-									Lisää uusi rivi</button>
-
-
-
 								<!-- TÄSTÄ ALKAA UUSI SIVUTETTU JA KORJATTU PÄIVITYS -->
 								<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mt-3">
 									<button type="button" class="btn btn-outline-primary fw-bold rounded-pill px-4"

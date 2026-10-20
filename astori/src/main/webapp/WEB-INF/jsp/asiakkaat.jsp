@@ -55,19 +55,19 @@
 				</div>
 
 
-				<!-- 🔍 ASIAKKASHAKU (Laajennettu CRM-luokittelulla) -->
+				<!-- Asiakashaku -->
 				<form action="${pageContext.request.contextPath}/asiakkaat" method="get" class="mb-4">
 					<div class="row g-2 align-items-center bg-light p-3 rounded shadow-sm border">
 
-						<!-- 1. Vapaasanahaku (Leveys 4/12) -->
+						<!-- 1. Vapaasanahaku -->
 						<div class="col-md-3">
 							<label class="form-label small fw-bold text-secondary mb-1">Tekstihaku</label>
 							<input type="text" name="haku" class="form-control form-control-lg" id="reaaliaikainenHaku"
 								value="${haku}" placeholder="Nimi, sähköposti tai Y-tunnus...">
 						</div>
 
-						<!-- 2. Aluerajoitus (Leveys 3/12) -->
-						<div class="col-md-2">
+						<!-- 2. Aluerajoitus -->
+						<div class="col-md-3">
 							<label class="form-label small fw-bold text-secondary mb-1">Hyvinvointialue</label>
 							<select name="alue" class="form-select form-select-lg">
 								<option value="">-- Kaikki alueet --</option>
@@ -79,20 +79,7 @@
 							</select>
 						</div>
 
-						<!-- 🔌 3. UUSI: Kirjaustyyppisuodatus (Leveys 3/12) -->
-						<div class="col-md-2">
-							<label class="form-label small fw-bold text-secondary mb-1">Kirjaustyyppi / Luokitus</label>
-							<select name="tyyppi" class="form-select form-select-lg">
-								<option value="">-- Kaikki kirjaukset --</option>
-								<c:forEach items="${kirjaustyypit}" var="kt">
-									<option value="${kt.id}" ${kt.id==valittuTyyppi ? 'selected' : '' }>
-										${kt.nimi}
-									</option>
-								</c:forEach>
-							</select>
-						</div>
-
-						<div class="col-md-2">
+						<div class="col-md-3">
 							<label class="form-label small fw-bold text-secondary mb-1">Asiakkuuden tila</label>
 							<select name="tila" class="form-select form-select-lg">
 								<option value="">-- Kaikki tilat --</option>
@@ -111,7 +98,7 @@
 							<div class="d-flex gap-2">
 								<button type="submit" class="btn btn-lg btn-primary fw-bold w-100">
 									🔍 Hae</button>
-								<c:if test="${not empty haku or not empty valittuAlue or not empty valittuTyyppi or not empty valittuTila}">
+								<c:if test="${not empty haku or not empty valittuAlue or not empty valittuTila}">
 									<a href="${pageContext.request.contextPath}/asiakkaat"
 										class="btn btn-lg btn-outline-secondary d-flex align-items-center justify-content-center px-3 fw-bold"
 										title="Tyhjennä haku" style="white-space: nowrap;"> ✖
@@ -201,16 +188,16 @@
 								class="d-flex justify-content-center mt-4">
 								<ul class="pagination shadow-sm">
 									<li class="page-item ${currentPage == 0 ? 'disabled' : ''}">
-										<a class="page-link" href="?page=${currentPage - 1}&haku=${haku}&alue=${valittuAlue}&tyyppi=${valittuTyyppi}&tila=${valittuTila}">&laquo;
+										<a class="page-link" href="?page=${currentPage - 1}&haku=${haku}&alue=${valittuAlue}&tila=${valittuTila}">&laquo;
 											Edellinen</a>
 									</li>
 									<c:forEach var="i" begin="0" end="${totalPages - 1}">
 										<li class="page-item ${currentPage == i ? 'active' : ''}">
-											<a class="page-link" href="?page=${i}&haku=${haku}&alue=${valittuAlue}&tyyppi=${valittuTyyppi}&tila=${valittuTila}">${i + 1}</a>
+											<a class="page-link" href="?page=${i}&haku=${haku}&alue=${valittuAlue}&tila=${valittuTila}">${i + 1}</a>
 										</li>
 									</c:forEach>
 									<li class="page-item ${currentPage >= totalPages - 1 ? 'disabled' : ''}">
-										<a class="page-link" href="?page=${currentPage + 1}&haku=${haku}&alue=${valittuAlue}&tyyppi=${valittuTyyppi}&tila=${valittuTila}">Seuraava
+										<a class="page-link" href="?page=${currentPage + 1}&haku=${haku}&alue=${valittuAlue}&tila=${valittuTila}">Seuraava
 											&raquo;</a>
 									</li>
 								</ul>
@@ -333,6 +320,8 @@
 					var hakukentta = document.getElementById('reaaliaikainenHaku')
 					var taulukkoRunko = document.getElementById('asiakasTaulukkoRunko')
 					var sivutusNav = document.getElementById('sivutusNavigaatio')
+					var hakulomake = hakukentta ? hakukentta.form : null
+					var hakuPyynto = 0
 
 					// Tallennetaan alkuperäiset 10 sivutettua asiakasta muistiin
 					var alkuperainenSisalto = taulukkoRunko ? taulukkoRunko.innerHTML : ''
@@ -340,19 +329,16 @@
 					if (hakukentta && taulukkoRunko) {
 						hakukentta.addEventListener('input', function (e) {
 							var hakusana = e.target.value.trim()
-							var valittujaSuodattimia = document.querySelectorAll(
-								'select[name="alue"], select[name="tyyppi"], select[name="tila"]'
+							var suodattimet = hakulomake.querySelectorAll(
+								'select[name="alue"], select[name="tila"]'
 							)
-							var suodatinKaytossa = Array.prototype.some.call(valittujaSuodattimia, function (suodatin) {
+							var suodatinKaytossa = Array.prototype.some.call(suodattimet, function (suodatin) {
 								return suodatin.value !== ''
 							})
 
-							if (suodatinKaytossa) {
-								return
-							}
-
 							// Jos hakukenttä tyhjennetään, palautetaan alkuperäinen sivutettu lista
-							if (hakusana.length === 0) {
+							if (hakusana.length === 0 && !suodatinKaytossa) {
+								hakuPyynto++
 								taulukkoRunko.innerHTML = alkuperainenSisalto
 								if (sivutusNav) {
 									sivutusNav.style.display = ''
@@ -360,12 +346,22 @@
 								return
 							}
 
-							// Tehdään haku taustalta lennosta ilman sivun lataamista
-							fetch('${pageContext.request.contextPath}/asiakkaat/live-haku?haku=' + encodeURIComponent(hakusana))
+							var pyyntoId = ++hakuPyynto
+							var parametrit = new URLSearchParams(new FormData(hakulomake))
+							parametrit.set('haku', hakusana)
+
+							// Tehdään haku taustalta lennosta samoilla suodattimilla kuin lomakehaku
+							fetch('${pageContext.request.contextPath}/asiakkaat/live-haku?' + parametrit.toString())
 								.then(function (response) {
+									if (!response.ok) {
+										throw new Error('Hakupyyntö epäonnistui: ' + response.status)
+									}
 									return response.text()
 								})
 								.then(function (htmlRivit) {
+									if (pyyntoId !== hakuPyynto) {
+										return
+									}
 									// Päivitetään taulukon rivit lennosta hakutuloksilla
 									taulukkoRunko.innerHTML = htmlRivit
 									// Piilotetaan sivutuspainikkeet reaaliaikaisen haun ajaksi

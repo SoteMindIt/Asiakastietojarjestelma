@@ -49,51 +49,18 @@ public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 	@Query("SELECT COUNT(a) FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus")
 	long countByKayttajaKayttajatunnus(@Param("tunnus") String tunnus);
 
-	// 🔌 ==================== CRM-HAKUMENETELMÄT KIRJAUSTYYPEILLE ====================
-
-	// 5. Suodattaa pelkän Kirjaustyypin ID:n perusteella
-	@Query("SELECT DISTINCT a FROM Asiakas a JOIN a.kirjaukset k WHERE a.kayttaja.kayttajatunnus = :tunnus AND k.kirjaustyyppi.id = :tyyppiId")
-	Page<Asiakas> findByKayttajaKayttajatunnusAndKirjaustyyppi(@Param("tunnus") String tunnus, @Param("tyyppiId") Long tyyppiId, Pageable pageable);
-
-	// 6. Suodattaa vapaalla hakusanalla JA Kirjaustyypin ID:llä
-	@Query("SELECT DISTINCT a FROM Asiakas a JOIN a.kirjaukset k WHERE a.kayttaja.kayttajatunnus = :tunnus AND k.kirjaustyyppi.id = :tyyppiId AND " +
-		       "(LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-		       "LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-		       "LOWER(a.puhelin) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-		       "LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')))")
-	Page<Asiakas> findByKayttajaKayttajatunnusAndKirjaustyyppiAndHaku(
-			@Param("tunnus") String tunnus, @Param("tyyppiId") Long tyyppiId, @Param("haku") String haku, Pageable pageable);
-
-	// 7. Suodattaa hyvinvointialueella JA Kirjaustyypin ID:llä
-	@Query("SELECT DISTINCT a FROM Asiakas a JOIN a.kirjaukset k WHERE a.kayttaja.kayttajatunnus = :tunnus AND a.hyvinvointialue = :hyvinvointialue AND k.kirjaustyyppi.id = :tyyppiId")
-	Page<Asiakas> findByKayttajaKayttajatunnusAndHyvinvointialueAndKirjaustyyppi(
-			@Param("tunnus") String tunnus, @Param("hyvinvointialue") Hyvinvointialue hyvinvointialue, @Param("tyyppiId") Long tyyppiId, Pageable pageable);
-
-	// 8. Suodattaa KAIKILLA KOLMELLA (Hakusana + Hyvinvointialue + Kirjaustyyppi ID)
-	@Query("SELECT DISTINCT a FROM Asiakas a JOIN a.kirjaukset k WHERE a.kayttaja.kayttajatunnus = :tunnus AND a.hyvinvointialue = :hyvinvointialue AND k.kirjaustyyppi.id = :tyyppiId AND " +
-		       "(LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-		       "LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-		       "LOWER(a.puhelin) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-		       "LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')))")
-	Page<Asiakas> findByKayttajaKayttajatunnusAndHyvinvointialueAndKirjaustyyppiAndHaku(
-			@Param("tunnus") String tunnus, @Param("hyvinvointialue") Hyvinvointialue hyvinvointialue, @Param("tyyppiId") Long tyyppiId, @Param("haku") String haku, Pageable pageable);
-
 	@Query("SELECT DISTINCT a FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus " +
 			"AND (:tila IS NULL OR a.tila = :tila) " +
 			"AND (:hyvinvointialue IS NULL OR a.hyvinvointialue = :hyvinvointialue) " +
-			"AND (:tyyppiId IS NULL OR EXISTS (SELECT k.id FROM Kirjaus k WHERE k.asiakas = a AND k.kirjaustyyppi.id = :tyyppiId)) " +
-			"AND (:haku IS NULL OR " +
+			"AND (:haku = '' OR " +
 			"LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
 			"LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
 			"LOWER(a.puhelin) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-			"LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
-			"(:haeHyvinvointialueenNimella = true AND LOWER(a.hyvinvointialue) LIKE LOWER(CONCAT('%', :haku, '%'))))")
+			"LOWER(a.yTunnus) LIKE LOWER(CONCAT('%', :haku, '%')))")
 	Page<Asiakas> haeSuodattimilla(
 			@Param("tunnus") String tunnus,
 			@Param("tila") AsiakkaanTila tila,
 			@Param("hyvinvointialue") Hyvinvointialue hyvinvointialue,
-			@Param("tyyppiId") Long tyyppiId,
 			@Param("haku") String haku,
-			@Param("haeHyvinvointialueenNimella") boolean haeHyvinvointialueenNimella,
 			Pageable pageable);
 }

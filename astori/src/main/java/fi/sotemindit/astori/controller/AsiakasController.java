@@ -66,14 +66,11 @@ public class AsiakasController {
 	@Autowired
 	private fi.sotemindit.astori.repository.KirjaustyyppiRepository kirjaustyyppiRepository;
 
-	// 1b. ASIAKKAAT OMA SIVU: Kaikki asiakkaat, haku, sivutus ja
-	// hyvinvointialue-suodatus
-	// 1b. ASIAKKAAT OMA SIVU: Kaikki asiakkaat, haku, sivutus, alue- ja kirjaustyyppisuodatus
+	// 1b. Asiakaslista: haku, sivutus sekä hyvinvointialue- ja tilasuodatus
 		@GetMapping("/asiakkaat")
 		public String listaaAsiakkaat(jakarta.servlet.http.HttpSession session, @RequestParam(defaultValue = "0") int page,
 				@RequestParam(value = "haku", required = false) String haku,
 				@RequestParam(value = "alue", required = false) String alue,
-				@RequestParam(value = "tyyppi", required = false) Long tyyppiId,
 				@RequestParam(value = "tila", required = false) String tila,
 				Model model) {
 
@@ -108,8 +105,8 @@ public class AsiakasController {
 				}
 			}
 
-			asiakasSivu = asiakasRepository.haeSuodattimilla(istuntoTunnus, valittuTila, valittuAlue, tyyppiId,
-					hakusana, valittuAlue == null && tyyppiId == null, pageable);
+			asiakasSivu = asiakasRepository.haeSuodattimilla(istuntoTunnus, valittuTila, valittuAlue,
+					hakusana != null ? hakusana : "", pageable);
 
 			// Viedään tiedot asiakkaat.jsp-sivulle
 			model.addAttribute("asiakkaat", asiakasSivu.getContent());
@@ -119,15 +116,9 @@ public class AsiakasController {
 			model.addAttribute("haku", hakusana != null ? hakusana : "");
 			model.addAttribute("valittuAlue", valittuAlue != null ? valittuAlue.name() : "");
 			model.addAttribute("valittuTila", valittuTila != null ? valittuTila.name() : "");
-			
-			// 🔌 UUSI: Viedään valittu kirjaustyyppi ID takaisin sivulle, jotta se pysyy valittuna suodatuspalkissa
-			model.addAttribute("valittuTyyppi", tyyppiId != null ? tyyppiId : "");
-			
+
 			model.addAttribute("hyvinvointialueet", fi.sotemindit.astori.model.Hyvinvointialue.values());
-			
-			// Haetaan kaikki kirjaustyypit alasvetovalikon piirtämistä varten
-			model.addAttribute("kirjaustyypit", kirjaustyyppiRepository.findAll());
-			
+
 			return "asiakkaat";
 		}
 
@@ -316,10 +307,28 @@ public class AsiakasController {
 	@org.springframework.web.bind.annotation.GetMapping("/asiakkaat/live-haku")
 	@org.springframework.web.bind.annotation.ResponseBody
 	public String liveHaku(jakarta.servlet.http.HttpSession session,
-			@org.springframework.web.bind.annotation.RequestParam("haku") String haku) {
+			@org.springframework.web.bind.annotation.RequestParam(value = "haku", required = false, defaultValue = "") String haku,
+			@org.springframework.web.bind.annotation.RequestParam(value = "alue", required = false) String alue,
+			@org.springframework.web.bind.annotation.RequestParam(value = "tila", required = false) String tila) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
-		if (istuntoTunnus == null || haku == null || haku.trim().isEmpty()) {
+		if (istuntoTunnus == null) {
 			return "";
+		}
+
+		Hyvinvointialue valittuAlue = null;
+		if (alue != null && !alue.isBlank()) {
+			try {
+				valittuAlue = Hyvinvointialue.valueOf(alue.trim());
+			} catch (IllegalArgumentException ignored) {
+			}
+		}
+
+		AsiakkaanTila valittuTila = null;
+		if (tila != null && !tila.isBlank()) {
+			try {
+				valittuTila = AsiakkaanTila.valueOf(tila.trim());
+			} catch (IllegalArgumentException ignored) {
+			}
 		}
 
 		// Haetaan max 50 osumaa aakkosjärjestyksessä koko tietokannasta yli
@@ -327,8 +336,8 @@ public class AsiakasController {
 		org.springframework.data.domain.Pageable maxOsumat = org.springframework.data.domain.PageRequest.of(0, 50,
 				org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "nimi"));
 
-		org.springframework.data.domain.Page<fi.sotemindit.astori.model.Asiakas> tulokset = asiakasRepository
-				.findByKayttajaKayttajatunnusAndHaku(istuntoTunnus, haku.trim(), maxOsumat);
+		org.springframework.data.domain.Page<fi.sotemindit.astori.model.Asiakas> tulokset = asiakasRepository.haeSuodattimilla(
+				istuntoTunnus, valittuTila, valittuAlue, haku.trim(), maxOsumat);
 
 		// Rakennetaan dynaamiset taulukkorivit puhtaaksi tekstiksi ilman erillistä
 		// JSP-tiedostoa
