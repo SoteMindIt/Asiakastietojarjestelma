@@ -46,7 +46,7 @@ public class AsiakasTuote {
 		this.myyntihinta = myyntihinta;
 		this.maara = maara;
 		this.ostopaivamaara = java.time.LocalDate.now();
-		this.alvKanta = AlvKanta.ALV_25_5; // Asetetaan oletus arvo myös konstruktoriin
+		this.alvKanta = tuote.getAlvKanta();
 	}
 
 	// Alkuperäinen apumetodi palauttaa verottoman yhteishinnan

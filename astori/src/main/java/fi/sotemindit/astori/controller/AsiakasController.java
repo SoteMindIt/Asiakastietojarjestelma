@@ -236,7 +236,7 @@ public class AsiakasController {
 	// 6. TUOTTEEN LISAAMINEN ASIAKKAALLE
 	@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
 	public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId,
-			@RequestParam java.math.BigDecimal maara,
+			@RequestParam java.math.BigDecimal maara, @RequestParam java.math.BigDecimal myyntihinta,
 			jakarta.servlet.http.HttpSession session, @RequestParam(required = false) String ostopaivamaara) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
@@ -249,7 +249,7 @@ public class AsiakasController {
 				.orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt"));
 
 		fi.sotemindit.astori.model.AsiakasTuote uusiMyynti = new fi.sotemindit.astori.model.AsiakasTuote(asiakas, tuote,
-				tuote.getHinta(), maara);
+				myyntihinta, maara);
 
 		if (ostopaivamaara != null && !ostopaivamaara.trim().isEmpty()) {
 			uusiMyynti.setOstopaivamaara(java.time.LocalDate.parse(ostopaivamaara));

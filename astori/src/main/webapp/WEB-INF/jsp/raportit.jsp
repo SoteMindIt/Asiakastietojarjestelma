@@ -383,46 +383,14 @@
 							<!-- ==================== ALIVÄLILEHTI 3: MYYNTIRAPORTTI ==================== -->
 							<div class="tab-pane fade" id="myyntiSisalto" role="tabpanel" aria-labelledby="myynti-tab">
 
-								<!-- 🔍 ITSENÄINEN AIKAVÄLILOMAKE MYYNTIRAPORTEILLE -->
-								<div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
-									<form action="${pageContext.request.contextPath}/raportit" method="get"
-										class="row g-2 align-items-end">
-										<input type="hidden" name="sivu" value="0">
-										<input type="hidden" name="kSivu" value="0">
-										<input type="hidden" name="tab" value="myyntiSisalto">
-
-										<div class="col-md-4 col-sm-6 text-start">
-											<label for="alkuPvm_m"
-												class="form-label small fw-bold text-secondary">Alkupäivämäärä</label>
-											<input type="date" id="alkuPvm_m" name="alkuPvm"
-												class="form-control form-control-sm" value="${alkuPvm}">
-										</div>
-
-										<div class="col-md-4 col-sm-6 text-start">
-											<label for="loppuPvm_m"
-												class="form-label small fw-bold text-secondary">Loppupäivämäärä</label>
-											<input type="date" id="loppuPvm_m" name="loppuPvm"
-												class="form-control form-control-sm" value="${loppuPvm}">
-										</div>
-
-										<div class="col-md-4 col-12 d-flex gap-2">
-											<button type="submit"
-												class="btn btn-sm btn-primary fw-bold px-3 w-100 rounded-pill">📊
-												Päivitä ajanjakso</button>
-											<a href="${pageContext.request.contextPath}/raportit?tab=myyntiSisalto"
-												class="btn btn-sm btn-outline-secondary px-3 w-100 rounded-pill">Nollaa</a>
-										</div>
-									</form>
-								</div>
-
 								<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
 									<div>
 										<h5 class="fw-bold text-dark mb-0">Toteutunut liikevaihto ajanjaksolta</h5>
 										<small class="text-muted">
 											<c:choose>
-												<c:when test="${kaytossaOletusKuluvaKk}">ℹ️ Näytetään oletuksena kuluvan
-													kuukauden myynnit.</c:when>
-												<c:otherwise>🔍 Hakua rajattu valitulla ajanjaksolla.</c:otherwise>
+												<c:when test="${kaytossaOletusKuluvaKk}">Näytetään oletuksena kuluvan
+													kuukauden myynnit. Voit vaihtaa ajanjaksoa yllä olevilla päivämäärillä.</c:when>
+												<c:otherwise>Myynnit näytetään yllä valitulta ajanjaksolta.</c:otherwise>
 											</c:choose>
 										</small>
 									</div>
@@ -609,16 +577,16 @@
 
 								<div class="border rounded p-3 bg-white mb-4">
 									<form action="${pageContext.request.contextPath}/raportit/ajot/lisaa" method="post" class="row g-3">
-										<div class="col-md-3">
-											<label for="uusiAjoAsiakas" class="form-label">Asiakas</label>
-											<select id="uusiAjoAsiakas" name="asiakasId" class="form-select" required>
-												<option value="" selected disabled>Valitse asiakas</option>
+										<div class="col-md-4">
+											<label for="uusiAjoAsiakkaat" class="form-label">Asiakkaat (valinnainen)</label>
+											<select id="uusiAjoAsiakkaat" name="asiakasIds" class="form-select" multiple size="4">
 												<c:forEach items="${omatAsiakkaat}" var="asiakas">
 													<option value="${asiakas.id}"><c:out value="${asiakas.nimi}" /></option>
 												</c:forEach>
 											</select>
+											<div class="form-text">Voit valita useita asiakkaita Ctrl- tai Cmd-näppäimellä tai jättää valinnan tyhjäksi.</div>
 										</div>
-										<div class="col-md-3">
+										<div class="col-md-2">
 											<label for="uusiAjoPaivamaara" class="form-label">Päivämäärä</label>
 											<input id="uusiAjoPaivamaara" name="paivamaara" type="text" data-finnish-date placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off" class="form-control" value="${tanaan}" required>
 										</div>
@@ -631,8 +599,8 @@
 											<input id="uusiAjoKohde" name="kohde" maxlength="200" class="form-control" required>
 										</div>
 										<div class="col-md-6">
-											<label for="uusiAjoTarkoitus" class="form-label">Ajon tarkoitus</label>
-											<input id="uusiAjoTarkoitus" name="tarkoitus" maxlength="500" class="form-control" required>
+											<label for="uusiAjoTarkoitus" class="form-label">Selite</label>
+											<textarea id="uusiAjoTarkoitus" name="tarkoitus" rows="3" class="form-control" required></textarea>
 										</div>
 										<div class="col-md-3 d-flex align-items-end">
 											<div class="form-check mb-2"><input id="uusiAjoEdestakainen" name="edestakainen" type="checkbox" class="form-check-input"><label for="uusiAjoEdestakainen" class="form-check-label">Edestakainen matka</label></div>
@@ -644,10 +612,6 @@
 										<div class="col-md-2">
 											<label for="uusiAjoLoppu" class="form-label">Mittari lopussa</label>
 											<input id="uusiAjoLoppu" name="loppumatkamittari" type="number" min="0" step="0.01" class="form-control" required>
-										</div>
-										<div class="col-md-2">
-											<label for="uusiAjoLasku" class="form-label">Laskun viite</label>
-											<input id="uusiAjoLasku" name="laskuviite" maxlength="100" class="form-control">
 										</div>
 										<div class="col-12 d-flex justify-content-end">
 											<button type="submit" class="btn btn-primary">Lisää ajo</button>
@@ -668,8 +632,8 @@
 									<div class="col-md-4">
 										<label for="ajoAsiakas" class="form-label small fw-bold">Asiakas</label>
 										<select id="ajoAsiakas" name="ajoAsiakas" class="form-select">
-											<option value="">Kaikki asiakkaat joilla on ajoja</option>
-											<c:forEach items="${ajoAsiakkaat}" var="asiakas">
+										<option value="">Kaikki asiakkaat</option>
+										<c:forEach items="${omatAsiakkaat}" var="asiakas">
 												<option value="${asiakas.id}" ${asiakas.id == valittuAjoAsiakas ? 'selected' : ''}><c:out value="${asiakas.nimi}" /></option>
 											</c:forEach>
 										</select>
@@ -682,18 +646,33 @@
 
 								<div class="table-responsive">
 									<table class="table table-hover align-middle mb-0">
-										<thead><tr><th>Päivä</th><th>Asiakas</th><th>Reitti</th><th>Tarkoitus / lasku</th><th>Mittarilukemat</th><th>Km</th><th></th></tr></thead>
+										<thead><tr><th>Päivä</th><th>Asiakas</th><th>Reitti</th><th>Selite</th><th>Mittarilukemat</th><th>Km</th><th></th></tr></thead>
 										<tbody>
 											<c:forEach items="${asiakasAjot}" var="ajo">
 												<tr>
 													<td><c:out value="${ajo.paivamaara}" /></td>
-													<td><c:out value="${ajo.asiakas.nimi}" /></td>
+													<td>
+														<c:choose>
+															<c:when test="${not empty ajo.asiakkaat}">
+																<c:forEach items="${ajo.asiakkaat}" var="ajoAsiakas" varStatus="asiakasStatus">
+																	<c:if test="${not asiakasStatus.first}">, </c:if><c:out value="${ajoAsiakas.nimi}" />
+																</c:forEach>
+															</c:when>
+															<c:otherwise><span class="text-muted">Ei asiakasta</span></c:otherwise>
+														</c:choose>
+													</td>
 													<td><c:out value="${ajo.lahtopaikka}" /> &rarr; <c:out value="${ajo.kohde}" /><c:if test="${ajo.edestakainen}"> &rarr; <c:out value="${ajo.lahtopaikka}" /> <span class="badge text-bg-light">meno-paluu</span></c:if></td>
-													<td><c:out value="${ajo.tarkoitus}" /><c:if test="${not empty ajo.laskuviite}"><br><small class="text-muted">Lasku: <c:out value="${ajo.laskuviite}" /></small></c:if></td>
+													<td style="white-space: pre-wrap;"><c:out value="${ajo.tarkoitus}" /></td>
 													<td><fmt:formatNumber value="${ajo.alkumatkamittari}" maxFractionDigits="2" /> &rarr; <fmt:formatNumber value="${ajo.loppumatkamittari}" maxFractionDigits="2" /></td>
 													<td><fmt:formatNumber value="${ajo.kilometrit}" minFractionDigits="0" maxFractionDigits="2" /></td>
 													<td class="text-end text-nowrap">
-														<button type="button" class="btn btn-sm btn-outline-primary muokkaa-ajo" data-bs-toggle="modal" data-bs-target="#muokkaaAjoModal" data-id="${ajo.id}" data-asiakas="${ajo.asiakas.id}" data-paivamaara="${ajo.paivamaara}" data-lahtopaikka="<c:out value='${ajo.lahtopaikka}'/>" data-kohde="<c:out value='${ajo.kohde}'/>" data-tarkoitus="<c:out value='${ajo.tarkoitus}'/>" data-alku="${ajo.alkumatkamittari}" data-loppu="${ajo.loppumatkamittari}" data-edestakainen="${ajo.edestakainen}" data-laskuviite="<c:out value='${ajo.laskuviite}'/>">Muokkaa</button>
+														<textarea id="ajo-selite-${ajo.id}" class="d-none"><c:out value="${ajo.tarkoitus}" /></textarea>
+														<select id="ajo-valitut-asiakkaat-${ajo.id}" class="d-none" multiple>
+															<c:forEach items="${ajo.asiakkaat}" var="ajoAsiakas">
+																<option value="${ajoAsiakas.id}" selected></option>
+															</c:forEach>
+														</select>
+														<button type="button" class="btn btn-sm btn-outline-primary muokkaa-ajo" data-bs-toggle="modal" data-bs-target="#muokkaaAjoModal" data-id="${ajo.id}" data-paivamaara="${ajo.paivamaara}" data-lahtopaikka="<c:out value='${ajo.lahtopaikka}'/>" data-kohde="<c:out value='${ajo.kohde}'/>" data-alku="${ajo.alkumatkamittari}" data-loppu="${ajo.loppumatkamittari}" data-edestakainen="${ajo.edestakainen}">Muokkaa</button>
 														<form action="${pageContext.request.contextPath}/raportit/ajot/poista/${ajo.id}" method="post" class="d-inline" onsubmit="return confirm('Poistetaanko tämä ajo?');"><button type="submit" class="btn btn-sm btn-outline-danger">Poista</button></form>
 													</td>
 												</tr>
@@ -710,15 +689,14 @@
 										<form id="muokkaaAjoForm" method="post">
 											<div class="modal-header"><h5 class="modal-title">Muokkaa ajoa</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sulje"></button></div>
 											<div class="modal-body row g-3">
-												<div class="col-md-6"><label for="muokkaaAjoAsiakas" class="form-label">Asiakas</label><select id="muokkaaAjoAsiakas" name="asiakasId" class="form-select" required><c:forEach items="${omatAsiakkaat}" var="asiakas"><option value="${asiakas.id}"><c:out value="${asiakas.nimi}" /></option></c:forEach></select></div>
+												<div class="col-md-6"><label for="muokkaaAjoAsiakkaat" class="form-label">Asiakkaat (valinnainen)</label><select id="muokkaaAjoAsiakkaat" name="asiakasIds" class="form-select" multiple size="5"><c:forEach items="${omatAsiakkaat}" var="asiakas"><option value="${asiakas.id}"><c:out value="${asiakas.nimi}" /></option></c:forEach></select><div class="form-text">Voit valita useita asiakkaita tai tyhjentää valinnan.</div></div>
 												<div class="col-md-6"><label for="muokkaaAjoPaivamaara" class="form-label">Päivämäärä</label><input id="muokkaaAjoPaivamaara" name="paivamaara" type="text" data-finnish-date placeholder="pp.kk.vvvv" inputmode="numeric" autocomplete="off" class="form-control" required></div>
 												<div class="col-md-6"><label for="muokkaaAjoLahto" class="form-label">Lähtöpaikka</label><input id="muokkaaAjoLahto" name="lahtopaikka" maxlength="200" class="form-control" required></div>
 												<div class="col-md-6"><label for="muokkaaAjoKohde" class="form-label">Kohde</label><input id="muokkaaAjoKohde" name="kohde" maxlength="200" class="form-control" required></div>
-												<div class="col-12"><label for="muokkaaAjoTarkoitus" class="form-label">Ajon tarkoitus</label><input id="muokkaaAjoTarkoitus" name="tarkoitus" maxlength="500" class="form-control" required></div>
+												<div class="col-12"><label for="muokkaaAjoTarkoitus" class="form-label">Selite</label><textarea id="muokkaaAjoTarkoitus" name="tarkoitus" rows="4" class="form-control" required></textarea></div>
 												<div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2"><input id="muokkaaAjoEdestakainen" name="edestakainen" type="checkbox" class="form-check-input"><label for="muokkaaAjoEdestakainen" class="form-check-label">Edestakainen matka</label></div></div>
 												<div class="col-md-4"><label for="muokkaaAjoAlku" class="form-label">Mittari alussa</label><input id="muokkaaAjoAlku" name="alkumatkamittari" type="number" min="0" step="0.01" class="form-control" required></div>
 												<div class="col-md-4"><label for="muokkaaAjoLoppu" class="form-label">Mittari lopussa</label><input id="muokkaaAjoLoppu" name="loppumatkamittari" type="number" min="0" step="0.01" class="form-control" required></div>
-												<div class="col-md-4"><label for="muokkaaAjoLasku" class="form-label">Laskun viite</label><input id="muokkaaAjoLasku" name="laskuviite" maxlength="100" class="form-control"></div>
 												<input type="hidden" name="ajoAlku" value="${ajoAlku}"><input type="hidden" name="ajoLoppu" value="${ajoLoppu}"><input type="hidden" name="ajoAsiakas" value="${valittuAjoAsiakas}">
 											</div>
 											<div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Peruuta</button><button type="submit" class="btn btn-primary">Tallenna</button></div>
@@ -778,15 +756,20 @@
 							button.addEventListener('click', function () {
 								const form = document.getElementById('muokkaaAjoForm');
 								form.action = '${pageContext.request.contextPath}/raportit/ajot/muokkaa/' + button.dataset.id;
-								document.getElementById('muokkaaAjoAsiakas').value = button.dataset.asiakas;
+								const valitutAsiakkaat = Array.from(
+									document.getElementById('ajo-valitut-asiakkaat-' + button.dataset.id).options,
+									function (option) { return option.value; }
+								);
+								Array.from(document.getElementById('muokkaaAjoAsiakkaat').options).forEach(function (option) {
+									option.selected = valitutAsiakkaat.includes(option.value);
+								});
 								document.getElementById('muokkaaAjoPaivamaara').value = formatFinnishDate(button.dataset.paivamaara);
 								document.getElementById('muokkaaAjoLahto').value = button.dataset.lahtopaikka;
 								document.getElementById('muokkaaAjoKohde').value = button.dataset.kohde;
-								document.getElementById('muokkaaAjoTarkoitus').value = button.dataset.tarkoitus;
+								document.getElementById('muokkaaAjoTarkoitus').value = document.getElementById('ajo-selite-' + button.dataset.id).value;
 								document.getElementById('muokkaaAjoAlku').value = button.dataset.alku;
 								document.getElementById('muokkaaAjoLoppu').value = button.dataset.loppu;
 								document.getElementById('muokkaaAjoEdestakainen').checked = button.dataset.edestakainen === 'true';
-								document.getElementById('muokkaaAjoLasku').value = button.dataset.laskuviite;
 							});
 						});
 					</script>

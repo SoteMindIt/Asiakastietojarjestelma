@@ -118,10 +118,7 @@ public class RaportitController {
 		for (AsiakasTuote at : myyntirivit) {
 			kokonaisVeroton = kokonaisVeroton.add(at.getKokonaishinta());
 			kokonaisAlv = kokonaisAlv.add(at.getAlvOsuus());
-
-			if (at.getAlvKanta() != null && at.getAlvKanta().getProsentti().compareTo(java.math.BigDecimal.ZERO) > 0) {
-				kokonaisVerollinen = kokonaisVerollinen.add(at.getVerollinenKokonaishinta());
-			}
+			kokonaisVerollinen = kokonaisVerollinen.add(at.getVerollinenKokonaishinta());
 		}
 
 		List<Kirjaus> tarkeatKirjaukset = kirjausRepository.findTarkeatKirjauksetAjanjaksolta(istuntoTunnus, alkuAika,
@@ -134,7 +131,6 @@ public class RaportitController {
 
 		model.addAttribute("myyntirivit", myyntirivit);
 		model.addAttribute("asiakasAjot", asiakasAjot);
-		model.addAttribute("ajoAsiakkaat", asiakasAjoRepository.haeAsiakkaatJoillaAjoja(istuntoTunnus));
 		model.addAttribute("omatAsiakkaat", asiakasRepository.findAllByKayttajaKayttajatunnusOrderByNimiAsc(istuntoTunnus));
 		model.addAttribute("ajojenKilometrit", ajojenKilometrit);
 		model.addAttribute("ajoAlku", ajoAlku);

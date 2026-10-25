@@ -2,13 +2,17 @@ package fi.sotemindit.astori.controller;
 
 import fi.sotemindit.astori.model.Asiakas;
 import fi.sotemindit.astori.model.AsiakasAjo;
+import fi.sotemindit.astori.model.Kayttaja;
 import fi.sotemindit.astori.model.Loki;
 import fi.sotemindit.astori.repository.AsiakasAjoRepository;
 import fi.sotemindit.astori.repository.AsiakasRepository;
+import fi.sotemindit.astori.repository.KayttajaRepository;
 import fi.sotemindit.astori.repository.LokiRepository;
 import jakarta.servlet.http.HttpSession;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,53 +29,57 @@ public class AsiakasAjoController {
 	private AsiakasRepository asiakasRepository;
 
 	@Autowired
+	private KayttajaRepository kayttajaRepository;
+
+	@Autowired
 	private LokiRepository lokiRepository;
 
 	@PostMapping("/raportit/ajot/lisaa")
-	public String lisaaAjo(@RequestParam Long asiakasId, @RequestParam LocalDate paivamaara,
+	public String lisaaAjo(@RequestParam(required = false) List<Long> asiakasIds, @RequestParam LocalDate paivamaara,
 			@RequestParam String lahtopaikka, @RequestParam String kohde, @RequestParam String tarkoitus,
 			@RequestParam BigDecimal alkumatkamittari, @RequestParam BigDecimal loppumatkamittari,
-			@RequestParam(defaultValue = "false") boolean edestakainen,
-			@RequestParam(required = false) String laskuviite, HttpSession session) {
+			@RequestParam(defaultValue = "false") boolean edestakainen, HttpSession session) {
 		String tunnus = kirjautunutKayttaja(session);
 		if (tunnus == null) {
 			return "redirect:/login";
 		}
 
-		Asiakas asiakas = omaAsiakas(asiakasId, tunnus);
-		if (asiakas == null || !kelvollinenAjo(lahtopaikka, kohde, tarkoitus, alkumatkamittari, loppumatkamittari)) {
+		Kayttaja luoja = kayttajaRepository.findByKayttajatunnus(tunnus).orElse(null);
+		List<Asiakas> asiakkaat = omatAsiakkaat(asiakasIds, tunnus);
+		if (luoja == null || asiakkaat == null
+				|| !kelvollinenAjo(lahtopaikka, kohde, tarkoitus, alkumatkamittari, loppumatkamittari)) {
 			return "redirect:/raportit?tab=ajotSisalto&ajoVirhe=virheellinen";
 		}
 
 		AsiakasAjo ajo = new AsiakasAjo();
-		paivitaAjonTiedot(ajo, asiakas, paivamaara, lahtopaikka, kohde, tarkoitus, alkumatkamittari,
-				loppumatkamittari, edestakainen, laskuviite);
+		paivitaAjonTiedot(ajo, asiakkaat, luoja, paivamaara, lahtopaikka, kohde, tarkoitus,
+				alkumatkamittari, loppumatkamittari, edestakainen);
 		asiakasAjoRepository.save(ajo);
-		lokiRepository.save(new Loki(tunnus, "LISÄYS", "Lisätty asiakasajo asiakkaalle " + asiakas.getNimi() + "."));
+		lokiRepository.save(new Loki(tunnus, "LISÄYS", "Lisätty ajopäiväkirjamerkintä."));
 		return ajonRaporttiUrl(ajo);
 	}
 
 	@PostMapping("/raportit/ajot/muokkaa/{id}")
-	public String muokkaaAjo(@PathVariable Long id, @RequestParam Long asiakasId,
+	public String muokkaaAjo(@PathVariable Long id, @RequestParam(required = false) List<Long> asiakasIds,
 			@RequestParam LocalDate paivamaara, @RequestParam String lahtopaikka, @RequestParam String kohde,
 			@RequestParam String tarkoitus, @RequestParam BigDecimal alkumatkamittari,
 			@RequestParam BigDecimal loppumatkamittari, @RequestParam(defaultValue = "false") boolean edestakainen,
-			@RequestParam(required = false) String laskuviite,
 			HttpSession session) {
 		String tunnus = kirjautunutKayttaja(session);
 		if (tunnus == null) {
 			return "redirect:/login";
 		}
 
+		Kayttaja luoja = kayttajaRepository.findByKayttajatunnus(tunnus).orElse(null);
 		AsiakasAjo ajo = omaAjo(id, tunnus);
-		Asiakas asiakas = omaAsiakas(asiakasId, tunnus);
-		if (ajo == null || asiakas == null
+		List<Asiakas> asiakkaat = omatAsiakkaat(asiakasIds, tunnus);
+		if (luoja == null || ajo == null || asiakkaat == null
 				|| !kelvollinenAjo(lahtopaikka, kohde, tarkoitus, alkumatkamittari, loppumatkamittari)) {
 			return "redirect:/raportit?tab=ajotSisalto&ajoVirhe=virheellinen";
 		}
 
-		paivitaAjonTiedot(ajo, asiakas, paivamaara, lahtopaikka, kohde, tarkoitus, alkumatkamittari,
-				loppumatkamittari, edestakainen, laskuviite);
+		paivitaAjonTiedot(ajo, asiakkaat, luoja, paivamaara, lahtopaikka, kohde, tarkoitus,
+				alkumatkamittari, loppumatkamittari, edestakainen);
 		asiakasAjoRepository.save(ajo);
 		lokiRepository.save(new Loki(tunnus, "MUOKKAUS", "Muokattu asiakasajo (ID: " + id + ")."));
 		return ajonRaporttiUrl(ajo);
@@ -96,17 +104,28 @@ public class AsiakasAjoController {
 		return (String) session.getAttribute("kirjautunutKayttaja");
 	}
 
-	private Asiakas omaAsiakas(Long asiakasId, String tunnus) {
-		return asiakasRepository.findById(asiakasId)
-				.filter(asiakas -> asiakas.getKayttaja() != null
-						&& tunnus.equals(asiakas.getKayttaja().getKayttajatunnus()))
-				.orElse(null);
+	private List<Asiakas> omatAsiakkaat(List<Long> asiakasIds, String tunnus) {
+		if (asiakasIds == null || asiakasIds.isEmpty()) {
+			return List.of();
+		}
+
+		List<Long> yksilollisetIds = asiakasIds.stream().distinct().toList();
+		List<Asiakas> asiakkaat = new ArrayList<>();
+		asiakasRepository.findAllById(yksilollisetIds).forEach(asiakkaat::add);
+		if (asiakkaat.size() != yksilollisetIds.size()
+				|| asiakkaat.stream().anyMatch(asiakas -> asiakas.getKayttaja() == null
+						|| !tunnus.equals(asiakas.getKayttaja().getKayttajatunnus()))) {
+			return null;
+		}
+		return asiakkaat;
 	}
 
 	private AsiakasAjo omaAjo(Long id, String tunnus) {
 		return asiakasAjoRepository.findById(id)
-				.filter(ajo -> ajo.getAsiakas().getKayttaja() != null
-						&& tunnus.equals(ajo.getAsiakas().getKayttaja().getKayttajatunnus()))
+				.filter(ajo -> (ajo.getLuoja() != null && tunnus.equals(ajo.getLuoja().getKayttajatunnus()))
+						|| (!ajo.getAsiakkaat().isEmpty() && ajo.getAsiakkaat().stream()
+								.allMatch(asiakas -> asiakas.getKayttaja() != null
+										&& tunnus.equals(asiakas.getKayttaja().getKayttajatunnus()))))
 				.orElse(null);
 	}
 
@@ -117,9 +136,11 @@ public class AsiakasAjoController {
 				&& alku.signum() >= 0 && loppu.compareTo(alku) >= 0;
 	}
 
-	private void paivitaAjonTiedot(AsiakasAjo ajo, Asiakas asiakas, LocalDate paivamaara, String lahtopaikka,
-			String kohde, String tarkoitus, BigDecimal alku, BigDecimal loppu, boolean edestakainen, String laskuviite) {
-		ajo.setAsiakas(asiakas);
+	private void paivitaAjonTiedot(AsiakasAjo ajo, List<Asiakas> asiakkaat, Kayttaja luoja,
+			LocalDate paivamaara, String lahtopaikka, String kohde, String tarkoitus,
+			BigDecimal alku, BigDecimal loppu, boolean edestakainen) {
+		ajo.setAsiakkaat(asiakkaat);
+		ajo.setLuoja(luoja);
 		ajo.setPaivamaara(paivamaara);
 		ajo.setLahtopaikka(lahtopaikka.trim());
 		ajo.setKohde(kohde.trim());
@@ -127,12 +148,10 @@ public class AsiakasAjoController {
 		ajo.setEdestakainen(edestakainen);
 		ajo.setAlkumatkamittari(alku);
 		ajo.setLoppumatkamittari(loppu);
-		ajo.setLaskuviite(laskuviite == null || laskuviite.isBlank() ? null : laskuviite.trim());
 	}
 
 	private String ajonRaporttiUrl(AsiakasAjo ajo) {
 		String paivamaara = ajo.getPaivamaara().toString();
-		return "redirect:/raportit?tab=ajotSisalto&ajoAlku=" + paivamaara + "&ajoLoppu=" + paivamaara
-				+ "&ajoAsiakas=" + ajo.getAsiakas().getId();
+		return "redirect:/raportit?tab=ajotSisalto&ajoAlku=" + paivamaara + "&ajoLoppu=" + paivamaara;
 	}
 }

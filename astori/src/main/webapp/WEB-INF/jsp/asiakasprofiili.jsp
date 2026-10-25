@@ -1117,10 +1117,17 @@
 												<option value="" disabled selected>-- Valitse
 													tuoterekisteristä --</option>
 												<c:forEach var="tuote" items="${kaikkiTuotteet}">
-													<option value="${tuote.id}">${tuote.nimi}
+													<option value="${tuote.id}" data-hinta="${tuote.hinta}">${tuote.nimi}
 														(${tuote.hinta} € / ${tuote.yksikko.lyhenne})</option>
 												</c:forEach>
 											</select>
+										</div>
+										<div class="mb-3">
+											<label for="asiakasMyyntihinta"
+												class="form-label fw-bold small text-secondary">Asiakaskohtainen yksikköhinta (€)</label>
+											<input type="number" class="form-control" id="asiakasMyyntihinta"
+												name="myyntihinta" min="0" step="0.01" required>
+											<div class="form-text text-muted small">Oletuksena tuotteen hinta. Muutos vaikuttaa vain tämän asiakkaan myyntiriviin.</div>
 										</div>
 										<div class="mb-3">
 											<label for="maara"
@@ -1539,6 +1546,15 @@
 					<!-- SCRIPTS -->
 					<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 					<script>
+						const lisattavaTuoteSelect = document.getElementById('tuoteId');
+						const asiakasMyyntihintaInput = document.getElementById('asiakasMyyntihinta');
+						if (lisattavaTuoteSelect && asiakasMyyntihintaInput) {
+							lisattavaTuoteSelect.addEventListener('change', function () {
+								const valittuTuote = this.options[this.selectedIndex];
+								asiakasMyyntihintaInput.value = valittuTuote.dataset.hinta || '';
+							});
+						}
+
 						const yhElement = document.getElementById('muokkaaYhModal');
 						const yhModalOlio = yhElement ? new bootstrap.Modal(yhElement) : null;
 
