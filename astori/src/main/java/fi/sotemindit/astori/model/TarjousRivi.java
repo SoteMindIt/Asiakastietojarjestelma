@@ -1,6 +1,8 @@
 package fi.sotemindit.astori.model;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Entity
 @Table(name = "tarjous_rivit")
@@ -42,4 +44,23 @@ public class TarjousRivi {
 	public void setAlvProsentti(java.math.BigDecimal alvProsentti) { this.alvProsentti = alvProsentti; }
 	public Tarjous getTarjous() { return tarjous; }
 	public void setTarjous(Tarjous tarjous) { this.tarjous = tarjous; }
+
+	public BigDecimal getVerotonYhteensa() {
+		if (maara == null || yksikkohinta == null) {
+			return BigDecimal.ZERO.setScale(2);
+		}
+		return maara.multiply(yksikkohinta);
+	}
+
+	public BigDecimal getAlvOsuus() {
+		if (alvProsentti == null) {
+			return BigDecimal.ZERO.setScale(2);
+		}
+		return getVerotonYhteensa().multiply(alvProsentti)
+				.divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+	}
+
+	public BigDecimal getVerollinenYhteensa() {
+		return getVerotonYhteensa().add(getAlvOsuus()).setScale(2, RoundingMode.HALF_UP);
+	}
 }

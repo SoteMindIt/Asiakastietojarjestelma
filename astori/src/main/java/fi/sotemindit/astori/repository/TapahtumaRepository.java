@@ -2,6 +2,8 @@ package fi.sotemindit.astori.repository;
 
 import java.util.List;
 import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,10 +24,12 @@ public interface TapahtumaRepository extends JpaRepository<Tapahtuma, Long> {
 			@Param("asiakasId") Long asiakasId, @Param("tyyppi") TapahtumaTyyppi tyyppi,
 			@Param("alkuPvm") LocalDateTime alkuPvm, @Param("loppuPvm") LocalDateTime loppuPvm);
 
-	// 🔍 1. Haetaan tulevat tapahtumat aikajärjestyksessä etusivun koosteeseen
-	@Query("SELECT t FROM Tapahtuma t WHERE t.kayttaja.kayttajatunnus = :tunnus AND t.ajankohta > :nyt ORDER BY t.ajankohta ASC")
-	List<Tapahtuma> findByKayttajaKayttajatunnusAndAjankohtaAfterOrderByAjankohtaAsc(@Param("tunnus") String tunnus,
-			@Param("nyt") LocalDateTime nyt);
+	// 🔍 Haetaan etusivulle vain seuraavan 30 vuorokauden tapahtumat.
+	@Query("SELECT t FROM Tapahtuma t WHERE t.kayttaja.kayttajatunnus = :kayttajatunnus "
+			+ "AND t.ajankohta > :alku AND t.ajankohta <= :loppu ORDER BY t.ajankohta ASC")
+	Page<Tapahtuma> findByKayttajaKayttajatunnusAndAjankohtaBetweenOrderByAjankohtaAsc(
+			@Param("kayttajatunnus") String kayttajatunnus, @Param("alku") LocalDateTime alku,
+			@Param("loppu") LocalDateTime loppu, Pageable pageable);
 
 	// 📈 2. Lasketaan tämän päivän tehtävien määrä etusivun dashboard-korttiin
 	@Query("SELECT COUNT(t) FROM Tapahtuma t WHERE t.kayttaja.kayttajatunnus = :tunnus AND t.ajankohta BETWEEN :alku AND :loppu")

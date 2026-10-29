@@ -114,6 +114,10 @@
 														</strong></td>
 													<td>
 														<div class="d-flex gap-2">
+															<a class="btn btn-sm btn-outline-primary"
+																href="${pageContext.request.contextPath}/tarjous/${t.id}">Tarkastele</a>
+															<a class="btn btn-sm btn-outline-secondary"
+																href="${pageContext.request.contextPath}/tarjous/${t.id}/muokkaa">Muokkaa</a>
 															<a class="btn btn-sm btn-primary fw-bold"
 																href="${pageContext.request.contextPath}/tarjous/${t.id}/lataa-pdf">Lataa
 																PDF</a>
@@ -137,26 +141,36 @@
 
 					<!-- UUDEN TARJOUKSEN LASKENTA JA LUONTI -->
 					<div class="main-card border">
-						<h3 class="fw-bold h4 mb-4 text-dark">Luo uusi tarjouslaskelma</h3>
-						<form action="${pageContext.request.contextPath}/asiakkaat/${asiakas.id}/tarjoukset/tallenna"
-							method="post">
+						<h3 class="fw-bold h4 mb-4 text-dark">
+							<c:choose><c:when test="${not empty muokattavaTarjous}">Muokkaa tarjousta ${muokattavaTarjous.tarjousNumero}</c:when><c:otherwise>Luo uusi tarjouslaskelma</c:otherwise></c:choose>
+						</h3>
+						<c:choose>
+							<c:when test="${not empty muokattavaTarjous}">
+								<c:set var="tarjousLomakkeenOsoite" value="${pageContext.request.contextPath}/tarjous/${muokattavaTarjous.id}/muokkaa" />
+							</c:when>
+							<c:otherwise>
+								<c:set var="tarjousLomakkeenOsoite" value="${pageContext.request.contextPath}/asiakkaat/${asiakas.id}/tarjoukset/tallenna" />
+							</c:otherwise>
+						</c:choose>
+						<form action="${tarjousLomakkeenOsoite}" method="post">
 
 							<div class="row g-3 mb-4">
 								<div class="col-md-6">
 									<label class="form-label fw-bold">Tarjousnumero:</label>
 									<input type="text" class="form-control" name="tarjousNumero" required
-										placeholder="esim. T-2026-001">
+										placeholder="esim. T-2026-001" value="${muokattavaTarjous.tarjousNumero}">
 								</div>
 								<div class="col-md-6">
 									<label class="form-label fw-bold">Voimassaolopäivä:</label>
-									<input type="date" class="form-control" name="voimassaoloPvm" required>
+									<input type="date" class="form-control" name="voimassaoloPvm" required
+										value="${muokattavaTarjous.voimassaoloPvm}">
 								</div>
 							</div>
 
 							<div class="mb-4">
 								<label class="form-label fw-bold">Tarjouksen kuvaus / Lisätiedot:</label>
 								<textarea class="form-control" name="lisatiedot" rows="4"
-									placeholder="Kirjoita tähän tarkempi kuvaus palvelun sisällöstä, aikataulusta tai muista ehdoista..."></textarea>
+									placeholder="Kirjoita tähän tarkempi kuvaus palvelun sisällöstä, aikataulusta tai muista ehdoista..."><c:out value="${muokattavaTarjous.lisatiedot}" /></textarea>
 							</div>
 
 							<h4 class="fw-bold h5 mb-3 text-secondary">Tarjousrivit</h4>
@@ -172,32 +186,66 @@
 										</tr>
 									</thead>
 									<tbody>
-										<tr>
-											<td>
-												<select class="form-select" name="tuote[]" required
-													onchange="paivitaRivinHinta(this)">
-													<option value="" data-hinta="0">-- Valitse tuote --</option>
-													<c:forEach var="tuote" items="${tuoteLista}">
-														<option value="${tuote.nimi}" data-hinta="${tuote.hinta}">
-															${tuote.nimi} (${tuote.hinta} €)</option>
+										<c:choose>
+											<c:when test="${not empty muokattavaTarjous}">
+												<c:forEach var="muokattavaRivi" items="${muokattavaTarjous.rivit}">
+													<c:set var="tuoteLoytyy" value="false" />
+													<c:forEach var="rekisteriTuote" items="${tuoteLista}">
+														<c:if test="${rekisteriTuote.nimi == muokattavaRivi.tuotteenNimi}">
+															<c:set var="tuoteLoytyy" value="true" />
+														</c:if>
 													</c:forEach>
-												</select>
-											</td>
-											<td><input type="number" class="form-control" name="maara[]" value="1"
-													step="any" required oninput="laskeYhteissummat()"></td>
-											<td><input type="number" class="form-control" name="hinta[]" step="any"
-													required oninput="laskeYhteissummat()"></td>
-											<td>
-												<select class="form-select" name="alv[]" onchange="laskeYhteissummat()">
-													<option value="25.5">25.5 %</option>
-													<option value="14.0">14.0 %</option>
-													<option value="10.0">10.0 %</option>
-													<option value="0.0">0.0 %</option>
-												</select>
-											</td>
-											<td><button type="button" class="btn btn-outline-danger w-100"
-													onclick="poistaRivi(this)">Poista</button></td>
-										</tr>
+													<tr>
+														<td>
+															<select class="form-select" name="tuote[]" required onchange="paivitaRivinHinta(this)">
+																<option value="" data-hinta="0">-- Valitse tuote --</option>
+																<c:if test="${not tuoteLoytyy}">
+																	<option value="${muokattavaRivi.tuotteenNimi}" data-hinta="${muokattavaRivi.yksikkohinta}" selected><c:out value="${muokattavaRivi.tuotteenNimi}" /> (tarjouksen oma rivi)</option>
+																</c:if>
+																<c:forEach var="tuote" items="${tuoteLista}">
+																	<option value="${tuote.nimi}" data-hinta="${tuote.hinta}" ${tuote.nimi == muokattavaRivi.tuotteenNimi ? 'selected' : ''}>
+																		<c:out value="${tuote.nimi}" /> (${tuote.hinta} €)</option>
+																</c:forEach>
+															</select>
+														</td>
+														<td><input type="number" class="form-control" name="maara[]" value="${muokattavaRivi.maara}" step="any" required oninput="laskeYhteissummat()"></td>
+														<td><input type="number" class="form-control" name="hinta[]" value="${muokattavaRivi.yksikkohinta}" step="any" required oninput="laskeYhteissummat()"></td>
+														<td>
+															<select class="form-select" name="alv[]" onchange="laskeYhteissummat()">
+																<option value="25.5" ${muokattavaRivi.alvProsentti == 25.5 ? 'selected' : ''}>25.5 %</option>
+																<option value="14.0" ${muokattavaRivi.alvProsentti == 14.0 ? 'selected' : ''}>14.0 %</option>
+																<option value="10.0" ${muokattavaRivi.alvProsentti == 10.0 ? 'selected' : ''}>10.0 %</option>
+																<option value="0.0" ${muokattavaRivi.alvProsentti == 0.0 ? 'selected' : ''}>0.0 %</option>
+															</select>
+														</td>
+														<td><button type="button" class="btn btn-outline-danger w-100" onclick="poistaRivi(this)">Poista</button></td>
+													</tr>
+												</c:forEach>
+											</c:when>
+											<c:otherwise>
+												<tr>
+													<td>
+														<select class="form-select" name="tuote[]" required onchange="paivitaRivinHinta(this)">
+															<option value="" data-hinta="0">-- Valitse tuote --</option>
+															<c:forEach var="tuote" items="${tuoteLista}">
+																<option value="${tuote.nimi}" data-hinta="${tuote.hinta}"><c:out value="${tuote.nimi}" /> (${tuote.hinta} €)</option>
+															</c:forEach>
+														</select>
+													</td>
+													<td><input type="number" class="form-control" name="maara[]" value="1" step="any" required oninput="laskeYhteissummat()"></td>
+													<td><input type="number" class="form-control" name="hinta[]" step="any" required oninput="laskeYhteissummat()"></td>
+													<td>
+														<select class="form-select" name="alv[]" onchange="laskeYhteissummat()">
+															<option value="25.5">25.5 %</option>
+															<option value="14.0">14.0 %</option>
+															<option value="10.0">10.0 %</option>
+															<option value="0.0">0.0 %</option>
+														</select>
+													</td>
+													<td><button type="button" class="btn btn-outline-danger w-100" onclick="poistaRivi(this)">Poista</button></td>
+												</tr>
+											</c:otherwise>
+										</c:choose>
 									</tbody>
 								</table>
 							</div>
@@ -231,7 +279,7 @@
 								<div class="mt-4 border-top pt-3 text-end">
 									<button type="submit"
 										class="btn btn-success btn-lg fw-bold px-5 rounded-pill shadow-sm">
-										💾 Tallenna ja laske tarjous
+										<c:choose><c:when test="${not empty muokattavaTarjous}">💾 Tallenna muutokset</c:when><c:otherwise>💾 Tallenna ja laske tarjous</c:otherwise></c:choose>
 									</button>
 								</div>
 						</form>

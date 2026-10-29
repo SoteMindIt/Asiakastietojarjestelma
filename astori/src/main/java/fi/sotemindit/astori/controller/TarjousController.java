@@ -48,6 +48,8 @@ public class TarjousController {
 		}
 
 		Asiakas asiakas = asiakasRepository.findById(asiakasId)
+				.filter(haettuAsiakas -> haettuAsiakas.getKayttaja() != null
+						&& istuntoTunnus.equals(haettuAsiakas.getKayttaja().getKayttajatunnus()))
 				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + asiakasId));
 
 		List<Tarjous> tarjoukset = tarjousRepository.findByAsiakasId(asiakasId);
@@ -64,6 +66,102 @@ public class TarjousController {
 		model.addAttribute("tilat", fi.sotemindit.astori.model.AsiakkaanTila.values());
 
 		return "tarjoukset";
+	}
+
+	@GetMapping("/tarjous/{tarjousId}")
+	@Transactional
+	public String naytaTarjous(@PathVariable Long tarjousId, Model model,
+			jakarta.servlet.http.HttpSession session) {
+		Tarjous tarjous = haeKayttajanTarjous(tarjousId, session);
+		if (tarjous == null) {
+			return "redirect:/";
+		}
+		model.addAttribute("tarjous", tarjous);
+		return "tarjous-tiedot";
+	}
+
+	@GetMapping("/tarjous/{tarjousId}/muokkaa")
+	@Transactional
+	public String muokkaaTarjoustaNakyma(@PathVariable Long tarjousId, Model model,
+			jakarta.servlet.http.HttpSession session) {
+		Tarjous tarjous = haeKayttajanTarjous(tarjousId, session);
+		if (tarjous == null) {
+			return "redirect:/";
+		}
+		Asiakas asiakas = tarjous.getAsiakas();
+		model.addAttribute("asiakas", asiakas);
+		model.addAttribute("tarjoukset", tarjousRepository.findByAsiakasId(asiakas.getId()));
+		List<Tuote> tuoteLista = tuoteRepository.findAll();
+		model.addAttribute("tuoteLista", tuoteLista);
+		model.addAttribute("kaikkiTuotteet", tuoteLista);
+		model.addAttribute("tilat", fi.sotemindit.astori.model.AsiakkaanTila.values());
+		model.addAttribute("muokattavaTarjous", tarjous);
+		return "tarjoukset";
+	}
+
+	@PostMapping("/tarjous/{tarjousId}/muokkaa")
+	@Transactional
+	public String tallennaMuokattuTarjous(@PathVariable Long tarjousId, @RequestParam String tarjousNumero,
+			@RequestParam String voimassaoloPvm, @RequestParam(required = false) String lisatiedot,
+			@RequestParam("tuote[]") List<String> tuotteet,
+			@RequestParam("maara[]") List<java.math.BigDecimal> maarat,
+			@RequestParam("hinta[]") List<java.math.BigDecimal> hinnat,
+			@RequestParam("alv[]") List<java.math.BigDecimal> alvProsentit,
+			jakarta.servlet.http.HttpSession session,
+			org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+		Tarjous tarjous = haeKayttajanTarjous(tarjousId, session);
+		if (tarjous == null) {
+			return "redirect:/";
+		}
+		if (tarjousRepository.existsByTarjousNumeroAndIdNot(tarjousNumero, tarjousId)) {
+			redirectAttributes.addFlashAttribute("virheViesti",
+					"Tarjousnumero '" + tarjousNumero + "' on jo käytössä! Valitse toinen numero.");
+			return "redirect:/tarjous/" + tarjousId + "/muokkaa";
+		}
+
+		tarjous.setTarjousNumero(tarjousNumero);
+		tarjous.setVoimassaoloPvm(LocalDate.parse(voimassaoloPvm));
+		tarjous.setLisatiedot(lisatiedot);
+		paivitaTarjousrivit(tarjous, tuotteet, maarat, hinnat, alvProsentit);
+		tarjousRepository.save(tarjous);
+		return "redirect:/tarjous/" + tarjousId;
+	}
+
+	private void paivitaTarjousrivit(Tarjous tarjous, List<String> tuotteet,
+			List<java.math.BigDecimal> maarat, List<java.math.BigDecimal> hinnat,
+			List<java.math.BigDecimal> alvProsentit) {
+		java.math.BigDecimal kokonaisVeroton = java.math.BigDecimal.ZERO;
+		java.math.BigDecimal kokonaisAlv = java.math.BigDecimal.ZERO;
+		tarjous.getRivit().clear();
+
+		for (int i = 0; i < tuotteet.size(); i++) {
+			java.math.BigDecimal maara = maarat.get(i) != null ? maarat.get(i) : java.math.BigDecimal.ZERO;
+			java.math.BigDecimal hinta = hinnat.get(i) != null ? hinnat.get(i) : java.math.BigDecimal.ZERO;
+			java.math.BigDecimal alvProsentti = alvProsentit.get(i) != null
+					? alvProsentit.get(i) : java.math.BigDecimal.ZERO;
+			java.math.BigDecimal riviVeroton = maara.multiply(hinta);
+			java.math.BigDecimal riviAlv = riviVeroton.multiply(alvProsentti)
+					.divide(java.math.BigDecimal.valueOf(100.0), 2, java.math.RoundingMode.HALF_UP);
+
+			kokonaisVeroton = kokonaisVeroton.add(riviVeroton);
+			kokonaisAlv = kokonaisAlv.add(riviAlv);
+			tarjous.lisaaRivi(new TarjousRivi(tuotteet.get(i), maara, hinta, alvProsentti, tarjous));
+		}
+
+		tarjous.setVerotonYhteensa(kokonaisVeroton);
+		tarjous.setAlvYhteensa(kokonaisAlv);
+		tarjous.setVerollinenYhteensa(kokonaisVeroton.add(kokonaisAlv));
+	}
+
+	private Tarjous haeKayttajanTarjous(Long tarjousId, jakarta.servlet.http.HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return null;
+		}
+		return tarjousRepository.findById(tarjousId)
+				.filter(tarjous -> tarjous.getAsiakas().getKayttaja() != null
+						&& istuntoTunnus.equals(tarjous.getAsiakas().getKayttaja().getKayttajatunnus()))
+				.orElse(null);
 	}
 	// 2. Vastaanottaa dynaamiset tarjousrivit ja laskee summat tietokantaan
 	@Transactional
@@ -82,14 +180,16 @@ public class TarjousController {
 			return "redirect:/login";
 		}
 
+		Asiakas asiakas = asiakasRepository.findById(asiakasId)
+				.filter(haettuAsiakas -> haettuAsiakas.getKayttaja() != null
+						&& istuntoTunnus.equals(haettuAsiakas.getKayttaja().getKayttajatunnus()))
+				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + asiakasId));
+
 		if (tarjousRepository.existsByTarjousNumero(tarjousNumero)) {
 			redirectAttributes.addFlashAttribute("virheViesti",
 					"Tarjousnumero '" + tarjousNumero + "' on jo käytössä! Valitse toinen numero.");
 			return "redirect:/asiakas/" + asiakasId + "/tarjoukset";
 		}
-
-		Asiakas asiakas = asiakasRepository.findById(asiakasId)
-				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt ID-numerolla: " + asiakasId));
 
 		Tarjous tarjous = new Tarjous();
 		tarjous.setAsiakas(asiakas);
@@ -140,8 +240,11 @@ public class TarjousController {
 			return;
 		}
 
-		Tarjous tarjous = tarjousRepository.findById(tarjousId)
-				.orElseThrow(() -> new IllegalArgumentException("Tarjousta ei löytynyt ID-numerolla: " + tarjousId));
+		Tarjous tarjous = haeKayttajanTarjous(tarjousId, session);
+		if (tarjous == null) {
+			response.sendRedirect("/login");
+			return;
+		}
 		java.time.format.DateTimeFormatter suomiPvm = java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy");
 		Asiakas asiakas = tarjous.getAsiakas();
 
@@ -343,8 +446,10 @@ public class TarjousController {
 			return "redirect:/login";
 		}
 
-		Tarjous tarjous = tarjousRepository.findById(tarjousId)
-				.orElseThrow(() -> new IllegalArgumentException("Tarjousta ei löytynyt ID-numerolla: " + tarjousId));
+		Tarjous tarjous = haeKayttajanTarjous(tarjousId, session);
+		if (tarjous == null) {
+			return "redirect:/";
+		}
 
 		Long asiakasId = tarjous.getAsiakas().getId();
 		tarjousRepository.delete(tarjous);

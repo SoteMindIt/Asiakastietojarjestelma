@@ -1,11 +1,17 @@
 package fi.sotemindit.astori.controller;
 
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.time.LocalDate;
+import java.util.List;
 import fi.sotemindit.astori.model.Tapahtuma;
+import fi.sotemindit.astori.model.Tarjous;
 import fi.sotemindit.astori.model.TapahtumaTyyppi;
 import fi.sotemindit.astori.repository.AsiakasRepository;
 import fi.sotemindit.astori.repository.TapahtumaRepository;
@@ -32,7 +38,8 @@ public class DashboardController {
 	private fi.sotemindit.astori.repository.MuistiinpanoRepository muistiinpanoRepository;
 
 	@GetMapping("/")
-	public String naytaEtusivu(HttpSession session, Model model) {
+	public String naytaEtusivu(HttpSession session, Model model,
+			@RequestParam(value = "tapahtumaSivu", defaultValue = "0") int tapahtumaSivu) {
 		// 1. Istuntotarkistus tietoturvaa varten
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
@@ -41,7 +48,9 @@ public class DashboardController {
 
 		// 2. Haetaan laskuritietorivit dashboard-kortteja varten
 		long asiakkaatLaskuri = asiakasRepository.count();
-		long tarjouksetLaskuri = tarjousRepository.count();
+		LocalDate tanaan = LocalDate.now(java.time.ZoneId.of("Europe/Helsinki"));
+		List<Tarjous> avoimetTarjoukset = tarjousRepository.findAvoimetKayttajalle(istuntoTunnus, tanaan);
+		long tarjouksetLaskuri = tarjousRepository.countAvoimetKayttajalle(istuntoTunnus, tanaan);
 		// long tehtavatLaskuri = tapahtumaRepository.count();
 
 		java.time.ZoneId suomenAika = java.time.ZoneId.of("Europe/Helsinki");
@@ -53,14 +62,20 @@ public class DashboardController {
 
 		// 3. Haetaan tulevat kalenterimerkinnät etusivun koosteeseen
 		java.time.LocalDateTime nyt = java.time.LocalDateTime.now();
-		List<Tapahtuma> tulevatTapahtumat = tapahtumaRepository
-				.findByKayttajaKayttajatunnusAndAjankohtaAfterOrderByAjankohtaAsc(istuntoTunnus, nyt);
+		java.time.LocalDateTime tapahtumaRajauksenLoppu = nyt.plusDays(30);
+		Pageable tapahtumaPageable = PageRequest.of(Math.max(0, tapahtumaSivu), 5);
+		Page<Tapahtuma> tulevatTapahtumat = tapahtumaRepository
+				.findByKayttajaKayttajatunnusAndAjankohtaBetweenOrderByAjankohtaAsc(istuntoTunnus, nyt,
+						tapahtumaRajauksenLoppu, tapahtumaPageable);
 
 		// 4. Viedään laskurit ja tapahtumat näkymälle
 		model.addAttribute("asiakkaatLaskuri", asiakkaatLaskuri);
 		model.addAttribute("tarjouksetLaskuri", tarjouksetLaskuri);
+		model.addAttribute("avoimetTarjoukset", avoimetTarjoukset);
 		model.addAttribute("tehtavatLaskuri", tehtavatLaskuri);
-		model.addAttribute("tulevatTapahtumat", tulevatTapahtumat);
+		model.addAttribute("tulevatTapahtumat", tulevatTapahtumat.getContent());
+		model.addAttribute("tapahtumaSivu", tapahtumaPageable.getPageNumber());
+		model.addAttribute("tapahtumaSivuja", tulevatTapahtumat.getTotalPages());
 
 		// 5.Viedään dynaamiset listat täsmälleen samoilla nimillä kuin dashboard.jsp:n
 		// modal-ikkuna niitä odottaa
