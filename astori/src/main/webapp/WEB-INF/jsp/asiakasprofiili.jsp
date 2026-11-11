@@ -26,6 +26,18 @@
 							box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 						}
 
+						.sopimuslomake {
+							display: flex;
+							flex: 1 1 auto;
+							flex-direction: column;
+							min-height: 0;
+						}
+
+						.sopimuslomake .modal-body {
+							min-height: 0;
+							overflow-y: auto;
+						}
+
 						.col-card {
 							background: white;
 							border-radius: 8px;
@@ -66,6 +78,12 @@
 								href="${pageContext.request.contextPath}/asiakkaat">&larr;
 								Takaisin asiakaslistaukseen</a>
 						</div>
+						<c:if test="${not empty viesti}">
+							<div class="alert alert-success" role="status"><c:out value="${viesti}" /></div>
+						</c:if>
+						<c:if test="${not empty virhe}">
+							<div class="alert alert-danger" role="alert"><c:out value="${virhe}" /></div>
+						</c:if>
 
 						<!-- ASIAKKAAN PROFIILIKORTTI (KATSELU TAI MUOKKAUS) -->
 						<div class="profile-card border mb-4 bg-white shadow-sm p-4 rounded-3">
@@ -111,6 +129,10 @@
 											class="btn btn-sm btn-outline-secondary py-1.5 px-2.5 small rounded-pill"
 											style="font-size: 0.85em;" data-bs-toggle="modal"
 											data-bs-target="#lisaaYhModal">+ Yhteyshenkilö</button>
+										<button type="button"
+											class="btn btn-sm btn-outline-info fw-bold py-1.5 px-2.5 small rounded-pill"
+											style="font-size: 0.85em;" data-bs-toggle="modal"
+											data-bs-target="#lisaaSopimusModal">+ Sopimus</button>
 										<button type="button"
 											class="btn btn-sm btn-primary fw-bold py-1.5 px-3 shadow-sm rounded-pill ms-md-2"
 											style="font-size: 0.85em;" data-bs-toggle="modal"
@@ -797,11 +819,141 @@
 							</div>
 							<!-- /tarjoukset -->
 
+							<!-- ASIAKKAAN TALLENNETUT SOPIMUKSET -->
+							<div class="row g-4 mb-4">
+								<div class="col-12">
+									<div class="border bg-white p-3 rounded-3">
+										<h3 class="fw-bold h5 text-dark mb-3">Tallennetut sopimukset (${sopimukset.size()})</h3>
+										<c:choose>
+											<c:when test="${not empty sopimukset}">
+												<div class="table-responsive">
+													<table class="table table-sm table-hover mb-0 align-middle">
+														<thead class="table-light">
+															<tr>
+																<th>Sopimus</th>
+																<th>Luotu</th>
+																<th class="text-end">Toiminnot</th>
+															</tr>
+														</thead>
+														<tbody>
+															<c:forEach var="sopimus" items="${sopimukset}">
+																<tr>
+																	<td><c:out value="${sopimus.tiedostonNimi}" /></td>
+																	<td><c:out value="${sopimus.latausaika.toString().substring(0, 10)}" /></td>
+																	<td class="text-end">
+																		<a class="btn btn-sm btn-outline-secondary"
+																			href="${pageContext.request.contextPath}/asiakas/${asiakas.id}/sopimus/${sopimus.id}/lataa">Lataa PDF</a>
+																		<form class="d-inline" method="post"
+																			action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/sopimus/${sopimus.id}/poista"
+																			onsubmit="return confirm('Haluatko varmasti poistaa tämän sopimuksen?');">
+																			<button class="btn btn-sm btn-outline-danger" type="submit">Poista</button>
+																		</form>
+																	</td>
+																</tr>
+															</c:forEach>
+														</tbody>
+													</table>
+												</div>
+											</c:when>
+											<c:otherwise>
+												<p class="text-muted small mb-0">Asiakkaalle ei ole vielä luotu sopimuksia.</p>
+											</c:otherwise>
+										</c:choose>
+									</div>
+								</div>
+							</div>
+
 						</div>
 						<!-- /profile-card pääsulku -->
 					</div>
 					<!-- /container pääsulku -->
 					<!-- ==================== MODAL-IKKUNAT ==================== -->
+
+					<!-- MODAL: UUDEN PALVELUSOPIMUKSEN LUONTI -->
+					<div class="modal fade" id="lisaaSopimusModal" tabindex="-1"
+						aria-labelledby="lisaaSopimusModalLabel" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+							<div class="modal-content border-0 shadow-lg">
+								<form class="sopimuslomake"
+									action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/sopimus" method="post">
+									<div class="modal-header bg-dark text-white">
+										<h5 class="modal-title fw-bold" id="lisaaSopimusModalLabel">Luo palvelusopimus</h5>
+										<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+											aria-label="Sulje"></button>
+									</div>
+									<div class="modal-body p-4">
+										<p class="text-muted small">Asiakkaan tiedot täytetään profiilista. Täytä sopimuksen sisältö sekä hinta- ja maksuehdot tapauskohtaisesti.</p>
+										<div class="row g-3">
+											<div class="col-md-6">
+												<label class="form-label fw-bold small" for="sopimusPalveluntarjoaja">Palveluntarjoaja *</label>
+												<input id="sopimusPalveluntarjoaja" class="form-control" name="palveluntarjoajanNimi"
+													value="<c:out value='${yritystiedot.nimi}'/>" maxlength="150" required>
+											</div>
+											<div class="col-md-6">
+												<label class="form-label fw-bold small" for="sopimusYTunnus">Palveluntarjoajan Y-tunnus *</label>
+												<input id="sopimusYTunnus" class="form-control" name="palveluntarjoajanYTunnus"
+													value="<c:out value='${yritystiedot.yTunnus}'/>" maxlength="20" required>
+											</div>
+											<div class="col-12">
+												<label class="form-label fw-bold small" for="sopimusOsoite">Palveluntarjoajan osoite *</label>
+												<input id="sopimusOsoite" class="form-control" name="palveluntarjoajanOsoite"
+													value="<c:out value='${yritystiedot.osoite}'/>" maxlength="250" required>
+											</div>
+											<div class="col-12">
+												<label class="form-label fw-bold small" for="sopimusKohdeJaSisalto">2. Sopimuksen kohde ja sisältö *</label>
+												<textarea id="sopimusKohdeJaSisalto" class="form-control" name="sopimuksenKohdeJaSisalto"
+													rows="5" maxlength="5000" required></textarea>
+											</div>
+											<div class="col-12">
+												<label class="form-label fw-bold small" for="sopimusHintaJaMaksuehdot">3. Palvelun hinta ja maksuehdot *</label>
+												<textarea id="sopimusHintaJaMaksuehdot" class="form-control" name="hintaJaMaksuehdot"
+													rows="5" maxlength="5000" required></textarea>
+											</div>
+											<div class="col-md-4">
+												<label class="form-label fw-bold small" for="sopimusAloituspaiva">Sopimus alkaa *</label>
+												<input id="sopimusAloituspaiva" class="form-control" type="date" name="aloituspaiva"
+													value="${sopimusPaivamaara}" required>
+											</div>
+											<div class="col-md-4">
+												<label class="form-label fw-bold small" for="sopimusEdustaja">Asiakkaan edustaja *</label>
+												<input id="sopimusEdustaja" class="form-control" name="asiakkaanEdustaja"
+													list="sopimusYhteyshenkilot" maxlength="150" required>
+												<datalist id="sopimusYhteyshenkilot">
+													<c:forEach var="yhteyshenkilo" items="${yhteyshenkilot}">
+														<option value="<c:out value='${yhteyshenkilo.nimi}'/>"></option>
+													</c:forEach>
+												</datalist>
+											</div>
+											<div class="col-md-6">
+												<label class="form-label fw-bold small" for="sopimusOmaEdustaja">Palveluntarjoajan edustaja *</label>
+												<input id="sopimusOmaEdustaja" class="form-control" name="palveluntarjoajanEdustaja"
+													value="<c:out value='${palveluntarjoajanEdustaja}'/>" maxlength="150" required>
+											</div>
+											<div class="col-12">
+												<fieldset>
+													<legend class="form-label fw-bold small">Allekirjoitustapa *</legend>
+													<div class="form-check">
+														<input class="form-check-input" type="radio" name="allekirjoitustapa"
+															id="sopimusPaperinen" value="paperinen" checked>
+														<label class="form-check-label" for="sopimusPaperinen">Kaksi paperikappaletta</label>
+													</div>
+													<div class="form-check">
+														<input class="form-check-input" type="radio" name="allekirjoitustapa"
+															id="sopimusSahkoinen" value="sahkoinen">
+														<label class="form-check-label" for="sopimusSahkoinen">Sähköinen allekirjoitus</label>
+													</div>
+												</fieldset>
+											</div>
+										</div>
+									</div>
+									<div class="modal-footer bg-light">
+										<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Peruuta</button>
+										<button type="submit" class="btn btn-primary fw-bold">Luo ja tallenna sopimus</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
 
 					<!-- MODAL: KESKITETTY ASIAKASTUOTTEEN MUOKKAUS -->
 					<div class="modal fade" id="keskitettyMuokkaaPalveluModal" tabindex="-1" aria-hidden="true">

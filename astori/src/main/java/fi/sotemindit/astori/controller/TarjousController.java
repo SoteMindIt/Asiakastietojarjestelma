@@ -16,8 +16,10 @@ import fi.sotemindit.astori.model.Asiakas;
 import fi.sotemindit.astori.model.Tarjous;
 import fi.sotemindit.astori.model.TarjousRivi;
 import fi.sotemindit.astori.model.Tuote;
+import fi.sotemindit.astori.model.Kayttaja;
 import fi.sotemindit.astori.model.Yritystiedot;
 import fi.sotemindit.astori.repository.AsiakasRepository;
+import fi.sotemindit.astori.repository.KayttajaRepository;
 import fi.sotemindit.astori.repository.TarjousRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.repository.YritystiedotRepository;
@@ -36,6 +38,9 @@ public class TarjousController {
 
 	@Autowired
 	private YritystiedotRepository yritystiedotRepository;
+
+	@Autowired
+	private KayttajaRepository kayttajaRepository;
 
 	// 1. Avaa tarjoushallinnan ja -laskennan sivun (tarjoukset.jsp)
 	@Transactional
@@ -245,6 +250,9 @@ public class TarjousController {
 			response.sendRedirect("/login");
 			return;
 		}
+		Kayttaja kirjautunutKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+				.orElseThrow(() -> new IllegalArgumentException("Kirjautunutta käyttäjää ei löytynyt"));
+		String myyjanNimi = muodostaMyyjanNimi(kirjautunutKayttaja, istuntoTunnus);
 		java.time.format.DateTimeFormatter suomiPvm = java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy");
 		Asiakas asiakas = tarjous.getAsiakas();
 
@@ -422,19 +430,27 @@ public class TarjousController {
 		document.add(summaTaulu);
 
 		/* 💡 JAAKON KORJAUS: Haetaan globaalit yritystiedot (ID 1L) ja upotetaan tarjouksen alalaitaan maksutiedoiksi */
+		document.add(new com.lowagie.text.Paragraph("\nMyyjä:", alaOtsikkoFontti));
+		document.add(new com.lowagie.text.Paragraph(myyjanNimi, tekstiFontti));
+
 		Yritystiedot yritys = yritystiedotRepository.findById(1L).orElse(null);
 		if (yritys != null) {
-			document.add(new com.lowagie.text.Paragraph("\nMaksutiedot / Myyjä:", alaOtsikkoFontti));
-			com.lowagie.text.Paragraph pYritys = new com.lowagie.text.Paragraph(
-					yritys.getNimi() + " (Y-tunnus: " + yritys.getyTunnus() + ")\n" +
-					"Osoite: " + yritys.getOsoite() + "\n" +
-					"Tili (IBAN): " + yritys.getIban() + "  |  BIC: " + yritys.getBic(),
+			com.lowagie.text.Paragraph yrityksenMaksutiedot = new com.lowagie.text.Paragraph(
+					"Y-tunnus: " + yritys.getyTunnus() + "\n" +
+					"Osoite: " + yritys.getOsoite(),
 					tekstiFontti
 				);
-			document.add(pYritys);
+			document.add(yrityksenMaksutiedot);
 		}
 		
 		document.close();
+	}
+
+	private String muodostaMyyjanNimi(Kayttaja kayttaja, String kayttajatunnus) {
+		String etunimi = kayttaja.getEtunimi() != null ? kayttaja.getEtunimi().trim() : "";
+		String sukunimi = kayttaja.getSukunimi() != null ? kayttaja.getSukunimi().trim() : "";
+		String nimi = (etunimi + " " + sukunimi).trim();
+		return nimi.isEmpty() ? kayttajatunnus : nimi;
 	}
 
 	// 4. Poistaa tarjouksen ID-numeron perusteella ja ohjaa takaisin asiakkaan sivulle

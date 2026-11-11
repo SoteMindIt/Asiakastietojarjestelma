@@ -67,6 +67,9 @@ public class Asiakas {
 	@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true)
 	private java.util.List<AsiakasAjo> asiakasAjot = new java.util.ArrayList<>();
 
+	@OneToMany(mappedBy = "asiakas", cascade = CascadeType.ALL, orphanRemoval = true)
+	private java.util.List<Liitetiedosto> liitetiedostot = new java.util.ArrayList<>();
+
 
 	// Tyhjä konstruktori JPA:ta varten
 	public Asiakas() {
@@ -242,5 +245,13 @@ public class Asiakas {
 
 	public void setTarjoukset(java.util.List<Tarjous> tarjoukset) {
 		this.tarjoukset = tarjoukset;
+	}
+
+	public java.util.List<Liitetiedosto> getLiitetiedostot() {
+		return liitetiedostot;
+	}
+
+	public void setLiitetiedostot(java.util.List<Liitetiedosto> liitetiedostot) {
+		this.liitetiedostot = liitetiedostot;
 	}
 }

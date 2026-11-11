@@ -27,6 +27,8 @@ public class Kayttaja {
 	@Column(nullable = false)
 	private String rooli = "USER";
 
+	private Integer istunnonAikakatkaisuMinuutteina;
+
 	private String etunimi;
 	private String sukunimi;
 	private String sahkoposti;
@@ -123,5 +125,13 @@ public class Kayttaja {
 	
 	public void setRooli(String rooli) {
 		this.rooli = rooli;
+	}
+
+	public int getIstunnonAikakatkaisuMinuutteina() {
+		return istunnonAikakatkaisuMinuutteina == null ? 30 : istunnonAikakatkaisuMinuutteina;
+	}
+
+	public void setIstunnonAikakatkaisuMinuutteina(Integer istunnonAikakatkaisuMinuutteina) {
+		this.istunnonAikakatkaisuMinuutteina = istunnonAikakatkaisuMinuutteina;
 	}
 }

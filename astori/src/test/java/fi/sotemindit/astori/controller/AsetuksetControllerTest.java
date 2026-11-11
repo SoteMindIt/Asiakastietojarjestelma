@@ -87,6 +87,28 @@ class AsetuksetControllerTest {
 		verify(passwordEncoder, never()).encode("");
 	}
 
+	@Test
+	void savesAllowedTimeoutForCurrentUserAndAppliesItToCurrentSession() {
+		Kayttaja admin = kayttaja(1L, "admin", "ADMIN");
+		when(kayttajaRepository.findByKayttajatunnus("admin")).thenReturn(Optional.of(admin));
+
+		String result = controller.tallennaIstunnonAikakatkaisu(session, 60);
+
+		assertEquals("redirect:/asetukset?success=session_timeout_updated", result);
+		assertEquals(60, admin.getIstunnonAikakatkaisuMinuutteina());
+		verify(kayttajaRepository).save(admin);
+		verify(session).setMaxInactiveInterval(3600);
+	}
+
+	@Test
+	void rejectsTimeoutOutsideAllowedOptions() {
+		String result = controller.tallennaIstunnonAikakatkaisu(session, 120);
+
+		assertEquals("redirect:/asetukset?virhe=istunnon_aikakatkaisu", result);
+		verify(kayttajaRepository, never()).save(org.mockito.ArgumentMatchers.any());
+		verify(session, never()).setMaxInactiveInterval(org.mockito.ArgumentMatchers.anyInt());
+	}
+
 	private Kayttaja kayttaja(Long id, String tunnus, String rooli) {
 		Kayttaja kayttaja = new Kayttaja();
 		kayttaja.setId(id);

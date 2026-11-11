@@ -71,8 +71,10 @@ public class AsetuksetController {
 		}
 
 		// Haetaan nykyisen käyttäjän tiedot ja varmistetaan olemassaolo
-		kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+		Kayttaja nykyinenKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
 				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
+		model.addAttribute("istunnonAikakatkaisuMinuutteina",
+				nykyinenKayttaja.getIstunnonAikakatkaisuMinuutteina());
 
 		// Viedään kaikki käyttäjät listaukseen
 		List<Kayttaja> kaikkiKayttajat = kayttajaRepository.findAll();
@@ -97,6 +99,25 @@ public class AsetuksetController {
 		model.addAttribute("kaikkiKirjaustyypit", kirjaustyyppiRepository.findAll());
 
 		return "asetukset"; // Avaa asetukset.jsp
+	}
+
+	@PostMapping("/asetukset/tallenna-istunnon-aikakatkaisu")
+	public String tallennaIstunnonAikakatkaisu(HttpSession session,
+			@RequestParam int aikakatkaisuMinuutteina) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+		if (!List.of(15, 30, 60).contains(aikakatkaisuMinuutteina)) {
+			return "redirect:/asetukset?virhe=istunnon_aikakatkaisu";
+		}
+
+		Kayttaja kayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
+		kayttaja.setIstunnonAikakatkaisuMinuutteina(aikakatkaisuMinuutteina);
+		kayttajaRepository.save(kayttaja);
+		session.setMaxInactiveInterval(aikakatkaisuMinuutteina * 60);
+		return "redirect:/asetukset?success=session_timeout_updated";
 	}
 
 	// 2. REITTI: Luo uuden käyttäjätunnuksen roolivalinnalla (Vain Admin)

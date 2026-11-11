@@ -1,10 +1,22 @@
 package fi.sotemindit.astori.controller;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -12,17 +24,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 
 import fi.sotemindit.astori.model.Asiakas;
 import fi.sotemindit.astori.model.AsiakasTuote;
 import fi.sotemindit.astori.model.AsiakkaanTila;
 import fi.sotemindit.astori.model.Hyvinvointialue;
 import fi.sotemindit.astori.model.Kirjaus;
+import fi.sotemindit.astori.model.Kayttaja;
 import fi.sotemindit.astori.model.Liitetiedosto;
 import fi.sotemindit.astori.model.Loki;
 import fi.sotemindit.astori.model.Tarjous;
 import fi.sotemindit.astori.model.Tuote;
 import fi.sotemindit.astori.model.Yhteyshenkilo;
+import fi.sotemindit.astori.model.Yritystiedot;
 import fi.sotemindit.astori.repository.AsiakasRepository;
 import fi.sotemindit.astori.repository.AsiakasTuoteRepository;
 import fi.sotemindit.astori.repository.KayttajaRepository;
@@ -32,6 +47,10 @@ import fi.sotemindit.astori.repository.TarjousRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.repository.YhteyshenkiloRepository;
 import fi.sotemindit.astori.repository.LokiRepository;
+import fi.sotemindit.astori.repository.YritystiedotRepository;
+import fi.sotemindit.astori.service.SopimusPdfPalvelu;
+
+import com.lowagie.text.DocumentException;
 
 @Controller
 public class AsiakasController {
@@ -62,7 +81,13 @@ public class AsiakasController {
 
 	@Autowired
 	private LokiRepository lokiRepository;
-	
+
+	@Autowired
+	private YritystiedotRepository yritystiedotRepository;
+
+	@Autowired
+	private SopimusPdfPalvelu sopimusPdfPalvelu;
+
 	@Autowired
 	private fi.sotemindit.astori.repository.KirjaustyyppiRepository kirjaustyyppiRepository;
 
@@ -205,6 +230,9 @@ public class AsiakasController {
 		lokiRepository.save(new Loki(istuntoTunnus, "KATSELU", kuvaus));
 
 		List<Liitetiedosto> liitteet = liitetiedostoRepository.findByAsiakasIdOrderByLatausaikaDesc(id);
+		List<Liitetiedosto> sopimukset = liitteet.stream()
+				.filter(liite -> "PALVELUSOPIMUS".equals(liite.getKuvaus()))
+				.toList();
 		List<Yhteyshenkilo> yhteyshenkilot = yhteyshenkiloRepository.findByAsiakasId(id);
 		List<Kirjaus> kirjaukset = kirjausRepository.findByAsiakasIdOrderByLuontiaikaDesc(id);
 
@@ -214,6 +242,7 @@ public class AsiakasController {
 
 		model.addAttribute("asiakas", asiakas);
 		model.addAttribute("liitteet", liitteet);
+		model.addAttribute("sopimukset", sopimukset);
 		model.addAttribute("yhteyshenkilot", yhteyshenkilot);
 		model.addAttribute("kirjaukset", kirjaukset);
 		model.addAttribute("ostetutTuotteet", ostetutTuotteet);
@@ -229,8 +258,153 @@ public class AsiakasController {
 		model.addAttribute("kaikkiViimeisymmatKirjaukset", kaikkiUusimmat);
 		//Haetaan kirjaustyypit profiilisivulle
 		model.addAttribute("kirjaustyypit", kirjaustyyppiRepository.findAll());
+		model.addAttribute("yritystiedot",
+				yritystiedotRepository.findById(1L).orElseGet(Yritystiedot::new));
+		Kayttaja kirjautunutKayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus).orElse(null);
+		model.addAttribute("palveluntarjoajanEdustaja",
+				muodostaKayttajanNimi(kirjautunutKayttaja, istuntoTunnus));
+		model.addAttribute("sopimusPaivamaara", LocalDate.now());
 
 		return "asiakasprofiili";
+	}
+
+	@Transactional
+	@PostMapping("/asiakas/{asiakasId}/sopimus")
+	public String luoSopimus(@PathVariable Long asiakasId, jakarta.servlet.http.HttpSession session,
+			@RequestParam String palveluntarjoajanNimi, @RequestParam String palveluntarjoajanYTunnus,
+			@RequestParam String palveluntarjoajanOsoite, @RequestParam String sopimuksenKohdeJaSisalto,
+			@RequestParam String hintaJaMaksuehdot,
+			@RequestParam LocalDate aloituspaiva, @RequestParam String palveluntarjoajanEdustaja,
+			@RequestParam String asiakkaanEdustaja, @RequestParam String allekirjoitustapa,
+			org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes)
+			throws IOException, DocumentException {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		Asiakas asiakas = haeOmistettuAsiakas(asiakasId, istuntoTunnus);
+		if (!Set.of("paperinen", "sahkoinen").contains(allekirjoitustapa)
+				|| !onKelvollinenTeksti(palveluntarjoajanNimi, 150)
+				|| !onKelvollinenTeksti(palveluntarjoajanYTunnus, 20)
+				|| !onKelvollinenTeksti(palveluntarjoajanOsoite, 250)
+				|| !onKelvollinenTeksti(sopimuksenKohdeJaSisalto, 5000)
+				|| !onKelvollinenTeksti(hintaJaMaksuehdot, 5000)
+				|| !onKelvollinenTeksti(palveluntarjoajanEdustaja, 150)
+				|| !onKelvollinenTeksti(asiakkaanEdustaja, 150)) {
+			redirectAttributes.addFlashAttribute("virhe", "Tarkista sopimuksen lomaketiedot.");
+			return "redirect:/asiakas/" + asiakasId;
+		}
+
+		String asiakkaanOsoite = muodostaAsiakkaanOsoite(asiakas);
+		SopimusPdfPalvelu.SopimusTiedot sopimustiedot = new SopimusPdfPalvelu.SopimusTiedot(
+				palveluntarjoajanNimi.trim(), palveluntarjoajanYTunnus.trim(), palveluntarjoajanOsoite.trim(),
+				asiakas.getNimi(), asiakas.getyTunnus(), asiakkaanOsoite, sopimuksenKohdeJaSisalto.trim(),
+				hintaJaMaksuehdot.trim(), aloituspaiva,
+				palveluntarjoajanEdustaja.trim(), asiakkaanEdustaja.trim(), "sahkoinen".equals(allekirjoitustapa));
+		byte[] pdf = sopimusPdfPalvelu.luoSopimusPdf(sopimustiedot);
+		String tiedostonNimi = muodostaSopimuksenTiedostonNimi(asiakas.getNimi(), LocalDateTime.now());
+		liitetiedostoRepository.save(new Liitetiedosto(tiedostonNimi, "PALVELUSOPIMUS", pdf, asiakas));
+		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS",
+				"Luotu palvelusopimus asiakkaalle '" + asiakas.getNimi() + "' (ID: " + asiakasId + ")."));
+		redirectAttributes.addFlashAttribute("viesti", "Palvelusopimus luotu ja tallennettu asiakkaalle.");
+		return "redirect:/asiakas/" + asiakasId;
+	}
+
+	@GetMapping("/asiakas/{asiakasId}/sopimus/{sopimusId}/lataa")
+	public ResponseEntity<byte[]> lataaSopimus(@PathVariable Long asiakasId, @PathVariable Long sopimusId,
+			jakarta.servlet.http.HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+
+		haeOmistettuAsiakas(asiakasId, istuntoTunnus);
+		Liitetiedosto sopimus = liitetiedostoRepository.findById(sopimusId)
+				.filter(liite -> liite.getAsiakas().getId().equals(asiakasId)
+						&& "PALVELUSOPIMUS".equals(liite.getKuvaus()))
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sopimusta ei löytynyt."));
+
+		HttpHeaders otsakkeet = new HttpHeaders();
+		otsakkeet.setContentType(MediaType.APPLICATION_PDF);
+		otsakkeet.setContentDisposition(ContentDisposition.attachment()
+				.filename(sopimus.getTiedostonNimi(), StandardCharsets.UTF_8).build());
+		otsakkeet.setContentLength(sopimus.getData().length);
+		return new ResponseEntity<>(sopimus.getData(), otsakkeet, HttpStatus.OK);
+	}
+
+	@Transactional
+	@PostMapping("/asiakas/{asiakasId}/sopimus/{sopimusId}/poista")
+	public String poistaSopimus(@PathVariable Long asiakasId, @PathVariable Long sopimusId,
+			jakarta.servlet.http.HttpSession session,
+			org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		Asiakas asiakas = haeOmistettuAsiakas(asiakasId, istuntoTunnus);
+		Liitetiedosto sopimus = liitetiedostoRepository.findById(sopimusId)
+				.filter(liite -> liite.getAsiakas().getId().equals(asiakasId)
+						&& "PALVELUSOPIMUS".equals(liite.getKuvaus()))
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sopimusta ei löytynyt."));
+
+		liitetiedostoRepository.delete(sopimus);
+		lokiRepository.save(new Loki(istuntoTunnus, "POISTO",
+				"Poistettu palvelusopimus '" + sopimus.getTiedostonNimi() + "' asiakkaalta '"
+						+ asiakas.getNimi() + "' (ID: " + asiakasId + ")."));
+		redirectAttributes.addFlashAttribute("viesti", "Palvelusopimus poistettu.");
+		return "redirect:/asiakas/" + asiakasId;
+	}
+
+	private Asiakas haeOmistettuAsiakas(Long asiakasId, String istuntoTunnus) {
+		Asiakas asiakas = asiakasRepository.findById(asiakasId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asiakasta ei löytynyt."));
+		if (asiakas.getKayttaja() == null
+				|| !istuntoTunnus.equals(asiakas.getKayttaja().getKayttajatunnus())) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Asiakasta ei löytynyt.");
+		}
+		return asiakas;
+	}
+
+	private boolean onKelvollinenTeksti(String arvo, int enimmainspituus) {
+		return arvo != null && !arvo.isBlank() && arvo.length() <= enimmainspituus;
+	}
+
+	private String muodostaKayttajanNimi(Kayttaja kayttaja, String kayttajatunnus) {
+		if (kayttaja == null) {
+			return kayttajatunnus;
+		}
+		String nimi = ((kayttaja.getEtunimi() == null ? "" : kayttaja.getEtunimi().trim()) + " "
+				+ (kayttaja.getSukunimi() == null ? "" : kayttaja.getSukunimi().trim())).trim();
+		return nimi.isEmpty() ? kayttajatunnus : nimi;
+	}
+
+	private String muodostaAsiakkaanOsoite(Asiakas asiakas) {
+		StringBuilder osoite = new StringBuilder();
+		if (asiakas.getKatuosoite() != null && !asiakas.getKatuosoite().isBlank()) {
+			osoite.append(asiakas.getKatuosoite().trim());
+		}
+		String postiosoite = ((asiakas.getPostinumero() == null ? "" : asiakas.getPostinumero().trim()) + " "
+				+ (asiakas.getPostitoimipaikka() == null ? "" : asiakas.getPostitoimipaikka().trim())).trim();
+		if (!postiosoite.isEmpty()) {
+			if (!osoite.isEmpty()) {
+				osoite.append(", ");
+			}
+			osoite.append(postiosoite);
+		}
+		return osoite.toString();
+	}
+
+	private String muodostaSopimuksenTiedostonNimi(String asiakkaanNimi, LocalDateTime luontiaika) {
+		String turvallinenNimi = Normalizer.normalize(asiakkaanNimi, Normalizer.Form.NFD)
+				.replaceAll("\\p{M}+", "")
+				.replaceAll("[^A-Za-z0-9._-]+", "_");
+		if (turvallinenNimi.isBlank()) {
+			turvallinenNimi = "asiakas";
+		}
+		String aikaleima = luontiaika.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+		return "Palvelusopimus_" + turvallinenNimi + "_" + aikaleima + ".pdf";
 	}
 
 	// 6. TUOTTEEN LISAAMINEN ASIAKKAALLE

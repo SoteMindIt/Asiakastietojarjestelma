@@ -28,9 +28,14 @@
 				<h1 class="h3 fw-bold mt-2">Tarjous <c:out value="${tarjous.tarjousNumero}" /></h1>
 				<div class="text-muted"><c:out value="${tarjous.asiakas.nimi}" /></div>
 			</div>
-			<div class="d-flex gap-2">
+			<div class="d-flex flex-wrap align-items-center gap-2">
 				<a class="btn btn-primary" href="${pageContext.request.contextPath}/tarjous/${tarjous.id}/muokkaa">Muokkaa tarjousta</a>
 				<a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/tarjous/${tarjous.id}/lataa-pdf">Lataa PDF</a>
+				<form action="${pageContext.request.contextPath}/tarjous/${tarjous.id}/poista" method="post"
+					class="m-0"
+					onsubmit="return confirm('Haluatko varmasti poistaa tarjouksen ${tarjous.tarjousNumero}? Tätä toimintoa ei voi perua.');">
+					<button type="submit" class="btn btn-danger">Poista</button>
+				</form>
 			</div>
 		</div>
 

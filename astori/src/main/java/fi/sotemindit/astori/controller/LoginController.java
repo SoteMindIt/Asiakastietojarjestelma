@@ -39,6 +39,7 @@ public class LoginController {
         // Tarkistetaan löytyykö käyttäjä ja täsmääkö kryptattu salasana
         if (kayttajaHaku.isPresent() && passwordEncoder.matches(password, kayttajaHaku.get().getSalasana())) {
             // Tallennetaan istuntoon tieto kirjautuneesta käyttäjästä
+            session.setMaxInactiveInterval(kayttajaHaku.get().getIstunnonAikakatkaisuMinuutteina() * 60);
             session.setAttribute("kirjautunutKayttaja", username);
             return "redirect:/"; // Ohjataan onnistuneen kirjautumisen jälkeen etusivulle
         }

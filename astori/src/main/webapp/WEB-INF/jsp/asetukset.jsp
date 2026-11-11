@@ -75,12 +75,24 @@ body {
 					aria-label="Close"></button>
 			</div>
 		</c:if>
+		<c:if test="${param.virhe == 'istunnon_aikakatkaisu'}">
+			<div class="alert alert-danger alert-dismissible fade show fw-bold" role="alert">
+				Valitse sallittu uloskirjautumisaika: 15, 30 tai 60 minuuttia.
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+		</c:if>
 		<c:if test="${param.success == 'company_updated'}">
 			<div class="alert alert-success alert-dismissible fade show fw-bold"
 				role="alert">
 				✓ Yrityksen tiedot päivitetty onnistuneesti!
 				<button type="button" class="btn-close" data-bs-dismiss="alert"
 					aria-label="Close"></button>
+			</div>
+		</c:if>
+		<c:if test="${param.success == 'session_timeout_updated'}">
+			<div class="alert alert-success alert-dismissible fade show fw-bold" role="alert">
+				✓ Automaattisen uloskirjautumisen aika päivitettiin.
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 			</div>
 		</c:if>
 		<c:if test="${param.success == 'user_created'}">
@@ -131,6 +143,25 @@ body {
 					aria-label="Close"></button>
 			</div>
 		</c:if>
+
+		<div class="settings-card mb-4">
+			<h5 class="fw-bold text-dark">Automaattinen uloskirjautuminen</h5>
+			<p class="text-muted mb-3">Valinta koskee vain omaa käyttäjätunnustasi. Aika lasketaan viimeisestä järjestelmän käytöstä.</p>
+			<form action="${pageContext.request.contextPath}/asetukset/tallenna-istunnon-aikakatkaisu"
+				method="post" class="row g-3 align-items-end">
+				<div class="col-md-5">
+					<label class="form-label fw-semibold" for="istunnonAikakatkaisu">Kirjaa ulos käyttämättömyyden jälkeen</label>
+					<select class="form-select" id="istunnonAikakatkaisu" name="aikakatkaisuMinuutteina" required>
+						<option value="15" ${istunnonAikakatkaisuMinuutteina == 15 ? 'selected' : ''}>15 minuuttia</option>
+						<option value="30" ${istunnonAikakatkaisuMinuutteina == 30 ? 'selected' : ''}>30 minuuttia</option>
+						<option value="60" ${istunnonAikakatkaisuMinuutteina == 60 ? 'selected' : ''}>60 minuuttia</option>
+					</select>
+				</div>
+				<div class="col-md-auto">
+					<button type="submit" class="btn btn-primary fw-bold">Tallenna</button>
+				</div>
+			</form>
+		</div>
 
 		<div class="row g-4">
 
