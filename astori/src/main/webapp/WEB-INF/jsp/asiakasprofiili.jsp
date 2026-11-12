@@ -843,6 +843,8 @@
 																	<td class="text-end">
 																		<a class="btn btn-sm btn-outline-secondary"
 																			href="${pageContext.request.contextPath}/asiakas/${asiakas.id}/sopimus/${sopimus.id}/lataa">Lataa PDF</a>
+																		<a class="btn btn-sm btn-outline-primary"
+																			href="${pageContext.request.contextPath}/asiakas/${asiakas.id}/sopimus/${sopimus.id}/muokkaa">Muokkaa</a>
 																		<form class="d-inline" method="post"
 																			action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/sopimus/${sopimus.id}/poista"
 																			onsubmit="return confirm('Haluatko varmasti poistaa tämän sopimuksen?');">

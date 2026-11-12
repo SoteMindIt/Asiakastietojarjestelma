@@ -19,6 +19,26 @@ public class Liitetiedosto {
     @jakarta.persistence.Column(name = "data", columnDefinition = "bytea", nullable = false)
     private byte[] data;
 
+	@Column(columnDefinition = "TEXT")
+	private String sopimusTiedot;
+
+	private String palveluntarjoajanNimi;
+	private String palveluntarjoajanYTunnus;
+	private String palveluntarjoajanOsoite;
+	private String asiakkaanNimi;
+	private String asiakkaanYTunnus;
+	private String asiakkaanOsoite;
+
+	@Column(columnDefinition = "TEXT")
+	private String sopimuksenKohdeJaSisalto;
+
+	@Column(columnDefinition = "TEXT")
+	private String hintaJaMaksuehdot;
+
+	private java.time.LocalDate sopimuksenAloituspaiva;
+	private String palveluntarjoajanEdustaja;
+	private String asiakkaanEdustaja;
+	private Boolean sahkoinenAllekirjoitus;
 
 	private LocalDateTime latausaika = LocalDateTime.now();
 
@@ -67,6 +87,43 @@ public class Liitetiedosto {
 
 	public void setData(byte[] data) {
 		this.data = data;
+	}
+
+	public String getSopimusTiedot() {
+		return sopimusTiedot;
+	}
+
+	public void setSopimusTiedot(String sopimusTiedot) {
+		this.sopimusTiedot = sopimusTiedot;
+	}
+
+	public String getPalveluntarjoajanNimi() { return palveluntarjoajanNimi; }
+	public void setPalveluntarjoajanNimi(String nimi) { this.palveluntarjoajanNimi = nimi; }
+	public String getPalveluntarjoajanYTunnus() { return palveluntarjoajanYTunnus; }
+	public void setPalveluntarjoajanYTunnus(String tunnus) { this.palveluntarjoajanYTunnus = tunnus; }
+	public String getPalveluntarjoajanOsoite() { return palveluntarjoajanOsoite; }
+	public void setPalveluntarjoajanOsoite(String osoite) { this.palveluntarjoajanOsoite = osoite; }
+	public String getAsiakkaanNimi() { return asiakkaanNimi; }
+	public void setAsiakkaanNimi(String nimi) { this.asiakkaanNimi = nimi; }
+	public String getAsiakkaanYTunnus() { return asiakkaanYTunnus; }
+	public void setAsiakkaanYTunnus(String tunnus) { this.asiakkaanYTunnus = tunnus; }
+	public String getAsiakkaanOsoite() { return asiakkaanOsoite; }
+	public void setAsiakkaanOsoite(String osoite) { this.asiakkaanOsoite = osoite; }
+	public String getSopimuksenKohdeJaSisalto() { return sopimuksenKohdeJaSisalto; }
+	public void setSopimuksenKohdeJaSisalto(String sisalto) { this.sopimuksenKohdeJaSisalto = sisalto; }
+	public String getHintaJaMaksuehdot() { return hintaJaMaksuehdot; }
+	public void setHintaJaMaksuehdot(String ehdot) { this.hintaJaMaksuehdot = ehdot; }
+	public java.time.LocalDate getSopimuksenAloituspaiva() { return sopimuksenAloituspaiva; }
+	public void setSopimuksenAloituspaiva(java.time.LocalDate paiva) { this.sopimuksenAloituspaiva = paiva; }
+	public String getPalveluntarjoajanEdustaja() { return palveluntarjoajanEdustaja; }
+	public void setPalveluntarjoajanEdustaja(String edustaja) { this.palveluntarjoajanEdustaja = edustaja; }
+	public String getAsiakkaanEdustaja() { return asiakkaanEdustaja; }
+	public void setAsiakkaanEdustaja(String edustaja) { this.asiakkaanEdustaja = edustaja; }
+	public Boolean getSahkoinenAllekirjoitus() { return sahkoinenAllekirjoitus; }
+	public void setSahkoinenAllekirjoitus(Boolean sahkoinen) { this.sahkoinenAllekirjoitus = sahkoinen; }
+
+	public boolean hasSopimustiedot() {
+		return palveluntarjoajanNimi != null;
 	}
 
 	public LocalDateTime getLatausaika() {

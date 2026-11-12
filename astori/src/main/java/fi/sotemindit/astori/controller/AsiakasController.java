@@ -9,6 +9,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -87,6 +89,8 @@ public class AsiakasController {
 
 	@Autowired
 	private SopimusPdfPalvelu sopimusPdfPalvelu;
+
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Autowired
 	private fi.sotemindit.astori.repository.KirjaustyyppiRepository kirjaustyyppiRepository;
@@ -284,14 +288,9 @@ public class AsiakasController {
 		}
 
 		Asiakas asiakas = haeOmistettuAsiakas(asiakasId, istuntoTunnus);
-		if (!Set.of("paperinen", "sahkoinen").contains(allekirjoitustapa)
-				|| !onKelvollinenTeksti(palveluntarjoajanNimi, 150)
-				|| !onKelvollinenTeksti(palveluntarjoajanYTunnus, 20)
-				|| !onKelvollinenTeksti(palveluntarjoajanOsoite, 250)
-				|| !onKelvollinenTeksti(sopimuksenKohdeJaSisalto, 5000)
-				|| !onKelvollinenTeksti(hintaJaMaksuehdot, 5000)
-				|| !onKelvollinenTeksti(palveluntarjoajanEdustaja, 150)
-				|| !onKelvollinenTeksti(asiakkaanEdustaja, 150)) {
+		if (!kelvollisetSopimustiedot(palveluntarjoajanNimi, palveluntarjoajanYTunnus,
+				palveluntarjoajanOsoite, sopimuksenKohdeJaSisalto, hintaJaMaksuehdot,
+				palveluntarjoajanEdustaja, asiakkaanEdustaja, allekirjoitustapa)) {
 			redirectAttributes.addFlashAttribute("virhe", "Tarkista sopimuksen lomaketiedot.");
 			return "redirect:/asiakas/" + asiakasId;
 		}
@@ -304,10 +303,93 @@ public class AsiakasController {
 				palveluntarjoajanEdustaja.trim(), asiakkaanEdustaja.trim(), "sahkoinen".equals(allekirjoitustapa));
 		byte[] pdf = sopimusPdfPalvelu.luoSopimusPdf(sopimustiedot);
 		String tiedostonNimi = muodostaSopimuksenTiedostonNimi(asiakas.getNimi(), LocalDateTime.now());
-		liitetiedostoRepository.save(new Liitetiedosto(tiedostonNimi, "PALVELUSOPIMUS", pdf, asiakas));
+		Liitetiedosto sopimus = new Liitetiedosto(tiedostonNimi, "PALVELUSOPIMUS", pdf, asiakas);
+		tallennaSopimusTiedot(sopimus, sopimustiedot);
+		liitetiedostoRepository.save(sopimus);
 		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS",
 				"Luotu palvelusopimus asiakkaalle '" + asiakas.getNimi() + "' (ID: " + asiakasId + ")."));
 		redirectAttributes.addFlashAttribute("viesti", "Palvelusopimus luotu ja tallennettu asiakkaalle.");
+		return "redirect:/asiakas/" + asiakasId;
+	}
+
+	@GetMapping("/asiakas/{asiakasId}/sopimus/{sopimusId}/muokkaa")
+	@Transactional
+	public String muokkaaSopimus(@PathVariable Long asiakasId, @PathVariable Long sopimusId,
+			jakarta.servlet.http.HttpSession session, Model model) throws IOException {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		Asiakas asiakas = haeOmistettuAsiakas(asiakasId, istuntoTunnus);
+		Liitetiedosto sopimus = haeOmistettuSopimus(asiakasId, sopimusId);
+		SopimusPdfPalvelu.SopimusTiedot tiedot;
+		boolean vanhaSopimusIlmanTietoja = !sopimus.hasSopimustiedot() && sopimus.getSopimusTiedot() == null;
+		if (sopimus.hasSopimustiedot()) {
+			tiedot = lueSopimusTiedot(sopimus);
+		} else if (sopimus.getSopimusTiedot() != null) {
+			tiedot = lueSopimusTiedot(sopimus.getSopimusTiedot());
+		} else {
+			Yritystiedot yritys = yritystiedotRepository.findById(1L).orElseGet(Yritystiedot::new);
+			Kayttaja kayttaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus).orElse(null);
+			tiedot = new SopimusPdfPalvelu.SopimusTiedot(
+					arvoTaiTyhja(yritys.getNimi()), arvoTaiTyhja(yritys.getyTunnus()), arvoTaiTyhja(yritys.getOsoite()),
+					asiakas.getNimi(), asiakas.getyTunnus(), muodostaAsiakkaanOsoite(asiakas),
+					"", "",
+					sopimus.getLatausaika() != null ? sopimus.getLatausaika().toLocalDate() : LocalDate.now(),
+					muodostaKayttajanNimi(kayttaja, istuntoTunnus),
+					"", false);
+		}
+
+		model.addAttribute("asiakas", asiakas);
+		model.addAttribute("sopimus", sopimus);
+		model.addAttribute("sopimustiedot", tiedot);
+		model.addAttribute("vanhaSopimusIlmanTietoja", vanhaSopimusIlmanTietoja);
+		return "sopimus-muokkaa";
+	}
+
+	@Transactional
+	@PostMapping("/asiakas/{asiakasId}/sopimus/{sopimusId}/muokkaa")
+	public String tallennaMuokattuSopimus(@PathVariable Long asiakasId, @PathVariable Long sopimusId,
+			jakarta.servlet.http.HttpSession session, @RequestParam String palveluntarjoajanNimi,
+			@RequestParam String palveluntarjoajanYTunnus, @RequestParam String palveluntarjoajanOsoite,
+			@RequestParam String sopimuksenKohdeJaSisalto, @RequestParam String hintaJaMaksuehdot,
+			@RequestParam LocalDate aloituspaiva, @RequestParam String palveluntarjoajanEdustaja,
+			@RequestParam String asiakkaanEdustaja, @RequestParam String allekirjoitustapa,
+			org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes)
+			throws IOException, DocumentException {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		Asiakas asiakas = haeOmistettuAsiakas(asiakasId, istuntoTunnus);
+		Liitetiedosto sopimus = haeOmistettuSopimus(asiakasId, sopimusId);
+		if (!kelvollisetSopimustiedot(palveluntarjoajanNimi, palveluntarjoajanYTunnus,
+				palveluntarjoajanOsoite, sopimuksenKohdeJaSisalto, hintaJaMaksuehdot,
+				palveluntarjoajanEdustaja, asiakkaanEdustaja, allekirjoitustapa)) {
+			redirectAttributes.addFlashAttribute("virhe", "Tarkista sopimuksen lomaketiedot.");
+			return "redirect:/asiakas/" + asiakasId + "/sopimus/" + sopimusId + "/muokkaa";
+		}
+
+		SopimusPdfPalvelu.SopimusTiedot vanhatTiedot = sopimus.hasSopimustiedot()
+				? lueSopimusTiedot(sopimus)
+				: sopimus.getSopimusTiedot() != null ? lueSopimusTiedot(sopimus.getSopimusTiedot()) : null;
+		SopimusPdfPalvelu.SopimusTiedot tiedot = new SopimusPdfPalvelu.SopimusTiedot(
+				palveluntarjoajanNimi.trim(), palveluntarjoajanYTunnus.trim(), palveluntarjoajanOsoite.trim(),
+				vanhatTiedot != null ? vanhatTiedot.asiakkaanNimi() : asiakas.getNimi(),
+				vanhatTiedot != null ? vanhatTiedot.asiakkaanYTunnus() : asiakas.getyTunnus(),
+				vanhatTiedot != null ? vanhatTiedot.asiakkaanOsoite() : muodostaAsiakkaanOsoite(asiakas),
+				sopimuksenKohdeJaSisalto.trim(), hintaJaMaksuehdot.trim(), aloituspaiva,
+				palveluntarjoajanEdustaja.trim(), asiakkaanEdustaja.trim(), "sahkoinen".equals(allekirjoitustapa));
+		sopimus.setData(sopimusPdfPalvelu.luoSopimusPdf(tiedot));
+		tallennaSopimusTiedot(sopimus, tiedot);
+		sopimus.setSopimusTiedot(null);
+		liitetiedostoRepository.save(sopimus);
+		lokiRepository.save(new Loki(istuntoTunnus, "MUOKKAUS",
+				"Muokattu palvelusopimusta '" + sopimus.getTiedostonNimi() + "' asiakkaalla '"
+						+ asiakas.getNimi() + "' (ID: " + asiakasId + ")."));
+		redirectAttributes.addFlashAttribute("viesti", "Sopimuksen tiedot ja PDF päivitetty.");
 		return "redirect:/asiakas/" + asiakasId;
 	}
 
@@ -331,6 +413,66 @@ public class AsiakasController {
 				.filename(sopimus.getTiedostonNimi(), StandardCharsets.UTF_8).build());
 		otsakkeet.setContentLength(sopimus.getData().length);
 		return new ResponseEntity<>(sopimus.getData(), otsakkeet, HttpStatus.OK);
+	}
+
+	private Liitetiedosto haeOmistettuSopimus(Long asiakasId, Long sopimusId) {
+		return liitetiedostoRepository.findById(sopimusId)
+				.filter(liite -> liite.getAsiakas().getId().equals(asiakasId)
+						&& "PALVELUSOPIMUS".equals(liite.getKuvaus()))
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sopimusta ei löytynyt."));
+	}
+
+	private boolean kelvollisetSopimustiedot(String palveluntarjoajanNimi, String palveluntarjoajanYTunnus,
+			String palveluntarjoajanOsoite, String sopimuksenKohdeJaSisalto, String hintaJaMaksuehdot,
+			String palveluntarjoajanEdustaja, String asiakkaanEdustaja, String allekirjoitustapa) {
+		return Set.of("paperinen", "sahkoinen").contains(allekirjoitustapa)
+				&& onKelvollinenTeksti(palveluntarjoajanNimi, 150)
+				&& onKelvollinenTeksti(palveluntarjoajanYTunnus, 20)
+				&& onKelvollinenTeksti(palveluntarjoajanOsoite, 250)
+				&& onKelvollinenTeksti(sopimuksenKohdeJaSisalto, 5000)
+				&& onKelvollinenTeksti(hintaJaMaksuehdot, 5000)
+				&& onKelvollinenTeksti(palveluntarjoajanEdustaja, 150)
+				&& onKelvollinenTeksti(asiakkaanEdustaja, 150);
+	}
+
+	private String arvoTaiTyhja(String arvo) {
+		return arvo == null ? "" : arvo;
+	}
+
+	private void tallennaSopimusTiedot(Liitetiedosto sopimus, SopimusPdfPalvelu.SopimusTiedot tiedot) {
+		sopimus.setPalveluntarjoajanNimi(tiedot.palveluntarjoajanNimi());
+		sopimus.setPalveluntarjoajanYTunnus(tiedot.palveluntarjoajanYTunnus());
+		sopimus.setPalveluntarjoajanOsoite(tiedot.palveluntarjoajanOsoite());
+		sopimus.setAsiakkaanNimi(tiedot.asiakkaanNimi());
+		sopimus.setAsiakkaanYTunnus(tiedot.asiakkaanYTunnus());
+		sopimus.setAsiakkaanOsoite(tiedot.asiakkaanOsoite());
+		sopimus.setSopimuksenKohdeJaSisalto(tiedot.sopimuksenKohdeJaSisalto());
+		sopimus.setHintaJaMaksuehdot(tiedot.hintaJaMaksuehdot());
+		sopimus.setSopimuksenAloituspaiva(tiedot.aloituspaiva());
+		sopimus.setPalveluntarjoajanEdustaja(tiedot.palveluntarjoajanEdustaja());
+		sopimus.setAsiakkaanEdustaja(tiedot.asiakkaanEdustaja());
+		sopimus.setSahkoinenAllekirjoitus(tiedot.sahkoinenAllekirjoitus());
+	}
+
+	private SopimusPdfPalvelu.SopimusTiedot lueSopimusTiedot(Liitetiedosto sopimus) {
+		return new SopimusPdfPalvelu.SopimusTiedot(
+				sopimus.getPalveluntarjoajanNimi(), sopimus.getPalveluntarjoajanYTunnus(),
+				sopimus.getPalveluntarjoajanOsoite(), sopimus.getAsiakkaanNimi(), sopimus.getAsiakkaanYTunnus(),
+				sopimus.getAsiakkaanOsoite(), sopimus.getSopimuksenKohdeJaSisalto(),
+				sopimus.getHintaJaMaksuehdot(), sopimus.getSopimuksenAloituspaiva(),
+				sopimus.getPalveluntarjoajanEdustaja(), sopimus.getAsiakkaanEdustaja(),
+				Boolean.TRUE.equals(sopimus.getSahkoinenAllekirjoitus()));
+	}
+
+	private SopimusPdfPalvelu.SopimusTiedot lueSopimusTiedot(String json) throws IOException {
+		Map<String, String> arvot = objectMapper.readValue(json, new TypeReference<>() {});
+		return new SopimusPdfPalvelu.SopimusTiedot(
+				arvot.get("palveluntarjoajanNimi"), arvot.get("palveluntarjoajanYTunnus"),
+				arvot.get("palveluntarjoajanOsoite"), arvot.get("asiakkaanNimi"),
+				arvot.get("asiakkaanYTunnus"), arvot.get("asiakkaanOsoite"),
+				arvot.get("sopimuksenKohdeJaSisalto"), arvot.get("hintaJaMaksuehdot"),
+				LocalDate.parse(arvot.get("aloituspaiva")), arvot.get("palveluntarjoajanEdustaja"),
+				arvot.get("asiakkaanEdustaja"), Boolean.parseBoolean(arvot.get("sahkoinenAllekirjoitus")));
 	}
 
 	@Transactional

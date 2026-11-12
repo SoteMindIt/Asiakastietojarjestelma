@@ -312,5 +312,19 @@ public class SopimusPdfPalvelu {
 			String palveluntarjoajanOsoite, String asiakkaanNimi, String asiakkaanYTunnus, String asiakkaanOsoite,
 			String sopimuksenKohdeJaSisalto, String hintaJaMaksuehdot, java.time.LocalDate aloituspaiva,
 			String palveluntarjoajanEdustaja, String asiakkaanEdustaja, boolean sahkoinenAllekirjoitus) {
+
+		public String getPalveluntarjoajanNimi() { return palveluntarjoajanNimi; }
+		public String getPalveluntarjoajanYTunnus() { return palveluntarjoajanYTunnus; }
+		public String getPalveluntarjoajanOsoite() { return palveluntarjoajanOsoite; }
+		public String getAsiakkaanNimi() { return asiakkaanNimi; }
+		public String getAsiakkaanYTunnus() { return asiakkaanYTunnus; }
+		public String getAsiakkaanOsoite() { return asiakkaanOsoite; }
+		public String getSopimuksenKohdeJaSisalto() { return sopimuksenKohdeJaSisalto; }
+		public String getHintaJaMaksuehdot() { return hintaJaMaksuehdot; }
+		public java.time.LocalDate getAloituspaiva() { return aloituspaiva; }
+		public String getPalveluntarjoajanEdustaja() { return palveluntarjoajanEdustaja; }
+		public String getAsiakkaanEdustaja() { return asiakkaanEdustaja; }
+		public boolean isSahkoinenAllekirjoitus() { return sahkoinenAllekirjoitus; }
 	}
+
 }
