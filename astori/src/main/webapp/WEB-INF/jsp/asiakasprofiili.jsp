@@ -75,7 +75,7 @@
 						<!-- TAKAISIN-LINKKI -->
 						<div class="mb-3">
 							<a class="btn btn-link p-0 text-decoration-none"
-								href="${pageContext.request.contextPath}/asiakkaat">&larr;
+								href="${pageContext.request.contextPath}/asiakkaat?page=${asiakaslistanPaluusivu}">&larr;
 								Takaisin asiakaslistaukseen</a>
 						</div>
 						<c:if test="${not empty viesti}">
@@ -1606,6 +1606,7 @@
 								</div>
 								<form action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/muokkaa"
 									method="post">
+									<input type="hidden" name="returnPage" value="${asiakaslistanPaluusivu}">
 									<div class="modal-body p-4">
 										<div class="row g-3">
 											<div class="col-12">

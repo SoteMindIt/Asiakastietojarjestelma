@@ -229,7 +229,8 @@ public class AsiakasController {
 	// kirjaukset ja tarjoukset
 	@Transactional
 	@GetMapping("/asiakas/{id}")
-	public String naytaAsiakas(@PathVariable Long id, jakarta.servlet.http.HttpSession session, Model model) {
+	public String naytaAsiakas(@PathVariable Long id, jakarta.servlet.http.HttpSession session, Model model,
+			@RequestParam(value = "returnPage", defaultValue = "0") int returnPage) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
@@ -254,6 +255,7 @@ public class AsiakasController {
 		List<Tarjous> tarjoukset = tarjousRepository.findByAsiakasId(id);
 
 		model.addAttribute("asiakas", asiakas);
+		model.addAttribute("asiakaslistanPaluusivu", Math.max(0, returnPage));
 		model.addAttribute("liitteet", liitteet);
 		model.addAttribute("sopimukset", sopimukset);
 		model.addAttribute("yhteyshenkilot", yhteyshenkilot);
@@ -610,6 +612,7 @@ public class AsiakasController {
 			@RequestParam(required = false) Hyvinvointialue hyvinvointialue,
 			@RequestParam(value = "kotihoitoyritys", defaultValue = "false") boolean kotihoitoyritys,
 			@RequestParam(value = "asumispalveluyritys", defaultValue = "false") boolean asumispalveluyritys,
+			@RequestParam(value = "returnPage", defaultValue = "0") int returnPage,
 			jakarta.servlet.http.HttpSession session) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -637,7 +640,7 @@ public class AsiakasController {
 
 		asiakasRepository.save(asiakas);
 
-		return "redirect:/asiakas/" + id;
+		return "redirect:/asiakas/" + id + "?returnPage=" + Math.max(0, returnPage);
 	}
 
 	// 💡 LISÄTTY: Täydellinen Live Search, joka palauttaa pelkät valmiit
@@ -649,7 +652,8 @@ public class AsiakasController {
 			@org.springframework.web.bind.annotation.RequestParam(value = "alue", required = false) String alue,
 			@org.springframework.web.bind.annotation.RequestParam(value = "tila", required = false) String tila,
 			@org.springframework.web.bind.annotation.RequestParam(value = "kotihoito", defaultValue = "false") boolean kotihoito,
-			@org.springframework.web.bind.annotation.RequestParam(value = "asumispalvelu", defaultValue = "false") boolean asumispalvelu) {
+			@org.springframework.web.bind.annotation.RequestParam(value = "asumispalvelu", defaultValue = "false") boolean asumispalvelu,
+			@org.springframework.web.bind.annotation.RequestParam(value = "returnPage", defaultValue = "0") int returnPage) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "";
@@ -683,10 +687,12 @@ public class AsiakasController {
 		// JSP-tiedostoa
 		StringBuilder html = new StringBuilder();
 		String contextPath = session.getServletContext().getContextPath();
+		int asiakaslistanPaluusivu = Math.max(0, returnPage);
 
 		for (fi.sotemindit.astori.model.Asiakas a : tulokset.getContent()) {
 			html.append("<tr>");
 			html.append("<td><strong><a href=\"").append(contextPath).append("/asiakas/").append(a.getId())
+					.append("?returnPage=").append(asiakaslistanPaluusivu)
 					.append("\" class=\"text-decoration-none text-dark\">").append(a.getNimi())
 					.append("</a></strong></td>");
 			html.append("<td>").append(a.getyTunnus() != null ? a.getyTunnus() : "").append("</td>");
@@ -702,6 +708,7 @@ public class AsiakasController {
 			}
 			html.append("</td>");
 			html.append("<td class=\"text-end\"><a href=\"").append(contextPath).append("/asiakas/").append(a.getId())
+					.append("?returnPage=").append(asiakaslistanPaluusivu)
 					.append("\" class=\"btn btn-sm btn-outline-primary fw-bold\">Avaa profiili</a></td>");
 			html.append("</tr>");
 		}

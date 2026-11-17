@@ -57,6 +57,7 @@
 
 				<!-- Asiakashaku -->
 				<form action="${pageContext.request.contextPath}/asiakkaat" method="get" class="mb-4">
+					<input type="hidden" name="returnPage" value="${currentPage}">
 					<div class="row g-2 align-items-center bg-light p-3 rounded shadow-sm border">
 
 						<!-- 1. Vapaasanahaku -->
@@ -144,7 +145,7 @@
 								<tbody id="asiakasTaulukkoRunko">
 									<c:forEach var="a" items="${asiakkaat}">
 										<tr>
-											<td><strong><a href="${pageContext.request.contextPath}/asiakas/${a.id}"
+											<td><strong><a href="${pageContext.request.contextPath}/asiakas/${a.id}?returnPage=${currentPage}"
 														class="text-decoration-none text-dark">${a.nimi}</a></strong>
 											</td>
 											<td>${a.yTunnus}</td>
@@ -189,7 +190,7 @@
 											</td>
 
 											<td class="text-end"><a
-													href="${pageContext.request.contextPath}/asiakas/${a.id}"
+													href="${pageContext.request.contextPath}/asiakas/${a.id}?returnPage=${currentPage}"
 													class="btn btn-sm btn-outline-primary fw-bold">Avaa
 													profiili</a></td>
 										</tr>
