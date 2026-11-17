@@ -52,6 +52,9 @@ public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 	@Query("SELECT DISTINCT a FROM Asiakas a WHERE a.kayttaja.kayttajatunnus = :tunnus " +
 			"AND (:tila IS NULL OR a.tila = :tila) " +
 			"AND (:hyvinvointialue IS NULL OR a.hyvinvointialue = :hyvinvointialue) " +
+			"AND ((:kotihoito = false AND :asumispalvelu = false) " +
+			"OR (:kotihoito = true AND a.kotihoitoyritys = true) " +
+			"OR (:asumispalvelu = true AND a.asumispalveluyritys = true)) " +
 			"AND (:haku = '' OR " +
 			"LOWER(a.nimi) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
 			"LOWER(a.sahkoposti) LIKE LOWER(CONCAT('%', :haku, '%')) OR " +
@@ -61,6 +64,8 @@ public interface AsiakasRepository extends JpaRepository<Asiakas, Long> {
 			@Param("tunnus") String tunnus,
 			@Param("tila") AsiakkaanTila tila,
 			@Param("hyvinvointialue") Hyvinvointialue hyvinvointialue,
+			@Param("kotihoito") boolean kotihoito,
+			@Param("asumispalvelu") boolean asumispalvelu,
 			@Param("haku") String haku,
 			Pageable pageable);
 }

@@ -97,6 +97,12 @@
 										<h2 class="fw-bold h4 text-dark mb-1">${asiakas.nimi}</h2>
 										<div class="d-flex gap-2 align-items-center flex-wrap">
 											<span class="badge bg-secondary">ID #${asiakas.id}</span>
+											<c:if test="${asiakas.kotihoitoyritys}">
+												<span class="badge bg-info text-dark">Kotihoitoyritys</span>
+											</c:if>
+											<c:if test="${asiakas.asumispalveluyritys}">
+												<span class="badge bg-warning text-dark">Asumispalveluyritys</span>
+											</c:if>
 											<c:if test="${not empty Myyntiputki_tila}">
 												<span
 													class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-2 fw-semibold">
@@ -1673,6 +1679,24 @@
 															>${tilaVaihtoehto.nayttorivi}</option>
 													</c:forEach>
 												</select>
+											</div>
+											<div class="col-12">
+												<label class="form-label fw-bold small text-secondary">Yritystyyppi</label>
+												<div class="form-check">
+													<input class="form-check-input" type="checkbox" name="kotihoitoyritys"
+														value="true" id="muokkaaKotihoitoyritys"
+														${asiakas.kotihoitoyritys ? 'checked' : ''}>
+													<label class="form-check-label" for="muokkaaKotihoitoyritys">
+														Kotihoitoyritys</label>
+												</div>
+												<div class="form-check">
+													<input class="form-check-input" type="checkbox"
+														name="asumispalveluyritys" value="true"
+														id="muokkaaAsumispalveluyritys"
+														${asiakas.asumispalveluyritys ? 'checked' : ''}>
+													<label class="form-check-label" for="muokkaaAsumispalveluyritys">
+														Asumispalveluyritys</label>
+												</div>
 											</div>
 											<div class="col-12">
 												<label class="form-label fw-bold small text-secondary">Toiminnan

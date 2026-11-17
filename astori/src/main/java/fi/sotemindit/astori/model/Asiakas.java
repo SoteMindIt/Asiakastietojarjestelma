@@ -36,6 +36,12 @@ public class Asiakas {
 	@Column(nullable = false)
 	private AsiakkaanTila tila = AsiakkaanTila.PROSPEKTI;
 
+	@Column(nullable = false, columnDefinition = "boolean default false")
+	private boolean kotihoitoyritys;
+
+	@Column(nullable = false, columnDefinition = "boolean default false")
+	private boolean asumispalveluyritys;
+
 	@jakarta.persistence.ManyToOne
 	@jakarta.persistence.JoinColumn(name = "kayttaja_id")
 	private Kayttaja kayttaja;
@@ -163,6 +169,22 @@ public class Asiakas {
 
 	public void setTila(AsiakkaanTila tila) {
 		this.tila = tila;
+	}
+
+	public boolean isKotihoitoyritys() {
+		return kotihoitoyritys;
+	}
+
+	public void setKotihoitoyritys(boolean kotihoitoyritys) {
+		this.kotihoitoyritys = kotihoitoyritys;
+	}
+
+	public boolean isAsumispalveluyritys() {
+		return asumispalveluyritys;
+	}
+
+	public void setAsumispalveluyritys(boolean asumispalveluyritys) {
+		this.asumispalveluyritys = asumispalveluyritys;
 	}
 
 	public Kayttaja getKayttaja() {

@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -101,6 +102,8 @@ public class AsiakasController {
 				@RequestParam(value = "haku", required = false) String haku,
 				@RequestParam(value = "alue", required = false) String alue,
 				@RequestParam(value = "tila", required = false) String tila,
+				@RequestParam(value = "kotihoito", defaultValue = "false") boolean kotihoito,
+				@RequestParam(value = "asumispalvelu", defaultValue = "false") boolean asumispalvelu,
 				Model model) {
 
 			String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
@@ -135,7 +138,7 @@ public class AsiakasController {
 			}
 
 			asiakasSivu = asiakasRepository.haeSuodattimilla(istuntoTunnus, valittuTila, valittuAlue,
-					hakusana != null ? hakusana : "", pageable);
+					kotihoito, asumispalvelu, hakusana != null ? hakusana : "", pageable);
 
 			// Viedään tiedot asiakkaat.jsp-sivulle
 			model.addAttribute("asiakkaat", asiakasSivu.getContent());
@@ -145,6 +148,8 @@ public class AsiakasController {
 			model.addAttribute("haku", hakusana != null ? hakusana : "");
 			model.addAttribute("valittuAlue", valittuAlue != null ? valittuAlue.name() : "");
 			model.addAttribute("valittuTila", valittuTila != null ? valittuTila.name() : "");
+			model.addAttribute("valittuKotihoito", kotihoito);
+			model.addAttribute("valittuAsumispalvelu", asumispalvelu);
 
 			model.addAttribute("hyvinvointialueet", fi.sotemindit.astori.model.Hyvinvointialue.values());
 
@@ -158,6 +163,8 @@ public class AsiakasController {
 			@RequestParam(value = "yTunnus", required = false) String yTunnus,
 			@RequestParam(required = false) String kuvaus, @RequestParam(required = false) String sahkoposti,
 			@RequestParam(required = false) String puhelin, @RequestParam AsiakkaanTila tila,
+			@RequestParam(value = "kotihoitoyritys", defaultValue = "false") boolean kotihoitoyritys,
+			@RequestParam(value = "asumispalveluyritys", defaultValue = "false") boolean asumispalveluyritys,
 			@RequestParam(required = false) String katuosoite, @RequestParam(required = false) String postinumero,
 			@RequestParam(required = false) String postitoimipaikka, @RequestParam(required = false) String kotisivu,
 			@RequestParam(required = false) Hyvinvointialue hyvinvointialue) {
@@ -172,6 +179,8 @@ public class AsiakasController {
 		// Luodaan uusi asiakas
 		Asiakas uusiAsiakas = new Asiakas(nimi, puhelin, sahkoposti, katuosoite, postinumero, postitoimipaikka,
 				kotisivu, tila, yTunnus, kuvaus, hyvinvointialue);
+		uusiAsiakas.setKotihoitoyritys(kotihoitoyritys);
+		uusiAsiakas.setAsumispalveluyritys(asumispalveluyritys);
 
 		uusiAsiakas.setKayttaja(nykyinenKayttaja);
 		asiakasRepository.save(uusiAsiakas);
@@ -289,7 +298,8 @@ public class AsiakasController {
 
 		Asiakas asiakas = haeOmistettuAsiakas(asiakasId, istuntoTunnus);
 		if (!kelvollisetSopimustiedot(palveluntarjoajanNimi, palveluntarjoajanYTunnus,
-				palveluntarjoajanOsoite, sopimuksenKohdeJaSisalto, hintaJaMaksuehdot,
+				palveluntarjoajanOsoite, asiakas.getNimi(), asiakas.getyTunnus(),
+				muodostaAsiakkaanOsoite(asiakas), sopimuksenKohdeJaSisalto, hintaJaMaksuehdot,
 				palveluntarjoajanEdustaja, asiakkaanEdustaja, allekirjoitustapa)) {
 			redirectAttributes.addFlashAttribute("virhe", "Tarkista sopimuksen lomaketiedot.");
 			return "redirect:/asiakas/" + asiakasId;
@@ -353,6 +363,9 @@ public class AsiakasController {
 	public String tallennaMuokattuSopimus(@PathVariable Long asiakasId, @PathVariable Long sopimusId,
 			jakarta.servlet.http.HttpSession session, @RequestParam String palveluntarjoajanNimi,
 			@RequestParam String palveluntarjoajanYTunnus, @RequestParam String palveluntarjoajanOsoite,
+			@RequestParam(required = false, defaultValue = "") String asiakkaanNimi,
+			@RequestParam(required = false, defaultValue = "") String asiakkaanYTunnus,
+			@RequestParam(required = false, defaultValue = "") String asiakkaanOsoite,
 			@RequestParam String sopimuksenKohdeJaSisalto, @RequestParam String hintaJaMaksuehdot,
 			@RequestParam LocalDate aloituspaiva, @RequestParam String palveluntarjoajanEdustaja,
 			@RequestParam String asiakkaanEdustaja, @RequestParam String allekirjoitustapa,
@@ -366,20 +379,16 @@ public class AsiakasController {
 		Asiakas asiakas = haeOmistettuAsiakas(asiakasId, istuntoTunnus);
 		Liitetiedosto sopimus = haeOmistettuSopimus(asiakasId, sopimusId);
 		if (!kelvollisetSopimustiedot(palveluntarjoajanNimi, palveluntarjoajanYTunnus,
-				palveluntarjoajanOsoite, sopimuksenKohdeJaSisalto, hintaJaMaksuehdot,
+				palveluntarjoajanOsoite, asiakkaanNimi, asiakkaanYTunnus, asiakkaanOsoite,
+				sopimuksenKohdeJaSisalto, hintaJaMaksuehdot,
 				palveluntarjoajanEdustaja, asiakkaanEdustaja, allekirjoitustapa)) {
 			redirectAttributes.addFlashAttribute("virhe", "Tarkista sopimuksen lomaketiedot.");
 			return "redirect:/asiakas/" + asiakasId + "/sopimus/" + sopimusId + "/muokkaa";
 		}
 
-		SopimusPdfPalvelu.SopimusTiedot vanhatTiedot = sopimus.hasSopimustiedot()
-				? lueSopimusTiedot(sopimus)
-				: sopimus.getSopimusTiedot() != null ? lueSopimusTiedot(sopimus.getSopimusTiedot()) : null;
 		SopimusPdfPalvelu.SopimusTiedot tiedot = new SopimusPdfPalvelu.SopimusTiedot(
 				palveluntarjoajanNimi.trim(), palveluntarjoajanYTunnus.trim(), palveluntarjoajanOsoite.trim(),
-				vanhatTiedot != null ? vanhatTiedot.asiakkaanNimi() : asiakas.getNimi(),
-				vanhatTiedot != null ? vanhatTiedot.asiakkaanYTunnus() : asiakas.getyTunnus(),
-				vanhatTiedot != null ? vanhatTiedot.asiakkaanOsoite() : muodostaAsiakkaanOsoite(asiakas),
+				asiakkaanNimi.trim(), asiakkaanYTunnus.trim(), asiakkaanOsoite.trim(),
 				sopimuksenKohdeJaSisalto.trim(), hintaJaMaksuehdot.trim(), aloituspaiva,
 				palveluntarjoajanEdustaja.trim(), asiakkaanEdustaja.trim(), "sahkoinen".equals(allekirjoitustapa));
 		sopimus.setData(sopimusPdfPalvelu.luoSopimusPdf(tiedot));
@@ -423,12 +432,16 @@ public class AsiakasController {
 	}
 
 	private boolean kelvollisetSopimustiedot(String palveluntarjoajanNimi, String palveluntarjoajanYTunnus,
-			String palveluntarjoajanOsoite, String sopimuksenKohdeJaSisalto, String hintaJaMaksuehdot,
+			String palveluntarjoajanOsoite, String asiakkaanNimi, String asiakkaanYTunnus, String asiakkaanOsoite,
+			String sopimuksenKohdeJaSisalto, String hintaJaMaksuehdot,
 			String palveluntarjoajanEdustaja, String asiakkaanEdustaja, String allekirjoitustapa) {
 		return Set.of("paperinen", "sahkoinen").contains(allekirjoitustapa)
 				&& onKelvollinenTeksti(palveluntarjoajanNimi, 150)
 				&& onKelvollinenTeksti(palveluntarjoajanYTunnus, 20)
 				&& onKelvollinenTeksti(palveluntarjoajanOsoite, 250)
+				&& onKelvollinenValinnainenTeksti(asiakkaanNimi, 150)
+				&& onKelvollinenValinnainenTeksti(asiakkaanYTunnus, 20)
+				&& onKelvollinenValinnainenTeksti(asiakkaanOsoite, 250)
 				&& onKelvollinenTeksti(sopimuksenKohdeJaSisalto, 5000)
 				&& onKelvollinenTeksti(hintaJaMaksuehdot, 5000)
 				&& onKelvollinenTeksti(palveluntarjoajanEdustaja, 150)
@@ -437,6 +450,10 @@ public class AsiakasController {
 
 	private String arvoTaiTyhja(String arvo) {
 		return arvo == null ? "" : arvo;
+	}
+
+	private boolean onKelvollinenValinnainenTeksti(String arvo, int enimmainspituus) {
+		return arvo == null || arvo.length() <= enimmainspituus;
 	}
 
 	private void tallennaSopimusTiedot(Liitetiedosto sopimus, SopimusPdfPalvelu.SopimusTiedot tiedot) {
@@ -590,7 +607,10 @@ public class AsiakasController {
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
 			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,
 			@RequestParam(required = false) String kotisivu,
-			@RequestParam(required = false) Hyvinvointialue hyvinvointialue, jakarta.servlet.http.HttpSession session) {
+			@RequestParam(required = false) Hyvinvointialue hyvinvointialue,
+			@RequestParam(value = "kotihoitoyritys", defaultValue = "false") boolean kotihoitoyritys,
+			@RequestParam(value = "asumispalveluyritys", defaultValue = "false") boolean asumispalveluyritys,
+			jakarta.servlet.http.HttpSession session) {
 
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
@@ -612,6 +632,8 @@ public class AsiakasController {
 		asiakas.setPostitoimipaikka(postitoimipaikka);
 		asiakas.setKotisivu(kotisivu);
 		asiakas.setHyvinvointialue(hyvinvointialue);
+		asiakas.setKotihoitoyritys(kotihoitoyritys);
+		asiakas.setAsumispalveluyritys(asumispalveluyritys);
 
 		asiakasRepository.save(asiakas);
 
@@ -625,7 +647,9 @@ public class AsiakasController {
 	public String liveHaku(jakarta.servlet.http.HttpSession session,
 			@org.springframework.web.bind.annotation.RequestParam(value = "haku", required = false, defaultValue = "") String haku,
 			@org.springframework.web.bind.annotation.RequestParam(value = "alue", required = false) String alue,
-			@org.springframework.web.bind.annotation.RequestParam(value = "tila", required = false) String tila) {
+			@org.springframework.web.bind.annotation.RequestParam(value = "tila", required = false) String tila,
+			@org.springframework.web.bind.annotation.RequestParam(value = "kotihoito", defaultValue = "false") boolean kotihoito,
+			@org.springframework.web.bind.annotation.RequestParam(value = "asumispalvelu", defaultValue = "false") boolean asumispalvelu) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "";
@@ -653,7 +677,7 @@ public class AsiakasController {
 				org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "nimi"));
 
 		org.springframework.data.domain.Page<fi.sotemindit.astori.model.Asiakas> tulokset = asiakasRepository.haeSuodattimilla(
-				istuntoTunnus, valittuTila, valittuAlue, haku.trim(), maxOsumat);
+				istuntoTunnus, valittuTila, valittuAlue, kotihoito, asumispalvelu, haku.trim(), maxOsumat);
 
 		// Rakennetaan dynaamiset taulukkorivit puhtaaksi tekstiksi ilman erillistä
 		// JSP-tiedostoa
@@ -669,6 +693,14 @@ public class AsiakasController {
 			html.append("<td>").append(a.getPuhelin() != null ? a.getPuhelin() : "").append("</td>");
 			html.append("<td>").append(a.getSahkoposti() != null ? a.getSahkoposti() : "").append("</td>");
 			html.append("<td><span class=\"badge bg-primary\">").append(a.getTila()).append("</span></td>");
+			html.append("<td>");
+			if (a.isKotihoitoyritys()) {
+				html.append("<span class=\"badge bg-info text-dark me-1\">Kotihoito</span>");
+			}
+			if (a.isAsumispalveluyritys()) {
+				html.append("<span class=\"badge bg-warning text-dark\">Asumispalvelut</span>");
+			}
+			html.append("</td>");
 			html.append("<td class=\"text-end\"><a href=\"").append(contextPath).append("/asiakas/").append(a.getId())
 					.append("\" class=\"btn btn-sm btn-outline-primary fw-bold\">Avaa profiili</a></td>");
 			html.append("</tr>");
@@ -676,7 +708,7 @@ public class AsiakasController {
 
 		if (tulokset.getContent().isEmpty()) {
 			html.append(
-					"<tr><td colspan=\"6\" class=\"text-center py-4 text-muted\">Hakuehdolla ei löytynyt yhtään asiakasta koko tietokannasta.</td></tr>");
+					"<tr><td colspan=\"7\" class=\"text-center py-4 text-muted\">Hakuehdolla ei löytynyt yhtään asiakasta koko tietokannasta.</td></tr>");
 		}
 
 		return html.toString();

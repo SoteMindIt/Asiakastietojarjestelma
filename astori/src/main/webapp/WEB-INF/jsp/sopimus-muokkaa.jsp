@@ -62,6 +62,21 @@
 						<input id="palveluntarjoajanOsoite" class="form-control" name="palveluntarjoajanOsoite"
 							value="<c:out value='${sopimustiedot.palveluntarjoajanOsoite}'/>" maxlength="250" required>
 					</div>
+					<div class="col-md-6">
+						<label class="form-label fw-bold" for="asiakkaanNimi">Asiakas</label>
+						<input id="asiakkaanNimi" class="form-control" name="asiakkaanNimi"
+							value="<c:out value='${sopimustiedot.asiakkaanNimi}'/>" maxlength="150">
+					</div>
+					<div class="col-md-6">
+						<label class="form-label fw-bold" for="asiakkaanYTunnus">Asiakkaan Y-tunnus</label>
+						<input id="asiakkaanYTunnus" class="form-control" name="asiakkaanYTunnus"
+							value="<c:out value='${sopimustiedot.asiakkaanYTunnus}'/>" maxlength="20">
+					</div>
+					<div class="col-12">
+						<label class="form-label fw-bold" for="asiakkaanOsoite">Asiakkaan osoite</label>
+						<input id="asiakkaanOsoite" class="form-control" name="asiakkaanOsoite"
+							value="<c:out value='${sopimustiedot.asiakkaanOsoite}'/>" maxlength="250">
+					</div>
 					<div class="col-12">
 						<label class="form-label fw-bold" for="sopimuksenKohdeJaSisalto">2. Sopimuksen kohde ja sisältö *</label>
 						<textarea id="sopimuksenKohdeJaSisalto" class="form-control" name="sopimuksenKohdeJaSisalto"

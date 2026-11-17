@@ -29,6 +29,7 @@ Astori on moderni asiakkuudenhallintajärjestelmä ei pelkästään sote-alalle,
 - Koordinaatit: `Double leveysaste` (Latitude) ja `Double pituusaste` (Longitude) valmiina tulevaa 100 km säteellistä kilometrihakua ja geokoodausta varten.
 - Tila: `@Enumerated(EnumType.STRING) AsiakkaanTila tila` (Oletus: PROSPEKTI).
 - Hyvinvointialue: `@Enumerated(EnumType.STRING) Hyvinvointialue hyvinvointialue` (Kytketty dynaamiseen enumiin).
+- Yritystyypit: `boolean kotihoitoyritys` ja `boolean asumispalveluyritys`; molemmat voivat olla valittuna ja niitä voi käyttää asiakaslistan suodattimina.
 - Relaatiot (Kytketty täydellä `CascadeType.ALL, orphanRemoval = true` suhteella automaattista ja turvallista asiakkaan poistamista varten):
   - `@ManyToOne @JoinColumn(name = "kayttaja_id") Kayttaja kayttaja`
   - `@OneToMany` palveluyksiköt, yhteyshenkilöt, kirjaukset ja tarjoukset.
