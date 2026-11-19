@@ -1,11 +1,16 @@
 package fi.sotemindit.astori.controller;
 
 import fi.sotemindit.astori.model.Kayttaja;
+import fi.sotemindit.astori.model.Asiakas;
+import fi.sotemindit.astori.model.AsiakasAjo;
+import fi.sotemindit.astori.model.Tapahtuma;
 import fi.sotemindit.astori.model.Tuote;
 import fi.sotemindit.astori.model.TuoteYksikko;
 import fi.sotemindit.astori.model.AlvKanta;
 import fi.sotemindit.astori.model.Yritystiedot;
 import fi.sotemindit.astori.repository.KayttajaRepository;
+import fi.sotemindit.astori.repository.AsiakasRepository;
+import fi.sotemindit.astori.repository.AsiakasAjoRepository;
 import fi.sotemindit.astori.repository.KirjaustyyppiRepository;
 import fi.sotemindit.astori.repository.TuoteRepository;
 import fi.sotemindit.astori.model.TapahtumaTyyppi;
@@ -28,6 +33,12 @@ public class AsetuksetController {
 
 	@Autowired
 	private KayttajaRepository kayttajaRepository;
+
+	@Autowired
+	private AsiakasRepository asiakasRepository;
+
+	@Autowired
+	private AsiakasAjoRepository asiakasAjoRepository;
 
 	@Autowired
 	private TuoteRepository tuoteRepository;
@@ -75,6 +86,8 @@ public class AsetuksetController {
 				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
 		model.addAttribute("istunnonAikakatkaisuMinuutteina",
 				nykyinenKayttaja.getIstunnonAikakatkaisuMinuutteina());
+		model.addAttribute("nykyisenKayttajanId", nykyinenKayttaja.getId());
+		model.addAttribute("kayttajanRooli", nykyinenKayttaja.getRooli());
 
 		// Viedään kaikki käyttäjät listaukseen
 		List<Kayttaja> kaikkiKayttajat = kayttajaRepository.findAll();
@@ -206,6 +219,45 @@ public class AsetuksetController {
 			session.setAttribute("kirjautunutKayttaja", uusiTunnus);
 		}
 		return "redirect:/asetukset?success=user_updated";
+	}
+
+	@PostMapping("/asetukset/poista-kayttaja/{id}")
+	@org.springframework.transaction.annotation.Transactional
+	public String poistaKayttaja(HttpSession session, @PathVariable Long id) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		Kayttaja poistaja = kayttajaRepository.findByKayttajatunnus(istuntoTunnus)
+				.orElseThrow(() -> new IllegalArgumentException("Käyttäjää ei löydy"));
+		if (!"ADMIN".equals(poistaja.getRooli())) {
+			return "redirect:/?error=access_denied";
+		}
+
+		Kayttaja poistettava = kayttajaRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Poistettavaa käyttäjää ei löytynyt ID-numerolla: " + id));
+		if (poistaja.getId().equals(poistettava.getId())) {
+			return "redirect:/asetukset?virhe=oma_kayttaja";
+		}
+		if ("ADMIN".equals(poistettava.getRooli()) && kayttajaRepository.countByRooli("ADMIN") <= 1) {
+			return "redirect:/asetukset?virhe=viimeinen_paakayttaja";
+		}
+
+		List<Asiakas> asiakkaat = asiakasRepository.findAllByKayttaja(poistettava);
+		asiakkaat.forEach(asiakas -> asiakas.setKayttaja(poistaja));
+		asiakasRepository.saveAll(asiakkaat);
+
+		List<Tapahtuma> tapahtumat = tapahtumaRepository.findAllByKayttaja(poistettava);
+		tapahtumat.forEach(tapahtuma -> tapahtuma.setKayttaja(poistaja));
+		tapahtumaRepository.saveAll(tapahtumat);
+
+		List<AsiakasAjo> ajot = asiakasAjoRepository.findAllByLuoja(poistettava);
+		ajot.forEach(ajo -> ajo.setLuoja(poistaja));
+		asiakasAjoRepository.saveAll(ajot);
+
+		kayttajaRepository.delete(poistettava);
+		return "redirect:/asetukset?success=user_deleted";
 	}
 
 	// 4. REITTI: Tallenna oman yrityksen tiedot tarjouspohjaa varten

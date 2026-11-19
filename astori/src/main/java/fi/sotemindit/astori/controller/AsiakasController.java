@@ -167,7 +167,7 @@ public class AsiakasController {
 			@RequestParam(value = "asumispalveluyritys", defaultValue = "false") boolean asumispalveluyritys,
 			@RequestParam(required = false) String katuosoite, @RequestParam(required = false) String postinumero,
 			@RequestParam(required = false) String postitoimipaikka, @RequestParam(required = false) String kotisivu,
-			@RequestParam(required = false) Hyvinvointialue hyvinvointialue) {
+			@RequestParam(value = "hyvinvointialueet", required = false) List<Hyvinvointialue> hyvinvointialueet) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
@@ -178,7 +178,8 @@ public class AsiakasController {
 
 		// Luodaan uusi asiakas
 		Asiakas uusiAsiakas = new Asiakas(nimi, puhelin, sahkoposti, katuosoite, postinumero, postitoimipaikka,
-				kotisivu, tila, yTunnus, kuvaus, hyvinvointialue);
+				kotisivu, tila, yTunnus, kuvaus, null);
+		uusiAsiakas.setHyvinvointialueet(hyvinvointialueet);
 		uusiAsiakas.setKotihoitoyritys(kotihoitoyritys);
 		uusiAsiakas.setAsumispalveluyritys(asumispalveluyritys);
 
@@ -609,7 +610,7 @@ public class AsiakasController {
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
 			@RequestParam(required = false) String postinumero, @RequestParam(required = false) String postitoimipaikka,
 			@RequestParam(required = false) String kotisivu,
-			@RequestParam(required = false) Hyvinvointialue hyvinvointialue,
+			@RequestParam(value = "hyvinvointialueet", required = false) List<Hyvinvointialue> hyvinvointialueet,
 			@RequestParam(value = "kotihoitoyritys", defaultValue = "false") boolean kotihoitoyritys,
 			@RequestParam(value = "asumispalveluyritys", defaultValue = "false") boolean asumispalveluyritys,
 			@RequestParam(value = "returnPage", defaultValue = "0") int returnPage,
@@ -634,7 +635,7 @@ public class AsiakasController {
 		asiakas.setPostinumero(postinumero);
 		asiakas.setPostitoimipaikka(postitoimipaikka);
 		asiakas.setKotisivu(kotisivu);
-		asiakas.setHyvinvointialue(hyvinvointialue);
+		asiakas.setHyvinvointialueet(hyvinvointialueet);
 		asiakas.setKotihoitoyritys(kotihoitoyritys);
 		asiakas.setAsumispalveluyritys(asumispalveluyritys);
 

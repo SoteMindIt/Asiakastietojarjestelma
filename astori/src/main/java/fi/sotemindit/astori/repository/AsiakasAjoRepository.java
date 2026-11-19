@@ -1,6 +1,7 @@
 package fi.sotemindit.astori.repository;
 
 import fi.sotemindit.astori.model.AsiakasAjo;
+import fi.sotemindit.astori.model.Kayttaja;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AsiakasAjoRepository extends JpaRepository<AsiakasAjo, Long> {
+
+	List<AsiakasAjo> findAllByLuoja(Kayttaja luoja);
 
 	@Query("SELECT DISTINCT a FROM AsiakasAjo a "
 			+ "LEFT JOIN a.asiakkaat linkitettyAsiakas "

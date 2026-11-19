@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import fi.sotemindit.astori.model.Asiakas;
+import fi.sotemindit.astori.model.Hyvinvointialue;
 import fi.sotemindit.astori.model.Kayttaja;
 
 @SpringBootTest
@@ -44,6 +45,23 @@ class AsiakasRepositoryTest {
 		assertEquals(Set.of("Kotihoito", "Asumispalvelut", "Molemmat"), haeNimet(tunnus, true, true));
 	}
 
+	@Test
+	@Transactional
+	void savesAndFiltersCustomerByMultipleWellbeingAreas() {
+		String tunnus = "wellbeing-area-test-" + UUID.randomUUID();
+		Kayttaja kayttaja = kayttajaRepository.save(new Kayttaja(tunnus, "password-hash",
+				"Testi", "Käyttäjä", "test@example.com", "0401234567"));
+		Asiakas asiakas = new Asiakas();
+		asiakas.setNimi("Usean alueen asiakas");
+		asiakas.setKayttaja(kayttaja);
+		asiakas.setHyvinvointialueet(
+				java.util.List.of(Hyvinvointialue.HELSINKI, Hyvinvointialue.PIRKANMAA));
+		asiakasRepository.saveAndFlush(asiakas);
+
+		assertEquals(Set.of("Usean alueen asiakas"), haeNimet(tunnus, Hyvinvointialue.HELSINKI));
+		assertEquals(Set.of("Usean alueen asiakas"), haeNimet(tunnus, Hyvinvointialue.PIRKANMAA));
+	}
+
 	private void tallennaAsiakas(Kayttaja kayttaja, String nimi, boolean kotihoito, boolean asumispalvelut) {
 		Asiakas asiakas = new Asiakas();
 		asiakas.setNimi(nimi);
@@ -56,6 +74,12 @@ class AsiakasRepositoryTest {
 	private Set<String> haeNimet(String tunnus, boolean kotihoito, boolean asumispalvelut) {
 		Page<Asiakas> asiakkaat = asiakasRepository.haeSuodattimilla(
 				tunnus, null, null, kotihoito, asumispalvelut, "", PageRequest.of(0, 20));
+		return asiakkaat.getContent().stream().map(Asiakas::getNimi).collect(Collectors.toSet());
+	}
+
+	private Set<String> haeNimet(String tunnus, Hyvinvointialue alue) {
+		Page<Asiakas> asiakkaat = asiakasRepository.haeSuodattimilla(
+				tunnus, null, alue, false, false, "", PageRequest.of(0, 20));
 		return asiakkaat.getContent().stream().map(Asiakas::getNimi).collect(Collectors.toSet());
 	}
 }

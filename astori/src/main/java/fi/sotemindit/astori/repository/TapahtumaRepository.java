@@ -9,8 +9,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import fi.sotemindit.astori.model.Tapahtuma;
 import fi.sotemindit.astori.model.TapahtumaTyyppi;
+import fi.sotemindit.astori.model.Kayttaja;
 
 public interface TapahtumaRepository extends JpaRepository<Tapahtuma, Long> {
+
+	List<Tapahtuma> findAllByKayttaja(Kayttaja kayttaja);
 
 	// 💡 VIIMEISTELTY DYNAAMINEN HAKUMETOLI KALENTERILLE (Oliotuki korjattu)
 	@Query("SELECT t FROM Tapahtuma t WHERE "

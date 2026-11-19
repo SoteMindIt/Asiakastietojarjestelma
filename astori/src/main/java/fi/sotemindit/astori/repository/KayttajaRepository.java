@@ -12,4 +12,6 @@ public interface KayttajaRepository extends JpaRepository<Kayttaja, Long> {
     
     // Tämän metodin avulla Spring hakee käyttäjän automaattisesti tietokannasta tunnuksen perusteella
     Optional<Kayttaja> findByKayttajatunnus(String kayttajatunnus);
+
+    long countByRooli(String rooli);
 }

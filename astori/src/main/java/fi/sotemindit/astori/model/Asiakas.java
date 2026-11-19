@@ -10,6 +10,14 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.PostLoad;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "asiakkaat")
@@ -30,7 +38,15 @@ public class Asiakas {
 	private String kotisivu;
 
 	@Enumerated(EnumType.STRING)
-	private Hyvinvointialue hyvinvointialue;
+	@Column(name = "hyvinvointialue")
+	private Hyvinvointialue vanhaHyvinvointialue;
+
+	@ElementCollection
+	@CollectionTable(name = "asiakas_hyvinvointialueet",
+			joinColumns = @JoinColumn(name = "asiakas_id"))
+	@Column(name = "hyvinvointialue", nullable = false)
+	@Enumerated(EnumType.STRING)
+	private List<Hyvinvointialue> hyvinvointialueet = new ArrayList<>();
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
@@ -95,7 +111,7 @@ public class Asiakas {
 		this.tila = tila != null ? tila : AsiakkaanTila.PROSPEKTI;
 		this.yTunnus = yTunnus;
 		this.kuvaus = kuvaus;
-		this.hyvinvointialue = hyvinvointialue;
+		setHyvinvointialue(hyvinvointialue);
 	}
 
 	// Getterit ja Setterit
@@ -212,11 +228,43 @@ public class Asiakas {
 	}
 
 	public Hyvinvointialue getHyvinvointialue() {
-		return hyvinvointialue;
+		return hyvinvointialueet.isEmpty() ? vanhaHyvinvointialue : hyvinvointialueet.get(0);
 	}
 
 	public void setHyvinvointialue(Hyvinvointialue hyvinvointialue) {
-		this.hyvinvointialue = hyvinvointialue;
+		this.hyvinvointialueet.clear();
+		if (hyvinvointialue != null) {
+			this.hyvinvointialueet.add(hyvinvointialue);
+		}
+		this.vanhaHyvinvointialue = hyvinvointialue;
+	}
+
+	public List<Hyvinvointialue> getHyvinvointialueet() {
+		return hyvinvointialueet;
+	}
+
+	public void setHyvinvointialueet(List<Hyvinvointialue> hyvinvointialueet) {
+		this.hyvinvointialueet.clear();
+		if (hyvinvointialueet != null) {
+			for (Hyvinvointialue alue : hyvinvointialueet) {
+				if (alue != null && !this.hyvinvointialueet.contains(alue)) {
+					this.hyvinvointialueet.add(alue);
+				}
+			}
+		}
+	}
+
+	@PostLoad
+	private void lisaaVanhaHyvinvointialueKokoelmaan() {
+		if (vanhaHyvinvointialue != null && !hyvinvointialueet.contains(vanhaHyvinvointialue)) {
+			hyvinvointialueet.add(vanhaHyvinvointialue);
+		}
+	}
+
+	@PrePersist
+	@PreUpdate
+	private void paivitaVanhaHyvinvointialue() {
+		vanhaHyvinvointialue = hyvinvointialueet.isEmpty() ? null : hyvinvointialueet.get(0);
 	}
 
 	// 🛰️ UUDET GETTERIT JA SETTERIT KOORDINAATEILLE

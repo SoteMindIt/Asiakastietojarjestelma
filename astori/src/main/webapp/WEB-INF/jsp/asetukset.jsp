@@ -81,6 +81,18 @@ body {
 				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 			</div>
 		</c:if>
+		<c:if test="${param.virhe == 'oma_kayttaja'}">
+			<div class="alert alert-danger alert-dismissible fade show fw-bold" role="alert">
+				Et voi poistaa omaa käyttäjätunnustasi.
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+		</c:if>
+		<c:if test="${param.virhe == 'viimeinen_paakayttaja'}">
+			<div class="alert alert-danger alert-dismissible fade show fw-bold" role="alert">
+				Järjestelmään on jätettävä vähintään yksi pääkäyttäjä.
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+		</c:if>
 		<c:if test="${param.success == 'company_updated'}">
 			<div class="alert alert-success alert-dismissible fade show fw-bold"
 				role="alert">
@@ -109,6 +121,12 @@ body {
 				✓ Käyttäjän tiedot päivitetty onnistuneesti!
 				<button type="button" class="btn-close" data-bs-dismiss="alert"
 					aria-label="Close"></button>
+			</div>
+		</c:if>
+		<c:if test="${param.success == 'user_deleted'}">
+			<div class="alert alert-success alert-dismissible fade show fw-bold" role="alert">
+				✓ Käyttäjä poistettiin. Hänen asiakkaansa, kalenteritapahtumansa ja ajopäiväkirjamerkintänsä siirrettiin sinulle.
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 			</div>
 		</c:if>
 		<c:if test="${param.success == 'product_created'}">
@@ -218,6 +236,14 @@ body {
 															class="btn btn-sm btn-outline-primary rounded-pill px-3"
 															data-bs-toggle="modal"
 															data-bs-target="#muokkaaKayttajaModal${k.id}">Muokkaa</button>
+														<c:if test="${kayttajanRooli == 'ADMIN' && k.id != nykyisenKayttajanId}">
+															<form action="${pageContext.request.contextPath}/asetukset/poista-kayttaja/${k.id}"
+																method="post" class="d-inline"
+																onsubmit="return confirm('Haluatko varmasti poistaa tämän käyttäjän? Käyttäjään liitetyt asiakkaat, kalenteritapahtumat ja ajopäiväkirjamerkinnät siirretään sinulle.');">
+																<button type="submit"
+																	class="btn btn-sm btn-outline-danger rounded-pill px-3">Poista</button>
+															</form>
+														</c:if>
 													</td>
 												</tr>
 											</c:forEach>

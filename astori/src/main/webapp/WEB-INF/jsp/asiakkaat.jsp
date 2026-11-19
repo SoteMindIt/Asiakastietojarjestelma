@@ -240,7 +240,7 @@
 							<h5 class="modal-title fw-bold">Lisää uusi asiakas</h5>
 							<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
 						</div>
-						<form action="${pageContext.request.contextPath}/lisaa-asiakas" method="post">
+						<form id="lisaaAsiakasLomake" action="${pageContext.request.contextPath}/lisaa-asiakas" method="post">
 							<div class="modal-body p-4">
 								<div class="mb-3">
 									<label for="nimi" class="form-label fw-semibold text-secondary">Nimi
@@ -256,13 +256,13 @@
 								</div>
 
 								<div class="mb-3">
-									<label for="hyvinvointialue" class="form-label">Hyvinvointialue</label>
-									<select class="form-select" id="hyvinvointialue" name="hyvinvointialue">
-										<option value="">-- Valitse hyvinvointialue --</option>
+									<label for="hyvinvointialueet" class="form-label">Hyvinvointialueet</label>
+									<select class="form-select" id="hyvinvointialueet" name="hyvinvointialueet" multiple size="5">
 										<c:forEach var="alue" items="${hyvinvointialueet}">
 											<option value="${alue}">${alue.nimi}</option>
 										</c:forEach>
 									</select>
+									<div class="form-text">Voit valita useita alueita pitämällä Ctrl-näppäintä (Macilla Cmd) painettuna.</div>
 								</div>
 
 								<div class="mb-3">
@@ -361,6 +361,32 @@
 
 					// Tallennetaan alkuperäiset 10 sivutettua asiakasta muistiin
 					var alkuperainenSisalto = taulukkoRunko ? taulukkoRunko.innerHTML : ''
+
+					var lisaaAsiakasLomake = document.getElementById('lisaaAsiakasLomake')
+					if (lisaaAsiakasLomake) {
+						lisaaAsiakasLomake.addEventListener('submit', function (event) {
+							var puuttuvatTiedot = []
+							var aluevalinta = document.getElementById('hyvinvointialueet')
+							var kotihoitoValittu = document.getElementById('uusiAsiakasKotihoito').checked
+							var asumispalveluValittu = document.getElementById('uusiAsiakasAsumispalvelu').checked
+
+							if (!aluevalinta || aluevalinta.selectedOptions.length === 0) {
+								puuttuvatTiedot.push('hyvinvointialue')
+							}
+							if (!kotihoitoValittu && !asumispalveluValittu) {
+								puuttuvatTiedot.push('yritystyyppi (kotihoito tai asumispalvelu)')
+							}
+
+							if (puuttuvatTiedot.length > 0) {
+								var varoitus = 'Huomio: seuraavat tiedot puuttuvat: ' +
+									puuttuvatTiedot.join(', ') +
+									'. Haluatko tallentaa asiakkaan silti?'
+								if (!window.confirm(varoitus)) {
+									event.preventDefault()
+								}
+							}
+						})
+					}
 
 					if (hakukentta && taulukkoRunko) {
 						hakukentta.addEventListener('input', function (e) {

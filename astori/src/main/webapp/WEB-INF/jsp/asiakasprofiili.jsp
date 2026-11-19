@@ -195,14 +195,15 @@
 													määritelty</span>'}
 											</p>
 											<p class="mb-0">
-												<strong>🏢 Hyvinvointialue:</strong>
+												<strong>🏢 Hyvinvointialueet:</strong>
 												<c:choose>
-													<c:when test="${not empty asiakas.hyvinvointialue}">
-														${asiakas.hyvinvointialue.nimi}
+													<c:when test="${not empty asiakas.hyvinvointialueet}">
+														<c:forEach var="asiakasAlue" items="${asiakas.hyvinvointialueet}" varStatus="alueTila">
+															<c:if test="${alueTila.index > 0}">, </c:if>
+															<c:out value="${asiakasAlue.nimi}" />
+														</c:forEach>
 													</c:when>
-													<c:otherwise>
-														<span class="text-muted italic">Ei määritelty</span>
-													</c:otherwise>
+													<c:otherwise><span class="text-muted italic">Ei määritelty</span></c:otherwise>
 												</c:choose>
 											</p>
 										</div>
@@ -1617,16 +1618,14 @@
 											</div>
 											<div class="col-md-6">
 												<label for="muokkaaHyvinvointialue"
-													class="form-label fw-bold small text-secondary">Hyvinvointialue</label>
+													class="form-label fw-bold small text-secondary">Hyvinvointialueet</label>
 												<select class="form-select" id="muokkaaHyvinvointialue"
-													name="hyvinvointialue">
-													<option value="">-- Valitse hyvinvointialue --</option>
+													name="hyvinvointialueet" multiple size="5">
 													<c:forEach var="alue" items="${hyvinvointialueet}">
-														<option value="${alue}" <c:if
-															test="${asiakas.hyvinvointialue == alue.name()}">selected
-															</c:if>>${alue.nimi}</option>
+														<option value="${alue}" <c:if test="${asiakas.hyvinvointialueet.contains(alue)}">selected</c:if>>${alue.nimi}</option>
 													</c:forEach>
 												</select>
+												<div class="form-text">Voit valita useita alueita pitämällä Ctrl-näppäintä (Macilla Cmd) painettuna.</div>
 											</div>
 											<div class="col-md-6">
 												<label class="form-label fw-bold small text-secondary">Y-tunnus</label>
