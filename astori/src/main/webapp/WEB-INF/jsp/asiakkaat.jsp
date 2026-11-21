@@ -134,6 +134,7 @@
 								<thead class="table-light">
 									<tr>
 										<th>Asiakkaan nimi</th>
+										<th>Postitoimipaikka</th>
 										<th>Y-tunnus</th>
 										<th>Puhelinnumero</th>
 										<th>Sähköposti</th>
@@ -148,6 +149,7 @@
 											<td><strong><a href="${pageContext.request.contextPath}/asiakas/${a.id}?returnPage=${currentPage}"
 														class="text-decoration-none text-dark">${a.nimi}</a></strong>
 											</td>
+											<td>${a.postitoimipaikka}</td>
 											<td>${a.yTunnus}</td>
 											<td>${a.puhelin}</td>
 											<td>${a.sahkoposti}</td>
@@ -197,7 +199,7 @@
 									</c:forEach>
 									<c:if test="${empty asiakkaat}">
 										<tr>
-											<td colspan="7" class="text-center py-4 text-muted">Ei
+											<td colspan="8" class="text-center py-4 text-muted">Ei
 												hakutuloksia tai asiakkaita järjestelmässä.</td>
 										</tr>
 									</c:if>

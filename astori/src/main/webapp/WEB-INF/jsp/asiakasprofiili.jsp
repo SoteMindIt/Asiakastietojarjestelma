@@ -46,6 +46,10 @@
 							box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 							height: 100%;
 						}
+
+						.disabled-customer-action:disabled {
+							opacity: 0.5;
+						}
 					</style>
 				</head>
 
@@ -124,9 +128,11 @@
 											data-bs-target="#lisaaPalveluyksikkoModal">+
 											Palveluyksikkö</button>
 										<button type="button"
-											class="btn btn-sm btn-outline-success fw-bold py-1.5 px-2.5 small rounded-pill"
+											class="btn btn-sm btn-outline-success fw-bold py-1.5 px-2.5 small rounded-pill disabled-customer-action"
 											style="font-size: 0.85em;" data-bs-toggle="modal"
-											data-bs-target="#lisaaTuoteModal">+ Tuote/Palvelu</button>
+											data-bs-target="#lisaaTuoteModal"
+											<c:if test="${asiakas.tila != 'AKTIIVINEN'}">disabled
+												title="Tuotteita tai palveluja voi lisätä vain aktiiviselle asiakkaalle"</c:if>>+ Tuote/Palvelu</button>
 										<button type="button"
 											class="btn btn-sm btn-outline-primary py-1.5 px-2.5 small rounded-pill"
 											style="font-size: 0.85em;" data-bs-toggle="modal"
@@ -136,9 +142,11 @@
 											style="font-size: 0.85em;" data-bs-toggle="modal"
 											data-bs-target="#lisaaYhModal">+ Yhteyshenkilö</button>
 										<button type="button"
-											class="btn btn-sm btn-outline-info fw-bold py-1.5 px-2.5 small rounded-pill"
+											class="btn btn-sm btn-outline-info fw-bold py-1.5 px-2.5 small rounded-pill disabled-customer-action"
 											style="font-size: 0.85em;" data-bs-toggle="modal"
-											data-bs-target="#lisaaSopimusModal">+ Sopimus</button>
+											data-bs-target="#lisaaSopimusModal"
+											<c:if test="${asiakas.tila != 'AKTIIVINEN'}">disabled
+												title="Sopimuksen voi luoda vain aktiiviselle asiakkaalle"</c:if>>+ Sopimus</button>
 										<button type="button"
 											class="btn btn-sm btn-primary fw-bold py-1.5 px-3 shadow-sm rounded-pill ms-md-2"
 											style="font-size: 0.85em;" data-bs-toggle="modal"

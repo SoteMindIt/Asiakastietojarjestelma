@@ -300,6 +300,11 @@ public class AsiakasController {
 		}
 
 		Asiakas asiakas = haeOmistettuAsiakas(asiakasId, istuntoTunnus);
+		if (asiakas.getTila() != AsiakkaanTila.AKTIIVINEN) {
+			redirectAttributes.addFlashAttribute("virhe",
+					"Sopimuksen voi luoda vain aktiiviselle asiakkaalle.");
+			return "redirect:/asiakas/" + asiakasId;
+		}
 		if (!kelvollisetSopimustiedot(palveluntarjoajanNimi, palveluntarjoajanYTunnus,
 				palveluntarjoajanOsoite, asiakas.getNimi(), asiakas.getyTunnus(),
 				muodostaAsiakkaanOsoite(asiakas), sopimuksenKohdeJaSisalto, hintaJaMaksuehdot,
@@ -573,7 +578,8 @@ public class AsiakasController {
 	@PostMapping("/asiakas/{asiakasId}/lisaa-tuote")
 	public String kirjaaMyynti(@PathVariable Long asiakasId, @RequestParam Long tuoteId,
 			@RequestParam java.math.BigDecimal maara, @RequestParam java.math.BigDecimal myyntihinta,
-			jakarta.servlet.http.HttpSession session, @RequestParam(required = false) String ostopaivamaara) {
+			jakarta.servlet.http.HttpSession session, @RequestParam(required = false) String ostopaivamaara,
+			org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
 		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
 		if (istuntoTunnus == null) {
 			return "redirect:/login";
@@ -581,6 +587,11 @@ public class AsiakasController {
 
 		Asiakas asiakas = asiakasRepository.findById(asiakasId)
 				.orElseThrow(() -> new IllegalArgumentException("Asiakasta ei löytynyt"));
+		if (asiakas.getTila() != AsiakkaanTila.AKTIIVINEN) {
+			redirectAttributes.addFlashAttribute("virhe",
+					"Tuotteita tai palveluja voi lisätä vain aktiiviselle asiakkaalle.");
+			return "redirect:/asiakas/" + asiakasId;
+		}
 		Tuote tuote = tuoteRepository.findById(tuoteId)
 				.orElseThrow(() -> new IllegalArgumentException("Tuotetta ei löytynyt"));
 
@@ -696,6 +707,8 @@ public class AsiakasController {
 					.append("?returnPage=").append(asiakaslistanPaluusivu)
 					.append("\" class=\"text-decoration-none text-dark\">").append(a.getNimi())
 					.append("</a></strong></td>");
+			html.append("<td>").append(a.getPostitoimipaikka() != null ? a.getPostitoimipaikka() : "")
+					.append("</td>");
 			html.append("<td>").append(a.getyTunnus() != null ? a.getyTunnus() : "").append("</td>");
 			html.append("<td>").append(a.getPuhelin() != null ? a.getPuhelin() : "").append("</td>");
 			html.append("<td>").append(a.getSahkoposti() != null ? a.getSahkoposti() : "").append("</td>");
@@ -716,7 +729,7 @@ public class AsiakasController {
 
 		if (tulokset.getContent().isEmpty()) {
 			html.append(
-					"<tr><td colspan=\"7\" class=\"text-center py-4 text-muted\">Hakuehdolla ei löytynyt yhtään asiakasta koko tietokannasta.</td></tr>");
+					"<tr><td colspan=\"8\" class=\"text-center py-4 text-muted\">Hakuehdolla ei löytynyt yhtään asiakasta koko tietokannasta.</td></tr>");
 		}
 
 		return html.toString();
