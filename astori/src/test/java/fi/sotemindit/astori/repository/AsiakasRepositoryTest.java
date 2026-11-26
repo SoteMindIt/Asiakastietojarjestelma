@@ -2,6 +2,8 @@ package fi.sotemindit.astori.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import jakarta.persistence.EntityManager;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,6 +27,9 @@ class AsiakasRepositoryTest {
 
 	@Autowired
 	private KayttajaRepository kayttajaRepository;
+
+	@Autowired
+	private EntityManager entityManager;
 
 	@Test
 	@Transactional
@@ -60,6 +65,29 @@ class AsiakasRepositoryTest {
 
 		assertEquals(Set.of("Usean alueen asiakas"), haeNimet(tunnus, Hyvinvointialue.HELSINKI));
 		assertEquals(Set.of("Usean alueen asiakas"), haeNimet(tunnus, Hyvinvointialue.PIRKANMAA));
+	}
+
+	@Test
+	@Transactional
+	void savesAndReloadsMultiplePatientInformationSystems() {
+		String tunnus = "patient-systems-test-" + UUID.randomUUID();
+		Kayttaja kayttaja = kayttajaRepository.save(new Kayttaja(tunnus, "password-hash",
+				"Testi", "Käyttäjä", "test@example.com", "0401234567"));
+		Asiakas asiakas = new Asiakas();
+		asiakas.setNimi("Usean järjestelmän asiakas");
+		asiakas.setKayttaja(kayttaja);
+		asiakas.setPotilastietojarjestelmat(List.of(
+				fi.sotemindit.astori.model.Potilastietojarjestelma.HILKKA,
+				fi.sotemindit.astori.model.Potilastietojarjestelma.APOTTI));
+		Asiakas tallennettu = asiakasRepository.saveAndFlush(asiakas);
+		Long asiakasId = tallennettu.getId();
+
+		entityManager.clear();
+
+		assertEquals(List.of(
+				fi.sotemindit.astori.model.Potilastietojarjestelma.HILKKA,
+				fi.sotemindit.astori.model.Potilastietojarjestelma.APOTTI),
+				asiakasRepository.findById(asiakasId).orElseThrow().getPotilastietojarjestelmat());
 	}
 
 	private void tallennaAsiakas(Kayttaja kayttaja, String nimi, boolean kotihoito, boolean asumispalvelut) {

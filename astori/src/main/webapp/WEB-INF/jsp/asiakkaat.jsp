@@ -250,6 +250,32 @@
 										name="nimi" required placeholder="esim. Sote-Hyvinvointi Oy">
 								</div>
 
+								<div class="mb-3">
+									<label class="form-label fw-semibold text-secondary">Käytössä oleva potilastietojärjestelmä</label>
+									<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-1">
+										<div class="col">
+											<div class="form-check">
+												<input class="form-check-input potilastietojarjestelma-valinta" type="checkbox"
+													name="potilastietojarjestelmat" value="EI_TIEDOSSA" id="uusiPtkEiTiedossa"
+													data-ei-tiedossa="true" checked>
+												<label class="form-check-label" for="uusiPtkEiTiedossa">Ei tiedossa</label>
+											</div>
+										</div>
+										<c:forEach var="jarjestelma" items="${potilastietojarjestelmat}">
+											<c:if test="${jarjestelma.name() != 'EI_TIEDOSSA'}">
+												<div class="col">
+													<div class="form-check">
+														<input class="form-check-input potilastietojarjestelma-valinta" type="checkbox"
+															name="potilastietojarjestelmat" value="${jarjestelma.name()}"
+															id="uusiPtk${jarjestelma.name()}">
+														<label class="form-check-label" for="uusiPtk${jarjestelma.name()}">${jarjestelma.nimi}</label>
+													</div>
+												</div>
+											</c:if>
+										</c:forEach>
+									</div>
+								</div>
+
 								<!-- Y-TUNNUS UUDEN ASIAKKAAN LOMAKKEELLE -->
 								<div class="mb-3">
 									<label for="yTunnus" class="form-label fw-semibold text-secondary">Y-tunnus
@@ -365,6 +391,28 @@
 					var alkuperainenSisalto = taulukkoRunko ? taulukkoRunko.innerHTML : ''
 
 					var lisaaAsiakasLomake = document.getElementById('lisaaAsiakasLomake')
+					document.querySelectorAll('.potilastietojarjestelma-valinta[data-ei-tiedossa="true"]').forEach(function (eiTiedossa) {
+						var lomake = eiTiedossa.form
+						var valinnat = lomake.querySelectorAll('.potilastietojarjestelma-valinta')
+						valinnat.forEach(function (valinta) {
+							valinta.addEventListener('change', function () {
+								if (valinta === eiTiedossa && eiTiedossa.checked) {
+									valinnat.forEach(function (muuValinta) {
+										if (muuValinta !== eiTiedossa) {
+											muuValinta.checked = false
+										}
+									})
+								} else if (valinta !== eiTiedossa && valinta.checked) {
+									eiTiedossa.checked = false
+								}
+								if (!Array.prototype.some.call(valinnat, function (valittu) {
+									return valittu.checked
+								})) {
+									eiTiedossa.checked = true
+								}
+							})
+						})
+					})
 					if (lisaaAsiakasLomake) {
 						lisaaAsiakasLomake.addEventListener('submit', function (event) {
 							var puuttuvatTiedot = []

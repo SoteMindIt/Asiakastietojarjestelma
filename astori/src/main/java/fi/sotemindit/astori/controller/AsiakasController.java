@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.multipart.MultipartFile;
 
 import fi.sotemindit.astori.model.Asiakas;
 import fi.sotemindit.astori.model.AsiakasTuote;
@@ -57,6 +58,8 @@ import com.lowagie.text.DocumentException;
 
 @Controller
 public class AsiakasController {
+
+	private static final long ASIAKASLIITTEEN_ENIMMAISKOKO = 50L * 1024 * 1024;
 
 	@Autowired
 	private AsiakasRepository asiakasRepository;
@@ -152,6 +155,8 @@ public class AsiakasController {
 			model.addAttribute("valittuAsumispalvelu", asumispalvelu);
 
 			model.addAttribute("hyvinvointialueet", fi.sotemindit.astori.model.Hyvinvointialue.values());
+			model.addAttribute("potilastietojarjestelmat",
+					fi.sotemindit.astori.model.Potilastietojarjestelma.values());
 
 			return "asiakkaat";
 		}
@@ -161,6 +166,8 @@ public class AsiakasController {
 	@PostMapping("/lisaa-asiakas")
 	public String lisaaAsiakas(jakarta.servlet.http.HttpSession session, @RequestParam String nimi,
 			@RequestParam(value = "yTunnus", required = false) String yTunnus,
+			@RequestParam(value = "potilastietojarjestelmat", required = false)
+					List<fi.sotemindit.astori.model.Potilastietojarjestelma> potilastietojarjestelmat,
 			@RequestParam(required = false) String kuvaus, @RequestParam(required = false) String sahkoposti,
 			@RequestParam(required = false) String puhelin, @RequestParam AsiakkaanTila tila,
 			@RequestParam(value = "kotihoitoyritys", defaultValue = "false") boolean kotihoitoyritys,
@@ -179,6 +186,7 @@ public class AsiakasController {
 		// Luodaan uusi asiakas
 		Asiakas uusiAsiakas = new Asiakas(nimi, puhelin, sahkoposti, katuosoite, postinumero, postitoimipaikka,
 				kotisivu, tila, yTunnus, kuvaus, null);
+		uusiAsiakas.setPotilastietojarjestelmat(potilastietojarjestelmat);
 		uusiAsiakas.setHyvinvointialueet(hyvinvointialueet);
 		uusiAsiakas.setKotihoitoyritys(kotihoitoyritys);
 		uusiAsiakas.setAsumispalveluyritys(asumispalveluyritys);
@@ -248,6 +256,9 @@ public class AsiakasController {
 		List<Liitetiedosto> sopimukset = liitteet.stream()
 				.filter(liite -> "PALVELUSOPIMUS".equals(liite.getKuvaus()))
 				.toList();
+		List<Liitetiedosto> asiakasliitteet = liitteet.stream()
+				.filter(liite -> "ASIAKASLIITE".equals(liite.getKuvaus()))
+				.toList();
 		List<Yhteyshenkilo> yhteyshenkilot = yhteyshenkiloRepository.findByAsiakasId(id);
 		List<Kirjaus> kirjaukset = kirjausRepository.findByAsiakasIdOrderByLuontiaikaDesc(id);
 
@@ -258,6 +269,7 @@ public class AsiakasController {
 		model.addAttribute("asiakas", asiakas);
 		model.addAttribute("asiakaslistanPaluusivu", Math.max(0, returnPage));
 		model.addAttribute("liitteet", liitteet);
+		model.addAttribute("asiakasliitteet", asiakasliitteet);
 		model.addAttribute("sopimukset", sopimukset);
 		model.addAttribute("yhteyshenkilot", yhteyshenkilot);
 		model.addAttribute("kirjaukset", kirjaukset);
@@ -266,6 +278,8 @@ public class AsiakasController {
 		model.addAttribute("tarjoukset", tarjoukset);
 		model.addAttribute("tarjouksetMaara", tarjoukset != null ? tarjoukset.size() : 0);
 		model.addAttribute("hyvinvointialueet", Hyvinvointialue.values());
+		model.addAttribute("potilastietojarjestelmat",
+				fi.sotemindit.astori.model.Potilastietojarjestelma.values());
 		// Viedään myyntiputken tilat profiilisivulle muokkausta varten
 		model.addAttribute("tilat", AsiakkaanTila.values());
 
@@ -280,8 +294,45 @@ public class AsiakasController {
 		model.addAttribute("palveluntarjoajanEdustaja",
 				muodostaKayttajanNimi(kirjautunutKayttaja, istuntoTunnus));
 		model.addAttribute("sopimusPaivamaara", LocalDate.now());
+		model.addAttribute("kirjauksenPaivamaara", LocalDate.now());
 
 		return "asiakasprofiili";
+	}
+
+	@Transactional
+	@PostMapping("/asiakas/{asiakasId}/liite")
+	public String lisaaAsiakasliite(@PathVariable Long asiakasId,
+			@RequestParam(value = "tiedosto", required = false) MultipartFile tiedosto,
+			jakarta.servlet.http.HttpSession session,
+			org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) throws IOException {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		Asiakas asiakas = haeOmistettuAsiakas(asiakasId, istuntoTunnus);
+		if (tiedosto == null || tiedosto.isEmpty()) {
+			redirectAttributes.addFlashAttribute("virhe", "Valitse liitetiedosto ennen tallentamista.");
+			return "redirect:/asiakas/" + asiakasId;
+		}
+		if (tiedosto.getSize() > ASIAKASLIITTEEN_ENIMMAISKOKO) {
+			redirectAttributes.addFlashAttribute("virhe", "Liitetiedoston enimmäiskoko on 50 Mt.");
+			return "redirect:/asiakas/" + asiakasId;
+		}
+
+		String tiedostonNimi = turvallinenLiitetiedostonNimi(tiedosto.getOriginalFilename());
+		if (tiedostonNimi == null) {
+			redirectAttributes.addFlashAttribute("virhe", "Liitetiedoston nimi ei ole kelvollinen.");
+			return "redirect:/asiakas/" + asiakasId;
+		}
+
+		Liitetiedosto liite = new Liitetiedosto(tiedostonNimi, "ASIAKASLIITE", tiedosto.getBytes(), asiakas);
+		liitetiedostoRepository.save(liite);
+		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS",
+				"Lisätty liitetiedosto '" + tiedostonNimi + "' asiakkaalle '" + asiakas.getNimi()
+						+ "' (ID: " + asiakasId + ")."));
+		redirectAttributes.addFlashAttribute("viesti", "Liitetiedosto lisätty asiakkaalle.");
+		return "redirect:/asiakas/" + asiakasId;
 	}
 
 	@Transactional
@@ -432,11 +483,67 @@ public class AsiakasController {
 		return new ResponseEntity<>(sopimus.getData(), otsakkeet, HttpStatus.OK);
 	}
 
+	@GetMapping("/asiakas/{asiakasId}/liite/{liiteId}/lataa")
+	public ResponseEntity<byte[]> lataaAsiakasliite(@PathVariable Long asiakasId, @PathVariable Long liiteId,
+			jakarta.servlet.http.HttpSession session) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+
+		haeOmistettuAsiakas(asiakasId, istuntoTunnus);
+		Liitetiedosto liite = haeOmistettuAsiakasliite(asiakasId, liiteId);
+		HttpHeaders otsakkeet = new HttpHeaders();
+		otsakkeet.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+		otsakkeet.setContentDisposition(ContentDisposition.attachment()
+				.filename(liite.getTiedostonNimi(), StandardCharsets.UTF_8).build());
+		otsakkeet.setContentLength(liite.getData().length);
+		otsakkeet.set("X-Content-Type-Options", "nosniff");
+		return new ResponseEntity<>(liite.getData(), otsakkeet, HttpStatus.OK);
+	}
+
+	@Transactional
+	@PostMapping("/asiakas/{asiakasId}/liite/{liiteId}/poista")
+	public String poistaAsiakasliite(@PathVariable Long asiakasId, @PathVariable Long liiteId,
+			jakarta.servlet.http.HttpSession session,
+			org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+		String istuntoTunnus = (String) session.getAttribute("kirjautunutKayttaja");
+		if (istuntoTunnus == null) {
+			return "redirect:/login";
+		}
+
+		Asiakas asiakas = haeOmistettuAsiakas(asiakasId, istuntoTunnus);
+		Liitetiedosto liite = haeOmistettuAsiakasliite(asiakasId, liiteId);
+		liitetiedostoRepository.delete(liite);
+		lokiRepository.save(new Loki(istuntoTunnus, "POISTO",
+				"Poistettu liitetiedosto '" + liite.getTiedostonNimi() + "' asiakkaalta '" + asiakas.getNimi()
+						+ "' (ID: " + asiakasId + ")."));
+		redirectAttributes.addFlashAttribute("viesti", "Liitetiedosto poistettu.");
+		return "redirect:/asiakas/" + asiakasId;
+	}
+
 	private Liitetiedosto haeOmistettuSopimus(Long asiakasId, Long sopimusId) {
 		return liitetiedostoRepository.findById(sopimusId)
 				.filter(liite -> liite.getAsiakas().getId().equals(asiakasId)
 						&& "PALVELUSOPIMUS".equals(liite.getKuvaus()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sopimusta ei löytynyt."));
+	}
+
+	private Liitetiedosto haeOmistettuAsiakasliite(Long asiakasId, Long liiteId) {
+		return liitetiedostoRepository.findById(liiteId)
+				.filter(liite -> liite.getAsiakas().getId().equals(asiakasId)
+						&& "ASIAKASLIITE".equals(liite.getKuvaus()))
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Liitetiedostoa ei löytynyt."));
+	}
+
+	private String turvallinenLiitetiedostonNimi(String alkuperainenNimi) {
+		if (alkuperainenNimi == null) {
+			return null;
+		}
+		String tiedostonNimi = alkuperainenNimi.replace('\\', '/');
+		tiedostonNimi = tiedostonNimi.substring(tiedostonNimi.lastIndexOf('/') + 1)
+				.replaceAll("[\\p{Cntrl}]", "").trim();
+		return tiedostonNimi.isEmpty() || tiedostonNimi.length() > 255 ? null : tiedostonNimi;
 	}
 
 	private boolean kelvollisetSopimustiedot(String palveluntarjoajanNimi, String palveluntarjoajanYTunnus,
@@ -616,6 +723,8 @@ public class AsiakasController {
 	@PostMapping("/asiakas/{id}/muokkaa")
 	public String muokkaaAsiakasta(@PathVariable Long id, @RequestParam String nimi,
 			@RequestParam(value = "yTunnus", required = false) String yTunnus,
+			@RequestParam(value = "potilastietojarjestelmat", required = false)
+					List<fi.sotemindit.astori.model.Potilastietojarjestelma> potilastietojarjestelmat,
 			@RequestParam(required = false) String kuvaus, // 💡 LISÄTTY: Vastaanotetaan laaja kuvausteksti lomakkeelta
 			@RequestParam(required = false) String sahkoposti, @RequestParam(required = false) String puhelin,
 			@RequestParam AsiakkaanTila tila, @RequestParam(required = false) String katuosoite,
@@ -638,6 +747,7 @@ public class AsiakasController {
 		// Päivitetään kaikki arvot standardinmukaisesti, mukana nyt laaja kuvaus
 		asiakas.setNimi(nimi);
 		asiakas.setyTunnus(yTunnus);
+		asiakas.setPotilastietojarjestelmat(potilastietojarjestelmat);
 		asiakas.setKuvaus(kuvaus); // 💡 LISÄTTY: Asetetaan uusi teksti oliolle
 		asiakas.setSahkoposti(sahkoposti);
 		asiakas.setPuhelin(puhelin);

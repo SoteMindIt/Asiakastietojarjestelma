@@ -14,7 +14,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Controller
@@ -36,6 +36,7 @@ public class KirjausController {
 	@Transactional
 	@PostMapping("/asiakas/{asiakasId}/lisaa-kirjaus")
 	public String lisaaKirjaus(@PathVariable Long asiakasId, @RequestParam String teksti,
+			@RequestParam LocalDate tapahtumaPaivamaara,
 			@RequestParam(value = "tarkea", defaultValue = "false") boolean tarkea,
 			@RequestParam(value = "linkitettavaId", required = false) Long linkitettavaId,
 			@RequestParam(value = "kirjaustyyppiId", required = false) Long kirjaustyyppiId,
@@ -66,7 +67,7 @@ public class KirjausController {
 		uusiKirjaus.setTeksti(teksti);
 		uusiKirjaus.setTarkea(tarkea);
 		uusiKirjaus.setKirjaustyyppi(kirjaustyyppi);
-		uusiKirjaus.setLuontiaika(LocalDateTime.now());
+		uusiKirjaus.setLuontiaika(tapahtumaPaivamaara.atStartOfDay());
 
 		// Tallennetaan ensin, jotta saadaan ID
 		uusiKirjaus = kirjausRepository.save(uusiKirjaus);

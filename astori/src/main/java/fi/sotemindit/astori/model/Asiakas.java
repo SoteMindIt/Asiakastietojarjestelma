@@ -65,6 +65,17 @@ public class Asiakas {
 	@Column(name = "y_tunnus", length = 9)
 	private String yTunnus;
 
+	@Column(name = "potilastietojarjestelma", length = 256)
+	private String vanhaPotilastietojarjestelma;
+
+	@ElementCollection
+	@CollectionTable(name = "asiakas_potilastietojarjestelmat",
+			joinColumns = @JoinColumn(name = "asiakas_id"))
+	@Column(name = "potilastietojarjestelma", nullable = false)
+	@Enumerated(EnumType.STRING)
+	private List<Potilastietojarjestelma> potilastietojarjestelmat =
+			new ArrayList<>(List.of(Potilastietojarjestelma.EI_TIEDOSSA));
+
 	@jakarta.persistence.Column(columnDefinition = "TEXT")
 	private String kuvaus;
 
@@ -219,6 +230,25 @@ public class Asiakas {
 		this.yTunnus = yTunnus;
 	}
 
+	public List<Potilastietojarjestelma> getPotilastietojarjestelmat() {
+		return potilastietojarjestelmat;
+	}
+
+	public void setPotilastietojarjestelmat(List<Potilastietojarjestelma> valitutJarjestelmat) {
+		this.potilastietojarjestelmat.clear();
+		if (valitutJarjestelmat != null) {
+			for (Potilastietojarjestelma jarjestelma : valitutJarjestelmat) {
+				if (jarjestelma != null && jarjestelma != Potilastietojarjestelma.EI_TIEDOSSA
+						&& !this.potilastietojarjestelmat.contains(jarjestelma)) {
+					this.potilastietojarjestelmat.add(jarjestelma);
+				}
+			}
+		}
+		if (this.potilastietojarjestelmat.isEmpty()) {
+			this.potilastietojarjestelmat.add(Potilastietojarjestelma.EI_TIEDOSSA);
+		}
+	}
+
 	public String getKuvaus() {
 		return this.kuvaus;
 	}
@@ -255,9 +285,13 @@ public class Asiakas {
 	}
 
 	@PostLoad
-	private void lisaaVanhaHyvinvointialueKokoelmaan() {
+	private void lisaaVanhatValinnatKokoelmiin() {
 		if (vanhaHyvinvointialue != null && !hyvinvointialueet.contains(vanhaHyvinvointialue)) {
 			hyvinvointialueet.add(vanhaHyvinvointialue);
+		}
+		if (potilastietojarjestelmat.isEmpty()) {
+			potilastietojarjestelmat.add(
+					Potilastietojarjestelma.vanhastaArvosta(vanhaPotilastietojarjestelma));
 		}
 	}
 

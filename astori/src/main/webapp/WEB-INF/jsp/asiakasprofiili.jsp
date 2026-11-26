@@ -142,6 +142,10 @@
 											style="font-size: 0.85em;" data-bs-toggle="modal"
 											data-bs-target="#lisaaYhModal">+ Yhteyshenkilö</button>
 										<button type="button"
+											class="btn btn-sm btn-outline-warning fw-bold py-1.5 px-2.5 small rounded-pill"
+											style="font-size: 0.85em;" data-bs-toggle="modal"
+											data-bs-target="#lisaaLiiteModal">+ Liitetiedosto</button>
+										<button type="button"
 											class="btn btn-sm btn-outline-info fw-bold py-1.5 px-2.5 small rounded-pill disabled-customer-action"
 											style="font-size: 0.85em;" data-bs-toggle="modal"
 											data-bs-target="#lisaaSopimusModal"
@@ -178,6 +182,13 @@
 												<strong>✉️ Sähköposti:</strong> ${not empty asiakas.sahkoposti ?
 												asiakas.sahkoposti : '<span class="text-muted italic">Ei
 													määritelty</span>'}
+											</p>
+											<p class="mb-2">
+												<strong>Käytössä oleva potilastietojärjestelmä:</strong>
+												<c:forEach var="jarjestelma" items="${asiakas.potilastietojarjestelmat}"
+													varStatus="status">
+													<c:if test="${!status.first}">, </c:if>${jarjestelma.nimi}
+												</c:forEach>
 											</p>
 											<p class="mb-2">
 												<strong>🌐 Kotisivu:</strong>
@@ -296,15 +307,14 @@
 
 														<!-- Aikaleima & Dynaaminen Kirjaustyyppi rinnakkain -->
 														<div class="d-flex align-items-center gap-2">
-															<!-- Luontiaika suomalaisessa muodossa -->
+															<!-- Tapahtumapäivä suomalaisessa muodossa -->
 															<small class="text-muted fw-semibold">
 																<c:set var="lokiAika"
-																	value="${k.luontiaika.toString().substring(0, 16)}" />
+																	value="${k.luontiaika.toString().substring(0, 10)}" />
 																<fmt:parseDate value="${lokiAika}"
-																	pattern="yyyy-MM-dd'T'HH:mm" var="parsituLoki"
-																	type="both" />
+																	pattern="yyyy-MM-dd" var="parsituLoki" type="date" />
 																<fmt:formatDate value="${parsituLoki}"
-																	pattern="dd.MM.yyyy 'klo' HH:mm" />
+																	pattern="dd.MM.yyyy" />
 															</small>
 
 															<!-- 🔌 UUSI: Näytetään dynaaminen luokitus-badge väreineen, jos se on kytketty -->
@@ -834,6 +844,50 @@
 							</div>
 							<!-- /tarjoukset -->
 
+							<!-- ASIAKKAAN LIITETIEDOSTOT -->
+							<div class="row g-4 mb-4">
+								<div class="col-12">
+									<div class="border bg-white p-3 rounded-3">
+										<h3 class="fw-bold h5 text-dark mb-3">Liitetiedostot (${asiakasliitteet.size()})</h3>
+										<c:choose>
+											<c:when test="${not empty asiakasliitteet}">
+												<div class="table-responsive">
+													<table class="table table-sm table-hover mb-0 align-middle">
+														<thead class="table-light">
+															<tr>
+																<th>Tiedosto</th>
+																<th>Lisätty</th>
+																<th class="text-end">Toiminnot</th>
+															</tr>
+														</thead>
+														<tbody>
+															<c:forEach var="liite" items="${asiakasliitteet}">
+																<tr>
+																	<td><c:out value="${liite.tiedostonNimi}" /></td>
+																	<td><c:out value="${liite.latausaika.toString().substring(0, 10)}" /></td>
+																	<td class="text-end">
+																		<a class="btn btn-sm btn-outline-secondary"
+																			href="${pageContext.request.contextPath}/asiakas/${asiakas.id}/liite/${liite.id}/lataa">Lataa</a>
+																		<form class="d-inline" method="post"
+																			action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/liite/${liite.id}/poista"
+																			onsubmit="return confirm('Haluatko varmasti poistaa tämän liitetiedoston?');">
+																			<button class="btn btn-sm btn-outline-danger" type="submit">Poista</button>
+																		</form>
+																	</td>
+																</tr>
+															</c:forEach>
+														</tbody>
+													</table>
+												</div>
+											</c:when>
+											<c:otherwise>
+												<p class="text-muted small mb-0">Asiakkaalle ei ole vielä lisätty liitetiedostoja.</p>
+											</c:otherwise>
+										</c:choose>
+									</div>
+								</div>
+							</div>
+
 							<!-- ASIAKKAAN TALLENNETUT SOPIMUKSET -->
 							<div class="row g-4 mb-4">
 								<div class="col-12">
@@ -885,6 +939,32 @@
 					</div>
 					<!-- /container pääsulku -->
 					<!-- ==================== MODAL-IKKUNAT ==================== -->
+
+					<!-- MODAL: ASIAKASLIITETIEDOSTON LISÄÄMINEN -->
+					<div class="modal fade" id="lisaaLiiteModal" tabindex="-1"
+						aria-labelledby="lisaaLiiteModalLabel" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content border-0 shadow-lg">
+								<form action="${pageContext.request.contextPath}/asiakas/${asiakas.id}/liite"
+									method="post" enctype="multipart/form-data">
+									<div class="modal-header bg-warning">
+										<h5 class="modal-title fw-bold" id="lisaaLiiteModalLabel">Lisää liitetiedosto</h5>
+										<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sulje"></button>
+									</div>
+									<div class="modal-body p-4">
+										<label class="form-label fw-semibold" for="asiakasLiiteTiedosto">Valitse tiedosto</label>
+										<input class="form-control" id="asiakasLiiteTiedosto" name="tiedosto"
+											type="file" required>
+										<div class="form-text">Suurin sallittu tiedostokoko on 50 Mt.</div>
+									</div>
+									<div class="modal-footer bg-light">
+										<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Peruuta</button>
+										<button type="submit" class="btn btn-warning fw-bold">Lisää liitetiedosto</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
 
 					<!-- MODAL: UUDEN PALVELUSOPIMUKSEN LUONTI -->
 					<div class="modal fade" id="lisaaSopimusModal" tabindex="-1"
@@ -1340,6 +1420,12 @@
 									</div>
 									<div class="modal-body p-4">
 										<div class="mb-3">
+											<label class="form-label fw-bold text-secondary" for="kirjauksenPaivamaara">
+												Tapahtumapäivä *</label>
+											<input class="form-control" id="kirjauksenPaivamaara" name="tapahtumaPaivamaara"
+												type="date" value="${kirjauksenPaivamaara}" required>
+										</div>
+										<div class="mb-3">
 											<label class="form-label fw-bold text-secondary">Muistiinpanot
 												/ Tapahtumatiedot *</label>
 											<textarea class="form-control" name="teksti" rows="5" required
@@ -1641,6 +1727,19 @@
 													name="yTunnus" placeholder="esim. 1234567-8" maxlength="9"
 													value="${asiakas.yTunnus}">
 											</div>
+											<div class="col-12">
+												<label class="form-label fw-bold small text-secondary">Käytössä oleva potilastietojärjestelmä</label>
+												<c:forEach var="jarjestelma" items="${potilastietojarjestelmat}">
+													<div class="form-check">
+														<input class="form-check-input potilastietojarjestelma-valinta" type="checkbox"
+															name="potilastietojarjestelmat" value="${jarjestelma.name()}"
+															id="muokkaaPtk${jarjestelma.name()}"
+															<c:if test="${asiakas.potilastietojarjestelmat.contains(jarjestelma)}">checked</c:if>
+															<c:if test="${jarjestelma.name() == 'EI_TIEDOSSA'}">data-ei-tiedossa="true"</c:if>>
+														<label class="form-check-label" for="muokkaaPtk${jarjestelma.name()}">${jarjestelma.nimi}</label>
+													</div>
+												</c:forEach>
+											</div>
 											<div class="col-md-6">
 												<label
 													class="form-label fw-bold small text-secondary">Puhelinnumero</label>
@@ -1732,6 +1831,29 @@
 					<!-- SCRIPTS -->
 					<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 					<script>
+						document.querySelectorAll('.potilastietojarjestelma-valinta[data-ei-tiedossa="true"]').forEach(function (eiTiedossa) {
+							var lomake = eiTiedossa.form;
+							var valinnat = lomake.querySelectorAll('.potilastietojarjestelma-valinta');
+							valinnat.forEach(function (valinta) {
+								valinta.addEventListener('change', function () {
+									if (valinta === eiTiedossa && eiTiedossa.checked) {
+										valinnat.forEach(function (muuValinta) {
+											if (muuValinta !== eiTiedossa) {
+												muuValinta.checked = false;
+											}
+										});
+									} else if (valinta !== eiTiedossa && valinta.checked) {
+										eiTiedossa.checked = false;
+									}
+									if (!Array.prototype.some.call(valinnat, function (valittu) {
+										return valittu.checked;
+									})) {
+										eiTiedossa.checked = true;
+									}
+								});
+							});
+						});
+
 						const lisattavaTuoteSelect = document.getElementById('tuoteId');
 						const asiakasMyyntihintaInput = document.getElementById('asiakasMyyntihinta');
 						if (lisattavaTuoteSelect && asiakasMyyntihintaInput) {
