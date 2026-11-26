@@ -37,7 +37,9 @@ body {
 			<div class="navbar-nav me-auto">
 				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a>
 				<a class="nav-link"
-					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a
+					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a>
+				<a class="nav-link" href="${pageContext.request.contextPath}/yhteistyotahot">Yhteistyötahot</a>
+				<a
 					class="nav-link active fw-bold"
 					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
 					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
@@ -157,6 +159,14 @@ body {
 			<div class="alert alert-success alert-dismissible fade show fw-bold"
 				role="alert">
 				✓ Asiakaskirjauksen hakuluokitus päivitetty!
+				<button type="button" class="btn-close" data-bs-dismiss="alert"
+					aria-label="Close"></button>
+			</div>
+		</c:if>
+		<c:if test="${param.success == 'kirjaustyyppi_deleted'}">
+			<div class="alert alert-success alert-dismissible fade show fw-bold"
+				role="alert">
+				✓ Kirjaustyyppi poistettu. Aiemmat kirjaukset säilyivät ja voit asettaa niille uuden tyypin muokkaamalla niitä.
 				<button type="button" class="btn-close" data-bs-dismiss="alert"
 					aria-label="Close"></button>
 			</div>
@@ -484,6 +494,12 @@ body {
 														<button type="button"
 															class="btn btn-sm btn-outline-dark rounded-pill px-3"
 															onclick="avaaKirjaustyypinMuokkaus('${kt.id}', '${kt.nimi}', '${kt.vari}')">Muokkaa</button>
+														<form class="d-inline" method="post"
+															action="${pageContext.request.contextPath}/asetukset/poista-kirjaustyyppi/${kt.id}"
+															onsubmit="return confirm('Poistetaanko tämä kirjaustyyppi? Käytössä olevat kirjaukset säilyvät ilman tyyppiä, ja niille voi valita uuden tyypin muokkaamalla kirjauksia.');">
+															<button type="submit"
+																class="btn btn-sm btn-outline-danger rounded-pill px-3">Poista</button>
+														</form>
 													</td>
 												</tr>
 											</c:forEach>

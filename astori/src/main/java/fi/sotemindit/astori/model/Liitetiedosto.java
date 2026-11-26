@@ -16,6 +16,9 @@ public class Liitetiedosto {
 
 	private String kuvaus;
 
+	@Column(columnDefinition = "TEXT")
+	private String selite;
+
     @jakarta.persistence.Column(name = "data", columnDefinition = "bytea", nullable = false)
     private byte[] data;
 
@@ -79,6 +82,14 @@ public class Liitetiedosto {
 
 	public void setKuvaus(String kuvaus) {
 		this.kuvaus = kuvaus;
+	}
+
+	public String getSelite() {
+		return selite;
+	}
+
+	public void setSelite(String selite) {
+		this.selite = selite;
 	}
 
 	public byte[] getData() {

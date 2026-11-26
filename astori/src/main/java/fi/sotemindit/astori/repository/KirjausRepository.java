@@ -18,6 +18,8 @@ public interface KirjausRepository extends JpaRepository<Kirjaus, Long> {
     
     // Valmis metodi, jolla voidaan hakea kaikki tietyn asiakkaan kirjaukset aikajärjestyksessä
     List<Kirjaus> findByAsiakasIdOrderByLuontiaikaDesc(Long asiakasId);
+    List<Kirjaus> findByKirjaustyyppi_Id(Long kirjaustyyppiId);
+
     // Hakee kaikki järjestelmän kirjaukset tietyltä aikaväliltä sivutettuna (uusin ensin)
     Page<Kirjaus> findByLuontiaikaBetweenOrderByLuontiaikaDesc(LocalDateTime alku, LocalDateTime loppu, Pageable pageable);
 

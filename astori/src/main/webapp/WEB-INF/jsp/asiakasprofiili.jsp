@@ -61,7 +61,9 @@
 							<a class="navbar-brand fw-bold" href="${pageContext.request.contextPath}/">Astori</a>
 							<div class="navbar-nav me-auto">
 								<a class="nav-link active fw-bold"
-									href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a
+									href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a>
+								<a class="nav-link" href="${pageContext.request.contextPath}/yhteistyotahot">Yhteistyötahot</a>
+								<a
 									class="nav-link" href="${pageContext.request.contextPath}/asetukset">Asetukset</a>
 								<a class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>
 								<a class="nav-link" href="${pageContext.request.contextPath}/kalenteri">Kalenteri</a>
@@ -318,13 +320,19 @@
 															</small>
 
 															<!-- 🔌 UUSI: Näytetään dynaaminen luokitus-badge väreineen, jos se on kytketty -->
-															<c:if test="${k.kirjaustyyppi != null}">
-																<span
-																	class="badge text-white fw-bold px-2 py-0.5 rounded-pill"
-																	style="background-color: ${k.kirjaustyyppi.vari}; font-size: 0.75rem;">
-																	${k.kirjaustyyppi.nimi}
-																</span>
-															</c:if>
+															<c:choose>
+																<c:when test="${k.kirjaustyyppi != null}">
+																	<span
+																		class="badge text-white fw-bold px-2 py-0.5 rounded-pill"
+																		style="background-color: ${k.kirjaustyyppi.vari}; font-size: 0.75rem;">
+																		${k.kirjaustyyppi.nimi}
+																	</span>
+																</c:when>
+																<c:otherwise>
+																	<span class="badge bg-secondary fw-bold px-2 py-0.5 rounded-pill"
+																		style="font-size: 0.75rem;">Kirjaustyyppi poistettu</span>
+																</c:otherwise>
+															</c:choose>
 														</div>
 
 														<!-- Painikkeet: Muokkaa ja arkistoiva Poista rinnakkain -->
@@ -856,6 +864,7 @@
 														<thead class="table-light">
 															<tr>
 																<th>Tiedosto</th>
+																<th>Selite</th>
 																<th>Lisätty</th>
 																<th class="text-end">Toiminnot</th>
 															</tr>
@@ -864,6 +873,14 @@
 															<c:forEach var="liite" items="${asiakasliitteet}">
 																<tr>
 																	<td><c:out value="${liite.tiedostonNimi}" /></td>
+																	<td>
+																		<c:choose>
+																			<c:when test="${not empty liite.selite}">
+																				<c:out value="${liite.selite}" />
+																			</c:when>
+																			<c:otherwise><span class="text-muted">-</span></c:otherwise>
+																		</c:choose>
+																	</td>
 																	<td><c:out value="${liite.latausaika.toString().substring(0, 10)}" /></td>
 																	<td class="text-end">
 																		<a class="btn btn-sm btn-outline-secondary"
@@ -956,6 +973,17 @@
 										<input class="form-control" id="asiakasLiiteTiedosto" name="tiedosto"
 											type="file" required>
 										<div class="form-text">Suurin sallittu tiedostokoko on 50 Mt.</div>
+										<div id="asiakasLiiteDropzone"
+											class="border rounded-3 bg-light p-4 mt-3 text-center text-secondary"
+											style="border-style: dashed !important; transition: background-color 0.15s ease;"
+											aria-live="polite">
+											<span id="asiakasLiiteDropzoneTeksti">Tai pudota yksi tiedosto tähän</span>
+										</div>
+										<div class="mt-3">
+											<label class="form-label fw-semibold" for="asiakasLiiteSelite">Selite (vapaaehtoinen)</label>
+											<input class="form-control" id="asiakasLiiteSelite" name="selite"
+												type="text" placeholder="Esim. allekirjoitettu sopimus">
+										</div>
 									</div>
 									<div class="modal-footer bg-light">
 										<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Peruuta</button>
@@ -1831,6 +1859,40 @@
 					<!-- SCRIPTS -->
 					<script src="${pageContext.request.contextPath}/resources/bootstrap.bundle.min.js"></script>
 					<script>
+						var liiteTiedostoInput = document.getElementById('asiakasLiiteTiedosto');
+						var liiteDropzone = document.getElementById('asiakasLiiteDropzone');
+						var liiteDropzoneTeksti = document.getElementById('asiakasLiiteDropzoneTeksti');
+						if (liiteTiedostoInput && liiteDropzone && liiteDropzoneTeksti) {
+							var alkuperainenDropzoneTeksti = liiteDropzoneTeksti.textContent;
+							liiteTiedostoInput.addEventListener('change', function () {
+								liiteDropzoneTeksti.textContent = liiteTiedostoInput.files.length
+									? 'Valittu: ' + liiteTiedostoInput.files[0].name
+									: alkuperainenDropzoneTeksti;
+							});
+							['dragenter', 'dragover'].forEach(function (tapahtuma) {
+								liiteDropzone.addEventListener(tapahtuma, function (event) {
+									event.preventDefault();
+									liiteDropzone.classList.add('border-primary', 'bg-primary-subtle');
+								});
+							});
+							['dragleave', 'drop'].forEach(function (tapahtuma) {
+								liiteDropzone.addEventListener(tapahtuma, function (event) {
+									event.preventDefault();
+									liiteDropzone.classList.remove('border-primary', 'bg-primary-subtle');
+								});
+							});
+							liiteDropzone.addEventListener('drop', function (event) {
+								var pudotetutTiedostot = event.dataTransfer && event.dataTransfer.files;
+								if (!pudotetutTiedostot || pudotetutTiedostot.length === 0) {
+									return;
+								}
+								var siirto = new DataTransfer();
+								siirto.items.add(pudotetutTiedostot[0]);
+								liiteTiedostoInput.files = siirto.files;
+								liiteTiedostoInput.dispatchEvent(new Event('change', { bubbles: true }));
+							});
+						}
+
 						document.querySelectorAll('.potilastietojarjestelma-valinta[data-ei-tiedossa="true"]').forEach(function (eiTiedossa) {
 							var lomake = eiTiedossa.form;
 							var valinnat = lomake.querySelectorAll('.potilastietojarjestelma-valinta');

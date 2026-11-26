@@ -168,7 +168,8 @@ body {
 			<div class="navbar-nav me-auto">
 				<a class="nav-link" href="${pageContext.request.contextPath}/">Etusivu</a>
 				<a class="nav-link"
-					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a> <a
+					href="${pageContext.request.contextPath}/asiakkaat">Asiakkaat</a>
+				<a class="nav-link" href="${pageContext.request.contextPath}/yhteistyotahot">Yhteistyötahot</a> <a
 					class="nav-link"
 					href="${pageContext.request.contextPath}/asetukset">Asetukset</a> <a
 					class="nav-link" href="${pageContext.request.contextPath}/raportit">Raportit</a>

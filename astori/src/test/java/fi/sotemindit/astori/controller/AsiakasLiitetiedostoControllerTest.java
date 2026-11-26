@@ -1,6 +1,7 @@
 package fi.sotemindit.astori.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -71,15 +72,28 @@ class AsiakasLiitetiedostoControllerTest {
 		MockMultipartFile file = new MockMultipartFile("tiedosto", "C:\\upload\\raportti.pdf",
 				"application/pdf", new byte[] { 1, 2, 3 });
 
-		String result = controller.lisaaAsiakasliite(7L, file, session, redirectAttributes);
+		String result = controller.lisaaAsiakasliite(7L, "Allekirjoitettu sopimus", file, session, redirectAttributes);
 
 		assertEquals("redirect:/asiakas/7", result);
 		ArgumentCaptor<Liitetiedosto> liiteCaptor = ArgumentCaptor.forClass(Liitetiedosto.class);
 		verify(liitetiedostoRepository).save(liiteCaptor.capture());
 		assertEquals("raportti.pdf", liiteCaptor.getValue().getTiedostonNimi());
 		assertEquals("ASIAKASLIITE", liiteCaptor.getValue().getKuvaus());
+		assertEquals("Allekirjoitettu sopimus", liiteCaptor.getValue().getSelite());
 		assertEquals(asiakas, liiteCaptor.getValue().getAsiakas());
 		assertEquals(3, liiteCaptor.getValue().getData().length);
+	}
+
+	@Test
+	void acceptsUploadWithoutOptionalDescription() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("tiedosto", "raportti.pdf",
+				"application/pdf", new byte[] { 1 });
+
+		controller.lisaaAsiakasliite(7L, "", file, session, redirectAttributes);
+
+		ArgumentCaptor<Liitetiedosto> liiteCaptor = ArgumentCaptor.forClass(Liitetiedosto.class);
+		verify(liitetiedostoRepository).save(liiteCaptor.capture());
+		assertNull(liiteCaptor.getValue().getSelite());
 	}
 
 	@Test
@@ -90,7 +104,7 @@ class AsiakasLiitetiedostoControllerTest {
 		when(file.getOriginalFilename()).thenReturn("raportti.pdf");
 		when(file.getBytes()).thenReturn(new byte[] { 1 });
 
-		controller.lisaaAsiakasliite(7L, file, session, redirectAttributes);
+		controller.lisaaAsiakasliite(7L, "", file, session, redirectAttributes);
 
 		verify(liitetiedostoRepository).save(any(Liitetiedosto.class));
 	}
@@ -101,7 +115,7 @@ class AsiakasLiitetiedostoControllerTest {
 		when(file.isEmpty()).thenReturn(false);
 		when(file.getSize()).thenReturn(ENIMMAISKOKO + 1);
 
-		String result = controller.lisaaAsiakasliite(7L, file, session, redirectAttributes);
+		String result = controller.lisaaAsiakasliite(7L, "", file, session, redirectAttributes);
 
 		assertEquals("redirect:/asiakas/7", result);
 		verify(redirectAttributes).addFlashAttribute("virhe", "Liitetiedoston enimmäiskoko on 50 Mt.");

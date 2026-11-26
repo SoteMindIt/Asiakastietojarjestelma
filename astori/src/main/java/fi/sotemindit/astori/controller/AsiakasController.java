@@ -302,6 +302,7 @@ public class AsiakasController {
 	@Transactional
 	@PostMapping("/asiakas/{asiakasId}/liite")
 	public String lisaaAsiakasliite(@PathVariable Long asiakasId,
+			@RequestParam(value = "selite", required = false, defaultValue = "") String selite,
 			@RequestParam(value = "tiedosto", required = false) MultipartFile tiedosto,
 			jakarta.servlet.http.HttpSession session,
 			org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) throws IOException {
@@ -327,6 +328,7 @@ public class AsiakasController {
 		}
 
 		Liitetiedosto liite = new Liitetiedosto(tiedostonNimi, "ASIAKASLIITE", tiedosto.getBytes(), asiakas);
+		liite.setSelite(selite.isBlank() ? null : selite.trim());
 		liitetiedostoRepository.save(liite);
 		lokiRepository.save(new Loki(istuntoTunnus, "LISÄYS",
 				"Lisätty liitetiedosto '" + tiedostonNimi + "' asiakkaalle '" + asiakas.getNimi()
